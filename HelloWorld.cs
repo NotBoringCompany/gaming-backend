@@ -11,6 +11,13 @@ using PlayFab.Samples;
 
 namespace NBCompany.HelloWorld
 {
+    [System.Serializable]
+    public class PlayerItemSlotsData
+    {
+        public string ItemName;
+        public int Quantity;
+    }
+
     public static class HelloWorld
     {
         [FunctionName("HelloWorld")]
@@ -32,11 +39,23 @@ namespace NBCompany.HelloWorld
                 inputValue = args["inputValue"];
             }
 
-            message = $"Hello {args["inputValue"]}!";
+            try{
+
+            string PlayerItemSlotsDataString = args["inputValue"];
+
+            PlayerItemSlotsData ourItem = JsonConvert.DeserializeObject<PlayerItemSlotsData>(PlayerItemSlotsDataString);
+            string ItemName = ourItem.ItemName;
+
+            message = $"Hello {ItemName}!";
 
             log.LogDebug($"HelloWorld: {new { input = inputValue} }");
 
             return new { messageValue = message };
+
+            }
+            catch(Exception e){
+                return e.ToString();
+            }
             
         }
     }
