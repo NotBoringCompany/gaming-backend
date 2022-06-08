@@ -17,12 +17,11 @@ namespace NBCompany.Setters
 {
     public static class SetTitleInternalDatabase
     {
-        [FunctionName("SetTitleInternalDatabase")]
+        [FunctionName("SetSkillDatabase")]
         public static async Task<dynamic> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
-            try{
             FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
 
             dynamic args = context.FunctionArgument;
@@ -39,25 +38,57 @@ namespace NBCompany.Setters
             var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
 
             
-                string skillDatabase = args["Data"];
+            string skillDatabase = args["Data"];
 
-                SkillsDataBase.SkillInfoPlayFabList skillInfoPlayFabListObject = new SkillsDataBase.SkillInfoPlayFabList();
+            SkillsDataBase.SkillInfoPlayFabList skillInfoPlayFabListObject = new SkillsDataBase.SkillInfoPlayFabList();
 
-                //Checks if seriliazation is done correctly
-                skillInfoPlayFabListObject = JsonConvert.DeserializeObject<SkillsDataBase.SkillInfoPlayFabList>(skillDatabase);
+            //Checks if seriliazation is done correctly
+            skillInfoPlayFabListObject = JsonConvert.DeserializeObject<SkillsDataBase.SkillInfoPlayFabList>(skillDatabase);
 
-                var request = await serverApi.UpdateUserReadOnlyDataAsync(new UpdateUserDataRequest(){
-                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-                    Data = new Dictionary<string, string>(){
-                        {"SkillDatabase", skillDatabase}
-                    }
-                });
+            var request = await serverApi.SetTitleInternalDataAsync(new SetTitleDataRequest{
+                Key = "SkillDatabase",
+                Value = skillDatabase
+            });
 
-                return request.Result.ToString();
-            }
-            catch(Exception e){
-                return e;
+            return request;
+        }
+        
+
+        [FunctionName("SetElementDatabase")]
+        public static async Task<dynamic> SetElementDatabase(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+
+            
+            string elementDatabase = args["Data"];
+
+            ElementDatabase.ElementPropDatabasePlayFabList elementPropertiesPlayFabList = new ElementDatabase.ElementPropDatabasePlayFabList();
+
+            //Checks if seriliazation is done correctly
+            elementPropertiesPlayFabList = JsonConvert.DeserializeObject<ElementDatabase.ElementPropDatabasePlayFabList>(elementDatabase);
+
+            var request = await serverApi.SetTitleInternalDataAsync(new SetTitleDataRequest{
+                Key = "ElementDatabase",
+                Value = elementDatabase
+            });
+
+            return request;
             }
         }
-    }
 }
+

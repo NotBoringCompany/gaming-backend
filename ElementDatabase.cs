@@ -5,10 +5,9 @@ public class ElementDatabase
 {
     //The element property, shows what element is strong and weak against;
     [System.Serializable]
-    public class ElementProperties
+    public class ElementPropertiesPlayFab
     {
         public Elements element;
-        public bool fontColorDark;
         public bool ineffectiveAgainstSelf = true;
         public List<Elements> strongAgainst;
         public List<Elements> weakAgainst;
@@ -26,6 +25,12 @@ public class ElementDatabase
     {
         public Elements element;
         public List<ElementModifier> ElementModifier;
+    }
+
+    public class ElementPropDatabasePlayFabList
+    {
+        public List<ElementPropertiesPlayFab> elementPropDatabasePlayFabList;
+
     }
 
     public enum Elements
@@ -48,9 +53,7 @@ public class ElementDatabase
         Toxic,
         Item
     }
-
-    public List<ElementProperties> elementPropDatabase;
-
+    public List<ElementPropertiesPlayFab> elementPropDatabasePlayFab;
     public List<ElementProperties_Prototype> elementProp_Prototype;
 
     //Returns the value modifier of a particular element. Either -2, 0 or 2
@@ -58,7 +61,7 @@ public class ElementDatabase
     public int FindElementValueModifier(Elements monsterBaseElement, Elements elementInput)
     {
         //For each element, find the element properties and check which value to return based on elementInput
-        ElementProperties elementProperties = FindElementProperties(monsterBaseElement);
+        ElementPropertiesPlayFab elementProperties = FindElementProperties(monsterBaseElement);
 
         // Debug.Log(monsterBaseElement + "/" + elementInput + "/" + elementProperties.strongAgainst.Contains(elementInput) + "/" + elementProperties.weakAgainst.Contains(elementInput));
 
@@ -102,9 +105,9 @@ public class ElementDatabase
 
 
     //Returns the input element properties
-    public ElementProperties FindElementProperties(Elements element)
+    public ElementPropertiesPlayFab FindElementProperties(Elements element)
     {
-        foreach (var elementProperty in elementPropDatabase)
+        foreach (var elementProperty in elementPropDatabasePlayFab)
         {
             if (element == elementProperty.element)
             {
