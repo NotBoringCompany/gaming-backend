@@ -89,6 +89,150 @@ namespace NBCompany.Setters
 
             return request;
             }
+
+            [FunctionName("SetItemDatabase")]
+        public static async Task<dynamic> SetItemDatabase(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+
+            
+            string itemDatabase = args["Data"];
+
+            InventoryItemsPlayFabLists inventoryItemsPlayFabLists = new InventoryItemsPlayFabLists();
+
+            //Checks if seriliazation is done correctly
+            inventoryItemsPlayFabLists = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(itemDatabase);
+
+            var request = await serverApi.SetTitleInternalDataAsync(new SetTitleDataRequest{
+                Key = "ItemDatabase",
+                Value = itemDatabase
+            });
+
+            return request;
+            }
+
+        [FunctionName("SetPassiveDatabase")]
+        public static async Task<dynamic> SetPassiveDatabase(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+
+            
+            string passiveDatabase = args["Data"];
+
+            PassiveDatabase.PassiveInfosPlayFabList passiveInfosPlayFabLists = new PassiveDatabase.PassiveInfosPlayFabList();
+
+            //Checks if seriliazation is done correctly
+            passiveInfosPlayFabLists = JsonConvert.DeserializeObject<PassiveDatabase.PassiveInfosPlayFabList>(passiveDatabase);
+
+            var request = await serverApi.SetTitleInternalDataAsync(new SetTitleDataRequest{
+                Key = "passiveDatabase",
+                Value = passiveDatabase
+            });
+
+            return request;
+            }
+
+            [FunctionName("SetStatusEffectIconDatabase")]
+        public static async Task<dynamic> SetStatusEffectIconDatabase(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+
+            
+            string statusEffectIconDatabase = args["Data"];
+
+            StatusEffectIconDatabase.StatusConditionDatabasePlayFabList statusConditionDatabasePlayFabList = new StatusEffectIconDatabase.StatusConditionDatabasePlayFabList();
+
+            //Checks if seriliazation is done correctly
+            statusConditionDatabasePlayFabList = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(statusEffectIconDatabase);
+
+            var request = await serverApi.SetTitleInternalDataAsync(new SetTitleDataRequest{
+                Key = "statusEffectIconDatabase",
+                Value = statusEffectIconDatabase
+            });
+
+            return request;
+            }
+
+            [FunctionName("SetNBMonDatabase")]
+        public static async Task<dynamic> SetNBMonDatabase(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+
+            
+            string NBMonDatabase = args["Data"];
+
+            NBMonDatabase.MonstersPlayFabList monstersPlayFabList = new NBMonDatabase.MonstersPlayFabList();
+
+            //Checks if seriliazation is done correctly
+            monstersPlayFabList = JsonConvert.DeserializeObject<NBMonDatabase.MonstersPlayFabList>(NBMonDatabase);
+
+            var request = await serverApi.SetTitleInternalDataAsync(new SetTitleDataRequest{
+                Key = "NBMonDatabase",
+                Value = NBMonDatabase
+            });
+
+            return request;
+            }
         }
 }
 

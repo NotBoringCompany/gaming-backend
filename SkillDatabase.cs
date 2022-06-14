@@ -19,8 +19,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Drawing;
 
-namespace NBCompany.Setters{
-
 public class SkillsDataBase
 {
     public enum ActionType
@@ -109,5 +107,4 @@ public class SkillsDataBase
     
     }
 
-}
 }
