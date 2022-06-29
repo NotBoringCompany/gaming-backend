@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using PlayFab;
 using PlayFab.Samples;
 using System.Collections.Generic;
+using PlayFab.EconomyModels;
 using PlayFab.ServerModels;
 
 namespace NBCompany.Setters
@@ -115,15 +116,24 @@ namespace NBCompany.Setters
 
             InventoryItemsPlayFabLists inventoryItemsPlayFabLists = new InventoryItemsPlayFabLists();
 
-            //Checks if seriliazation is done correctly
-            inventoryItemsPlayFabLists = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(itemDatabase);
 
-            var request = await serverApi.SetTitleInternalDataAsync(new SetTitleDataRequest{
-                Key = "ItemDatabase",
-                Value = itemDatabase
-            });
+            var economyApi = new PlayFabEconomyInstanceAPI(authContext);
 
-            return request;
+            
+
+            foreach(ItemsPlayFab inventoryItem in inventoryItemsPlayFabLists.ItemDataBasePlayFab){
+                var item = new PlayFab.EconomyModels.CatalogItem();
+                item.Title = new Dictionary<string, string>();
+                item.Title.Add("English", inventoryItem.Name);
+
+
+                var request = await economyApi.CreateDraftItemAsync(new CreateDraftItemRequest(){
+                    Item = item,
+                    Publish = true    
+                });
+            }
+
+            return "success";
             }
 
         [FunctionName("SetPassiveDatabase")]
@@ -230,6 +240,47 @@ namespace NBCompany.Setters
                 Key = "NBMonDatabase",
                 Value = NBMonDatabase
             });
+
+            return request;
+            }
+
+            [FunctionName("SetTeamInformation")]
+        public static async Task<dynamic> SetTeamInformation(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+
+            
+            string ListsTeamInformation = args["Data"];
+
+            NBMonDataSave.ListsTeamInformation listsTeamInformation = new NBMonDataSave.ListsTeamInformation();
+
+            //Checks if seriliazation is done correctly
+            listsTeamInformation = JsonConvert.DeserializeObject<NBMonDataSave.ListsTeamInformation>(ListsTeamInformation);
+
+            var request = await serverApi.UpdateUserReadOnlyDataAsync(new UpdateUserDataRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Data = new Dictionary<string, string>(){
+                    {"ListsTeamInformation", ListsTeamInformation}
+                    },
+                Permission = UserDataPermission.Private
+            });
+
+
 
             return request;
             }

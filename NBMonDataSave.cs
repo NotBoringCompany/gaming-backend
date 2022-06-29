@@ -93,6 +93,11 @@ public class NBMonDataSave
     public int defenseEffort = 0;
     public int specialDefenseEffort = 0;
 
+    public class ListsTeamInformation{
+        public List<NBMonDataSave> thisPlayerInformation;
+        public List<NBMonDataSave> enemyPlayerInformation;
+    }
+
 
     //Change the stats based on percentage
     public void StatsPercentageChange(NBMonProperties.StatsType statsType, int percentageChange)
