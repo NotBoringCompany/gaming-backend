@@ -13,6 +13,8 @@ using PlayFab.Samples;
 using System.Collections.Generic;
 using PlayFab.EconomyModels;
 using PlayFab.ServerModels;
+using System.Net.Http;
+using System.Net;
 
 namespace NBCompany.Setters
 {
@@ -283,7 +285,92 @@ namespace NBCompany.Setters
 
 
             return request;
-            }
         }
+
+        private static PlayFabApiSettings FabSettingAPI = new PlayFabApiSettings   {  
+            TitleId =
+            Environment.GetEnvironmentVariable("PLAYFAB_TITLE_ID", EnvironmentVariableTarget.Process), 
+            DeveloperSecretKey =
+            Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+        };
+
+        [FunctionName("GrandItem")]
+        public static async Task<dynamic> GrandItem([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+            
+            string itemID = args["Data"];
+            List<string> IDs = new List<string>();
+            IDs.Add(itemID);
+
+            var request = await serverApi.GrantItemsToUserAsync(new GrantItemsToUserRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                ItemIds = IDs,
+                CatalogVersion = "InventoryTest"
+            });
+
+            return request;
+        }
+
+        private static HttpClient httpClient = new HttpClient();
+
+        
+
+        [FunctionName("HerokuAddGenesisNBMons")]
+        public static async Task<dynamic> HerokuAddGenesisNBMons([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+            
+            string address = args["address"];
+
+            string GenesisNBMons = "";
+
+            HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://nbcompanytest.herokuapp.com/genesisNBMon/getOwnerGenesisNBMons/" + address);
+            requestH.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+
+            using(HttpWebResponse response = (HttpWebResponse)requestH.GetResponse())
+            using(Stream stream = response.GetResponseStream())
+            using(StreamReader reader = new StreamReader(stream))
+            {
+                GenesisNBMons = reader.ReadToEnd();
+            }
+
+            var request = await serverApi.UpdateUserReadOnlyDataAsync(new UpdateUserDataRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Data = new Dictionary<string, string>(){
+                    {"GenesisNBMons", GenesisNBMons}
+                    },
+                Permission = UserDataPermission.Private
+            });
+
+            return request;
+        }
+    }
 }
 
