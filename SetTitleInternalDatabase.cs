@@ -371,6 +371,149 @@ namespace NBCompany.Setters
 
             return request;
         }
+
+        [FunctionName("GetItemDrops")]
+        public static async Task<dynamic> GetItemDrops([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+
+            //Get Player's Internal Title Data
+            var getPlayerInternalDataRequest = await serverApi.GetUserInternalDataAsync(new GetUserDataRequest() 
+            { PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId});
+
+            //Check if the ItemDrops contains string.Empty or not, if it's does, return "There's no drop rate obtained!".
+            if(getPlayerInternalDataRequest.Result.Data.ContainsKey("ItemDrops"))
+            {
+                //Convert the Json String given from the request.
+                string JsonStringData = getPlayerInternalDataRequest.Result.Data["ItemDrops"].Value;
+                List<string> ListOfItemDropIDs = new List<string>();
+                ListOfItemDropIDs = JsonConvert.DeserializeObject<List<String>>(JsonStringData)!;
+
+                //Let's sent the dropped items into the player.
+                var request = await serverApi.GrantItemsToUserAsync(new GrantItemsToUserRequest{
+                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                    ItemIds = ListOfItemDropIDs,
+                    CatalogVersion = "InventoryTest"
+                });
+
+                //After the Item Drops given to player, let's delete this Key.
+                var setPlayerInternalDataRequest = await serverApi.UpdateUserInternalDataAsync(new UpdateUserInternalDataRequest() {
+                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                    KeysToRemove = new List<string>() {"ItemDrops"}
+                });
+
+                //Check Item Data
+                var requestPlayerInventory = await serverApi.GetUserInventoryAsync(new GetUserInventoryRequest() {
+                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                });
+
+                List<ItemInstance> PlayerItemData = requestPlayerInventory.Result.Inventory;
+
+                //Let's update Player Inventory if the Player's item exceeded maximum item or not.
+                foreach(var IndividualItemInstance in PlayerItemData)
+                {
+                    if(IndividualItemInstance.RemainingUses >= 99)
+                    {
+                        var requestModifyItem = await serverApi.ModifyItemUsesAsync(new ModifyItemUsesRequest() {
+                            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                            ItemInstanceId = IndividualItemInstance.ItemInstanceId,
+                            UsesToAdd = (int)(99 - IndividualItemInstance.RemainingUses)
+                        });
+                    }
+                }
+
+                return "Dropped Items are sent to Player's Inventory!";
+            }
+            else
+            {
+                return "There's no Item Dropped! Good luck next time";
+            }
+        }
+
+        [FunctionName("AddItemToItemDrops")]
+        public static async Task<dynamic> AddItemToItemDrops([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+        {
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+            
+            //Declare used Variables for Testing
+            var MonsterIDWeWantToUse = 11; //Roggo's ID
+            NBMonDatabase.MonstersPlayFabList TempData = new NBMonDatabase.MonstersPlayFabList();
+            List<string> DroppedItems = new List<string>();
+
+            //Get Player's Internal Title Data
+            var getPlayerInternalDataRequest = await serverApi.GetUserInternalDataAsync(new GetUserDataRequest() 
+            { PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId});
+
+            //Check if the ItemDrops contains string.Empty or not, if it's does, add into DroppedItems string List".
+            if(getPlayerInternalDataRequest.Result.Data.ContainsKey("ItemDrops"))
+            {
+                string JsonStringData = getPlayerInternalDataRequest.Result.Data["ItemDrops"].Value;
+                DroppedItems = JsonConvert.DeserializeObject<List<String>>(JsonStringData)!;
+            }
+
+            //Let's request NBMonDatabase from Internal Title Data
+            var requestNBMonDatabaseTitleData = await serverApi.GetTitleInternalDataAsync(new GetTitleDataRequest());
+
+            //Check if the NBMonDatabase Key is exist in the Title Internal Data
+            if(requestNBMonDatabaseTitleData.Result.Data.ContainsKey("NBMonDatabase"))
+            {
+                //Convert Json String into Class Data using NBMonDatabase.MonstersPlayFabList
+                TempData = JsonConvert.DeserializeObject<NBMonDatabase.MonstersPlayFabList>(requestNBMonDatabaseTitleData.Result.Data["NBMonDatabase"]);
+
+                //Find Monster we want to uses
+                NBMonDatabase.MonsterInfoPlayFab UsedMonster = TempData.monstersPlayFab[MonsterIDWeWantToUse];
+
+                //Let's do RNG Looping for testing purposes
+                foreach(var ItemDropTable in UsedMonster.LootLists)
+                {
+                    Random rand = new Random();
+                    if(ItemDropTable.RNGChance > rand.Next(0, 100))
+                    {
+                        DroppedItems.Add(ItemDropTable.ItemDrop.PlayFabItemID);
+                    }
+                }
+
+                //Let's set the DroppedItems into ItemDrops inside Player Internal Title Data
+                if(DroppedItems.Count != 0)
+                {
+                    var request = serverApi.UpdateUserInternalDataAsync(new UpdateUserInternalDataRequest() 
+                    {
+                        PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                        Data = new Dictionary<string, string>() {{"ItemDrops", JsonConvert.SerializeObject(DroppedItems)}}
+                    });
+
+                    return "Success";
+                }
+            }
+
+            return null;
+        }
     }
 }
 

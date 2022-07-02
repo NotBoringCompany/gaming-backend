@@ -43,6 +43,7 @@ public class NBMonDatabase
     public class PlayerItemSlotsData
     {
         public string ItemName;
+        public string PlayFabItemID;
         public int Quantity;
     }
 
