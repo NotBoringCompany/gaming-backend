@@ -553,8 +553,8 @@ namespace NBCompany.Setters
                 DroppedItems = JsonConvert.DeserializeObject<List<String>>(JsonStringData)!;
             }
 
-            var NBMonDatabaseJson = NBMonDatabase.MonsterDatabaseJson;
-            TempData = JsonConvert.DeserializeObject<NBMonDatabase.MonstersPlayFabList>(NBMonDatabaseJson);
+            var MonsterJsonData = NBMonDatabaseJson.MonsterDatabaseJson;
+            TempData = JsonConvert.DeserializeObject<NBMonDatabase.MonstersPlayFabList>(MonsterJsonData);
 
             //Find Monster we want to uses
             NBMonDatabase.MonsterInfoPlayFab UsedMonster = TempData.monstersPlayFab[MonsterIDWeWantToUse];
