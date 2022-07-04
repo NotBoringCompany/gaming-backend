@@ -1,8 +1,5 @@
 const Moralis = require('moralis/node');
 
-const moralisAPINode = process.env.MORALIS_APINODE;
-require('dotenv').config();
-
 const serverUrl = process.env.MORALIS_SERVERURL;
 const appId = process.env.MORALIS_APPID;
 const masterKey = process.env.MORALIS_MASTERKEY;
@@ -11,7 +8,6 @@ const masterKey = process.env.MORALIS_MASTERKEY;
  * @dev Helper function to parse object data into a JSON string
  */
  const parseJSON = (data) => JSON.parse(JSON.stringify(data));
-
 
 /**
  * `addLoggedInUser` adds a user email's eth address to the list of `loggedInUsers`.
@@ -58,82 +54,55 @@ const addLoggedInUser = async (sessionToken) => {
                     const LoggedInUsersDB = Moralis.Object.extend("LoggedInUsers");
                     const loggedInUsersDB = new LoggedInUsersDB();
 
-                    loggedInUsersDB.set("ETH_Address", userInfo["ethAddress"]);
+                    // here, we are querying the `LoggedInUsers` class to check if the eth address already exists
+                    // (meaning that the user with this eth address has already logged in)
+                    const LoggedInUsersQuery = new Moralis.Query(loggedInUsersDB);
+                    const ethAddressQuery = LoggedInUsersQuery.equalTo("ETH_Address", userInfo["ethAddress"]);
+                    const ethAddressQueryResult = await ethAddressQuery.find({useMasterKey: true});
+                    
+                    // parsing the query result into object format. should return {} if there are no results.
+                    const ethAddressQueryResultParsed = parseJSON(ethAddressQueryResult);
 
-                    if (userInfo["email"] !== undefined) {
-                        loggedInUsersDB.set("Email", userInfo["email"]);
-                    }
+                    // if the user hasn't logged in yet, then this check should be true
+                    if (ethAddressQueryResultParsed.length === 0) {
+                        // we then set the eth address with the user's eth address
+                        loggedInUsersDB.set("ETH_Address", userInfo["ethAddress"]);
 
-                    loggedInUsersDB.save(null, {useMasterKey: true}).then(
-                        () => {
-                            return `User ${userInfo} logged in successfully.`
-                        }, (err) => {
-                            throw new Error(`Error adding user to Moralis DB. ${err.stack}`);
+                        if (userInfo["email"] !== undefined) {
+                            // if email exists, we also set the email here just for extra check purposes.
+                            loggedInUsersDB.set("Email", userInfo["email"]);
                         }
-                    )
+
+                        // we save the record we just set (i.e. added to the database)
+                        loggedInUsersDB.save(null, {useMasterKey: true}).then(
+                            () => {
+                                return `User ${userInfo} logged in successfully.`
+                            }, (err) => {
+                                throw new Error(`Error adding user to Moralis DB. ${err.stack}`);
+                            }
+                        )
+                    // if the user has already logged in, we can't add their eth address again.
+                    } else {
+                        throw new Error(`User's ETH Address ${userInfo["email"]} is already logged in. Cannot add another instance.`);
+                    }
+                // if eth address is empty, we cannot log the user's eth address in. they need to add this address.
                 } else {
                     throw new Error("User's eth address is empty. Cannot log user into the database if empty.");
                 }
+            // if the user has no email or eth address, we cannot log them in. they need to add at least the eth address.
             } else {
-                // if object is completely empty
                 throw new Error("Both user email and eth address are empty for the user. Please alert them.");
             }
+        // if session token is invalid or not found, we throw an error.
         } else {
             throw new Error("Session token is not found.");
         }
+    // catches any random or unexpected errors.
     } catch (err) {
         throw new Error(err.stack);
     }
-    // try {
-    //     //Starts moralis globally with masterKey
-    //     await Moralis.start({ serverUrl, appId, masterKey });
-    //     // if user is logged into the game, we will fetch their eth address from the `_User` class in Moralis DB
-    //     if (isLoggedIn === true) {
-    //         // gets an instance of the user database and queries through the records
-    //         const UserDB = new Moralis.Query("_User");
-
-    //         // here, we set up the pipeline to filter the specific user and return their eth address
-    //         const userPipeline = [
-                // { match: { email: userEmail } },
-                // { project: { _id: 0, ethAddress: 1 } },
-    //         ]
-
-    //         // aggregation using the specified pipeline to retrieve the address
-    //         const userAddressRaw = await UserDB.aggregate(userPipeline);
-
-    //         // userAddress will return an array of objects which looks like this:
-    //         // [ { ethAddress: '0xa123123' } ]
-    //         // but since there is only 1 object due to the behavior of the pipeline, we need to return the 0th index (the only result)
-    //         // and return the 'ethAddress' field of that object to get the userAddress.
-    //         const userAddress = userAddressRaw[0]["ethAddress"];
-
-    //         const LoggedInUsersDB = Moralis.Object.extend("LoggedInUsers");
-    //         const loggedInUsersDB = new LoggedInUsersDB();
-
-    //         loggedInUsersDB.set("Email", userEmail);
-    //         loggedInUsersDB.set("ETH_Address", userAddress);
-
-    //         if (adminPassword === "kontol") {
-    //             // we check if the user has logged in already (meaning that the user exists in the DB)
-    //             // if yes, we will return an error.
-    //             const userQuery = new Moralis.Query(LoggedInUsersDB);
-
-
-
-
-    //             loggedInUsersDB.save(null, {useMasterKey: true}).then(
-    //                 (user) => {
-    //                     console.log(`${user} has logged in. Their address ${userAddress} has been noted.`);
-    //                 }, (err) => {
-    //                     throw new Error(err.stack);
-    //                 }
-    //             );
-    //         } else {
-    //             throw new Error("Password is wrong. User is unauthenticated");
-    //         }
-    //     }
-    // } catch (err) {
-    //     throw new Error(err.stack);
-    // }
 }
-addLoggedInUser("r:ac3a98aca3acefabf713c04fa57e9f48");
+
+module.exports = {
+    addLoggedInUser
+}
