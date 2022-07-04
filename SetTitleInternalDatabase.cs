@@ -433,7 +433,26 @@ namespace NBCompany.Setters
                 });
 
                 //Check Item Data
-                CheckMaxItemLimit(serverApi, context);
+                var requestPlayerInventory = await serverApi.GetUserInventoryAsync(new GetUserInventoryRequest()
+                {
+                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                });
+
+                List<ItemInstance> PlayerItemData = requestPlayerInventory.Result.Inventory;
+
+                //Let's update Player Inventory if the Player's item exceeded maximum item or not.
+                foreach (var IndividualItemInstance in PlayerItemData)
+                {
+                    if (IndividualItemInstance.RemainingUses >= 99)
+                    {
+                        var requestModifyItem = await serverApi.ModifyItemUsesAsync(new ModifyItemUsesRequest()
+                        {
+                            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                            ItemInstanceId = IndividualItemInstance.ItemInstanceId,
+                            UsesToAdd = (int)(99 - IndividualItemInstance.RemainingUses)
+                        });
+                    }
+                }
                 
 
                 return "Dropped Items are sent to Player's Inventory!";
@@ -442,32 +461,6 @@ namespace NBCompany.Setters
             {
                 return "There's no Item Dropped! Good luck next time";
             }
-        }
-
-        public static async void CheckMaxItemLimit(PlayFabServerInstanceAPI serverApi, FunctionExecutionContext<dynamic> context)
-        {
-            //Check Item Data
-            var requestPlayerInventory = await serverApi.GetUserInventoryAsync(new GetUserInventoryRequest()
-            {
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-            });
-
-            List<ItemInstance> PlayerItemData = requestPlayerInventory.Result.Inventory;
-
-            //Let's update Player Inventory if the Player's item exceeded maximum item or not.
-            foreach (var IndividualItemInstance in PlayerItemData)
-            {
-                if (IndividualItemInstance.RemainingUses >= 99)
-                {
-                    var requestModifyItem = await serverApi.ModifyItemUsesAsync(new ModifyItemUsesRequest()
-                    {
-                        PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-                        ItemInstanceId = IndividualItemInstance.ItemInstanceId,
-                        UsesToAdd = (int)(99 - IndividualItemInstance.RemainingUses)
-                    });
-                }
-            }
-
         }
 
         [FunctionName("AddItemToItemDrops")]
