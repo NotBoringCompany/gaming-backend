@@ -68,19 +68,15 @@ public static class InitialTeamSetup
         Team2UniqueID_BF = new List<string> {{EnemyTeam[0].uniqueId}, {EnemyTeam[1].uniqueId}};
 
         //Update AllMonsterUniqueID_BF to Player Title Data
-        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
-             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string> {{"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(AllMonsterUniqueID_BF)}}
-        });
-
-        //Update Team1UniqueID_BF to Player Title Data
-        var requestTeam1UniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
-            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string> {{"Team1UniqueID_BF", JsonConvert.SerializeObject(Team1UniqueID_BF)}}
-        });   
-
-        //Update Team2UniqueID_BF to Player Title Data
-        var requestTeam2UniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
-            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string> {{"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)}}
-        });
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
+            new UpdateUserDataRequest {
+             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+                 {"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(AllMonsterUniqueID_BF)},
+                 {"Team1UniqueID_BF", JsonConvert.SerializeObject(Team1UniqueID_BF)},
+                 {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)}
+                }
+            }
+        );
 
         return $"{AllMonsterUniqueID_BF.Count}";
     }
