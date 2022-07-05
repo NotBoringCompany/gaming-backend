@@ -62,10 +62,31 @@ public static class InitialTeamSetup
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
 
-        //Add Unique ID to List of the Categories (First and Second Slots).
-        AllMonsterUniqueID_BF = new List<string> {{PlayerTeam[0].uniqueId}, {PlayerTeam[1].uniqueId}, {EnemyTeam[0].uniqueId}, {EnemyTeam[1].uniqueId}};
-        Team1UniqueID_BF = new List<string> {{PlayerTeam[0].uniqueId}, {PlayerTeam[1].uniqueId}};
-        Team2UniqueID_BF = new List<string> {{EnemyTeam[0].uniqueId}, {EnemyTeam[1].uniqueId}};
+        //Looping Team 1
+        byte P1Count = 0;
+        foreach(var Monster in PlayerTeam)
+        {
+            if(P1Count == 2)
+                break;
+
+            AllMonsterUniqueID_BF.Add(Monster.uniqueId);
+            Team1UniqueID_BF.Add(Monster.uniqueId);
+
+            P1Count++;
+        }
+
+        //Looping Team 2
+        byte P2Count = 0;
+        foreach(var Monster in EnemyTeam)
+        {
+            if(P2Count == 2)
+                break;
+
+            AllMonsterUniqueID_BF.Add(Monster.uniqueId);
+            Team2UniqueID_BF.Add(Monster.uniqueId);
+
+            P2Count++;
+        }
 
         //Update AllMonsterUniqueID_BF to Player Title Data
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
