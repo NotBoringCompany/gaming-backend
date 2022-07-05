@@ -50,11 +50,38 @@ public static class InitialTeamSetup
                 PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam"}
             }
         );
+        
+        //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
+        List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
+        List<string> AllMonsterUniqueID_BF = new List<string>();
+        List<string> Team1UniqueID_BF = new List<string>();
+        List<string> Team2UniqueID_BF = new List<string>();
 
         //Convert from json to NBmonBattleDataSave
-        List<NBMonBattleDataSave> PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
-        List<NBMonBattleDataSave> EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+        PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
+        EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
 
-        return null;
+        //Add Unique ID to List of the Categories (First and Second Slots).
+        AllMonsterUniqueID_BF = new List<string> {{PlayerTeam[0].uniqueId}, {PlayerTeam[1].uniqueId}, {EnemyTeam[0].uniqueId}, {EnemyTeam[1].uniqueId}};
+        Team1UniqueID_BF = new List<string> {{PlayerTeam[0].uniqueId}, {PlayerTeam[1].uniqueId}};
+        Team2UniqueID_BF = new List<string> {{EnemyTeam[0].uniqueId}, {EnemyTeam[1].uniqueId}};
+
+        //Update AllMonsterUniqueID_BF to Player Title Data
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
+             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string> {{"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(AllMonsterUniqueID_BF)}}
+        });
+
+        //Update Team1UniqueID_BF to Player Title Data
+        var requestTeam1UniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string> {{"Team1UniqueID_BF", JsonConvert.SerializeObject(Team1UniqueID_BF)}}
+        });   
+
+        //Update Team2UniqueID_BF to Player Title Data
+        var requestTeam2UniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string> {{"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)}}
+        });
+
+        return $"{AllMonsterUniqueID_BF.Count}";
     }
 }
