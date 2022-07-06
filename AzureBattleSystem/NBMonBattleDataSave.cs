@@ -71,3 +71,19 @@ public class SkillByHP
     public int HPHasToBeBiggerThan;
     public string SkillName;
 }
+
+public class NBMonDatabase_Azure
+{
+    public static NBMonBattleDataSave FindNBMonDataUsingUniqueID(string UniqueID, List<NBMonBattleDataSave> Database)
+    {
+        foreach(var Monster in Database)
+        {
+            if(Monster.uniqueId == UniqueID)
+            {
+                return Monster;
+            }
+        }
+
+        return null;
+    }
+}
