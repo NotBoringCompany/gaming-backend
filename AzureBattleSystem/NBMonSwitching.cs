@@ -96,7 +96,8 @@ public static class NBMonSwitching
             }
 
             //Let's Add the NBMon the Input want to Switch with.
-            Team1UniqueID_BF.Add(Input.MonsterUniqueID_Switch);
+            if(!Team1UniqueID_BF.Contains(Input.MonsterUniqueID_Switch))
+                Team1UniqueID_BF.Add(Input.MonsterUniqueID_Switch);
         }
         else //Team 2 Logic
         {
@@ -106,13 +107,13 @@ public static class NBMonSwitching
                 if(Input.MonsterUniqueID_TargetSwitched == MonsterID)
                 {
                     Team2UniqueID_BF.Remove(MonsterID);
-                    AllMonsterUniqueID_BF.Remove(MonsterID);
                     break;
                 }
             }
 
             //Let's Add the NBMon the Input want to Switch with.
-            Team2UniqueID_BF.Add(Input.MonsterUniqueID_Switch);
+            if(!Team2UniqueID_BF.Contains(Input.MonsterUniqueID_Switch))
+                Team2UniqueID_BF.Add(Input.MonsterUniqueID_Switch);
         }
 
         //Let's add Both Teams again.
