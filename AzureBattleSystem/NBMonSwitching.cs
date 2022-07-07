@@ -71,8 +71,11 @@ public static class NBMonSwitching
             //Let's extract the argument value to SwitchInputValue variable.
             SwitchInputValue = args["SwitchInput"];
 
+            //Change from Dynamic to String
+            string SwitchInputValueString = SwitchInputValue;
+
             //Convert that argument into Input variable.
-            Input = JsonConvert.DeserializeObject<NBMonSwitchingInput>(SwitchInputValue);
+            Input = JsonConvert.DeserializeObject<NBMonSwitchingInput>(SwitchInputValueString);
         }
 
         //Convert from json to List<String>
