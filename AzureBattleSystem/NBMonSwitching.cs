@@ -113,7 +113,18 @@ public static class NBMonSwitching
         }
 
         //Let's add Both Teams again.
-        //TO DO!
+        AllMonsterUniqueID_BF = Team1UniqueID_BF.Concat<string>(Team2UniqueID_BF).ToList<string>();
+
+        //Update AllMonsterUniqueID_BF to Player Title Data
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
+            new UpdateUserDataRequest {
+             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+                 {"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(AllMonsterUniqueID_BF)},
+                 {"Team1UniqueID_BF", JsonConvert.SerializeObject(Team1UniqueID_BF)},
+                 {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)}
+                }
+            }
+        );
 
         return null;
     }
