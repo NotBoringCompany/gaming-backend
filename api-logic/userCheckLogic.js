@@ -1,8 +1,5 @@
+require('dotenv').config();
 const Moralis = require('moralis/node');
-
-const serverUrl = process.env.MORALIS_SERVERURL;
-const appId = process.env.MORALIS_APPID;
-const masterKey = process.env.MORALIS_MASTERKEY;
 
 /**
  * @dev Helper function to parse object data into a JSON string
@@ -15,7 +12,6 @@ const masterKey = process.env.MORALIS_MASTERKEY;
  */
 const addLoggedInUser = async (sessionToken) => {
     try {
-        await Moralis.start({ serverUrl, appId, masterKey });
         // we query the specific session token on the _Session class instance to obtain the record with the user
         const SessionDB = new Moralis.Query("_Session");
         const sessionTokenQuery = SessionDB.equalTo("sessionToken", sessionToken);
@@ -103,6 +99,76 @@ const addLoggedInUser = async (sessionToken) => {
     }
 }
 
-module.exports = {
-    addLoggedInUser
+/**
+ * Removes a user that has been logged out from the `LoggedInUsers` database.
+ * @param {*} ethAddress is the ethAddress that is stored after `addLoggedInUser` was called. This is the ethAddress
+ * of the user that's logged in.
+ */
+const removeLoggedInUser = async (ethAddress) => {
+    try {
+        // we query the specific session token on the _Session class instance to obtain the record with the user
+        const LoggedInUsersDB = new Moralis.Query("LoggedInUsers");
+        const query = LoggedInUsersDB.equalTo("ETH_Address", ethAddress);
+
+        // we find the query result and parse it to return the object format of the record
+        const queryResult = await query.find({useMasterKey: true});
+
+        if (queryResult.length === 0) {
+            throw new Error(`No record(s) with given ethAddress ${ethAddress} found`);''
+        }
+
+        queryResult.forEach((result) => {
+            result.destroy({useMasterKey: true}).then(
+                () => {
+                    return "Successfully deleted logged in user"
+                }, (err) => {
+                    throw new Error(err.stack);
+                }
+            )
+        })
+    } catch (err) {
+        throw new Error(err.stack);
+    }
 }
+
+/**
+ * Removes session token from the _Session database. Automatically logs the user out.
+ * @param {*} sessionToken is the user's current session token
+ */
+const removeSessionToken = async (sessionToken) => {
+    try {
+        // we query the specific session token on the _Session class instance to obtain the record with the user
+        const SessionDB = new Moralis.Query("_Session");
+        const sessionTokenQuery = SessionDB.equalTo("sessionToken", sessionToken);
+
+        // we find the query result and parse it to return the object format of the record
+        const queryResult = await sessionTokenQuery.first({useMasterKey: true});
+
+        // moralis doens't throw an error if session token is invalid. we throw it ourselves here
+        if (queryResult.length === 0) {
+            throw new Error("Session token is not found");
+        }
+
+        if (queryResult) {
+            queryResult.destroy({useMasterKey: true}).then(
+                () => {
+                    return "Session token removed successfully";
+                }, (err) => {
+                    throw new Error(`Error removing session token. ${err.stack}`)
+                }
+            );
+        }
+
+
+    } catch (err) {
+        throw new Error(err.stack);
+    }
+}
+
+
+module.exports = {
+    addLoggedInUser,
+    removeLoggedInUser,
+    removeSessionToken
+}
+
