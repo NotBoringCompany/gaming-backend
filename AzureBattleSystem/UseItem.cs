@@ -92,26 +92,43 @@ public static class UseItem
     //Add Status Effect
     public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log)
     {
+        log.LogInformation($"First Step! Code A");
+        
         //If there is no existing opposite status start by adding new data
         foreach (var statusEffectInfo in statusEffectInfoList)
         {
+            log.LogInformation($"First Loop Step! Code B: {statusEffectInfo.statusEffect}");
+
             //Make RNG Chances vary between Loop
             Random Rand = new Random();
             var RNG = Rand.Next(0, 100);
+
+            log.LogInformation($"Second Loop Step! Code C: {RNG}");
 
             // Store variables related with the status effect
             bool statusEffectExist = FindNBMonStatusEffect(ThisMonster, statusEffectInfo) != null;
             var ThisMonsterStatusEffect = FindNBMonStatusEffect(ThisMonster, statusEffectInfo);
 
+            log.LogInformation($"Third Loop Step! Code D: {statusEffectExist} / {ThisMonsterStatusEffect}");
+
+            bool ElementImmunity = StatusEffectIconDatabase.FindStatusEffectIcon(statusEffectInfo.statusEffect).elementImmunity;
+
+            NBMonDatabase.MonsterInfoPlayFab MonsterData = NBMonDatabase.FindMonster(ThisMonster.monsterId);
+
+            log.LogInformation($"4th Loop Step! Code E: {ElementImmunity} / {MonsterData}");
+
+            bool MonsterImmune = MonsterData.elements.Contains(StatusEffectIconDatabase.FindStatusEffectIcon(statusEffectInfo.statusEffect).immuneAgainstElement);
+
             //Status Effect Immunity based on Monster's Element.
-            if(StatusEffectIconDatabase.FindStatusEffectIcon(statusEffectInfo.statusEffect).elementImmunity)
+            if(ElementImmunity)
             {
                 //Find Monster Data First and Check if the Monster contains the Element which make the Status Effect unaffected by this Monster.
-                if(NBMonDatabase.FindMonster(ThisMonster.monsterId).elements.Contains(StatusEffectIconDatabase.FindStatusEffectIcon(statusEffectInfo.statusEffect).immuneAgainstElement))
+                if(MonsterImmune)
                 {
                    continue; 
                 }
             }
+
 
             //Status Effect RNG
             if (RNG > statusEffectInfo.triggerChance)
@@ -135,7 +152,7 @@ public static class UseItem
             //PassiveLogic.instances.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, monsterOnScreen, null, null);
         }
 
-        log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Add Status Effect has been Called!");
+        log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Add Status Effect has been Called!");
     }
 
     //Find Status Effect from Database
@@ -211,7 +228,7 @@ public static class UseItem
             }
         }
 
-        log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Remove Status Effect has been Called!");
+        log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Remove Status Effect has been Called!");
     }
 
     //Cloud Methods
@@ -256,7 +273,7 @@ public static class UseItem
         //Find Item
         UsedItem = FindItem(ConvertedInputData.ItemName);
 
-        log.LogDebug($"Is Item {ConvertedInputData.ItemName} Found? {UsedItem != null}");
+        log.LogInformation($"Is Item {ConvertedInputData.ItemName} Found? {UsedItem != null}");
 
         //When UsedItem is not Null, Let's recover their stats.
         if(UsedItem != null)
@@ -268,7 +285,7 @@ public static class UseItem
             //Find This Monster
             ThisMonster = FindMonster(ConvertedInputData.MonsterUniqueID, PlayerTeam);
 
-            log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} found!");
+            log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} found!");
 
             //If This Monster is Not NULL
             if(ThisMonster != null)
@@ -278,14 +295,14 @@ public static class UseItem
                 if(ThisMonster.hp > ThisMonster.maxHp)
                     ThisMonster.hp = ThisMonster.maxHp;
 
-                log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} HP Recovered!");
+                log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} HP Recovered!");
 
                 //Energy Recovery
                 ThisMonster.energy += TotalEnergyRecovery;
                 if(ThisMonster.energy > ThisMonster.maxEnergy)
                     ThisMonster.energy = ThisMonster.maxEnergy;
 
-                log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Energy Recovered!");
+                log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Energy Recovered!");
 
                 //Add Status Effect
                 ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects, log);
@@ -293,7 +310,7 @@ public static class UseItem
                 //Remove Status Effect
                 RemoveStatusEffect(ThisMonster, UsedItem.RemovesStatusEffects, log);
 
-                return JsonConvert.SerializeObject(PlayerTeam);
+                //return JsonConvert.SerializeObject(PlayerTeam);
 
                 var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
                         PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, 

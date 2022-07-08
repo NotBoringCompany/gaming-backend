@@ -95,9 +95,11 @@ public class NBMonDatabase
     //Returns a way to find the NBMons From The Database
     public static MonsterInfoPlayFab FindMonster(string monsterName)
     {
+        MonstersPlayFabList TempData = new MonstersPlayFabList();
+
         //Convertion from Json to Class
         var MonsterJsonData = NBMonDatabaseJson.MonsterDatabaseJson;
-        MonstersPlayFabList TempData = JsonConvert.DeserializeObject<MonstersPlayFabList>(MonsterJsonData);
+        TempData = JsonConvert.DeserializeObject<MonstersPlayFabList>(MonsterJsonData);
 
         //Make the original variable filled with the converted data.
         var monsters = TempData.monstersPlayFab;
