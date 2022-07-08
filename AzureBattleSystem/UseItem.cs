@@ -38,15 +38,18 @@ public static class UseItem
     //UseItem Input
     public class UseItemDataInput
     {
-        public string UserMonsterID;
+        public string MonsterUniqueID;
         public string ItemName;
     }
 
     //Find Item Method
-    public static ItemsPlayFab FindItem(string ItemName, InventoryItemsPlayFabLists Database)
+    public static ItemsPlayFab FindItem(string ItemName)
     {
+        //Get ItemDatabase
+        InventoryItemsPlayFabLists ItemDatabase = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(ItemDatabaseJson.ItemDataJson);
+
         //Looping ItemDatabase
-        foreach (var Item in Database.ItemDataBasePlayFab)
+        foreach (var Item in ItemDatabase.ItemDataBasePlayFab)
         {
             if(Item.Name == ItemName)
             {
@@ -87,20 +90,8 @@ public static class UseItem
     }
 
     //Add Status Effect
-    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList)
+    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log)
     {
-        //Declare Database
-        NBMonDatabase.MonstersPlayFabList MonsterDatabase = new NBMonDatabase.MonstersPlayFabList();
-        StatusEffectIconDatabase.StatusConditionDatabasePlayFabList StatusEffectDatabase = new StatusEffectIconDatabase.StatusConditionDatabasePlayFabList();   
-
-        //Get MonsterDatabase and Convert it from Json to Class
-        var MonsterJsonData = NBMonDatabaseJson.MonsterDatabaseJson;
-        MonsterDatabase = JsonConvert.DeserializeObject<NBMonDatabase.MonstersPlayFabList>(MonsterJsonData);
-
-        //Get Passive Database
-        var PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
-        StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(PassiveDatabaseJsonString);
-
         //If there is no existing opposite status start by adding new data
         foreach (var statusEffectInfo in statusEffectInfoList)
         {
@@ -111,9 +102,6 @@ public static class UseItem
             // Store variables related with the status effect
             bool statusEffectExist = FindNBMonStatusEffect(ThisMonster, statusEffectInfo) != null;
             var ThisMonsterStatusEffect = FindNBMonStatusEffect(ThisMonster, statusEffectInfo);
-
-            //Get This Status Effect's Counter
-            int statusEffectCounterMemory = FindNBMonStatusEffect(ThisMonster, statusEffectInfo).counter;
 
             //Status Effect Immunity based on Monster's Element.
             if(StatusEffectIconDatabase.FindStatusEffectIcon(statusEffectInfo.statusEffect).elementImmunity)
@@ -132,25 +120,22 @@ public static class UseItem
                 continue;
             }
 
-            if (statusEffectCounterMemory > 0)
+            if (!statusEffectExist) //If the Status Effect is not inside This Monster.
             {
-                if (!statusEffectExist) //If the Status Effect is not inside This Monster.
-                {
-                    //Add new status effect if the NBMon don't have this status effect
-                    AddNewStatusEffect(statusEffectInfo.statusEffect, statusEffectCounterMemory, statusEffectInfo.stackAmount, ThisMonster);
-                }
-                else if (statusEffectExist) //If the Status Effect already inside This Monster
-                {
-                    //Check if the Status Effect is Stackable
-                    ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectCounterMemory, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster);   
-                }
+                //Add new status effect if the NBMon don't have this status effect
+                AddNewStatusEffect(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, ThisMonster);
             }
-
+            else if (statusEffectExist) //If the Status Effect already inside This Monster
+            {
+                //Check if the Status Effect is Stackable
+                ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster);   
+            }
+           
             //Apply passives that works when received status effect. (TO DO)
-
-
             //PassiveLogic.instances.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, monsterOnScreen, null, null);
         }
+
+        log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Add Status Effect has been Called!");
     }
 
     //Find Status Effect from Database
@@ -213,7 +198,7 @@ public static class UseItem
     }
 
     //Remove Status Effect
-    public static void RemoveStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList)
+    public static void RemoveStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log)
     {
         foreach (var statusEffectInfo in statusEffectInfoList)
         {
@@ -225,6 +210,8 @@ public static class UseItem
                 }
             }
         }
+
+        log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Remove Status Effect has been Called!");
     }
 
     //Cloud Methods
@@ -246,12 +233,9 @@ public static class UseItem
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
         NBMonBattleDataSave ThisMonster = new NBMonBattleDataSave();
-        InventoryItemsPlayFabLists ItemDatabase = new InventoryItemsPlayFabLists();
+        UseItemDataInput ConvertedInputData = new UseItemDataInput();
         ItemsPlayFab UsedItem = new ItemsPlayFab();
         dynamic UseItemInputValue = null;
-        
-        //Get ItemDatabase
-        ItemDatabase = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(ItemDatabaseJson.ItemDataJson);
 
         //Check args["UseItemInput"] if it's null or not
         if(args["UseItemInput"] != null)
@@ -263,14 +247,16 @@ public static class UseItem
             string UseItemInputValueString = UseItemInputValue;
 
             //Convert that argument into Input variable.
-            UseItemInputValueString = JsonConvert.DeserializeObject<UseItemDataInput>(UseItemInputValue);
+            ConvertedInputData = JsonConvert.DeserializeObject<UseItemDataInput>(UseItemInputValueString);
         }
 
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
 
         //Find Item
-        UsedItem = FindItem(UseItemInputValue.ItemName, ItemDatabase);
+        UsedItem = FindItem(ConvertedInputData.ItemName);
+
+        log.LogDebug($"Is Item {ConvertedInputData.ItemName} Found? {UsedItem != null}");
 
         //When UsedItem is not Null, Let's recover their stats.
         if(UsedItem != null)
@@ -280,7 +266,9 @@ public static class UseItem
             int TotalEnergyRecovery = UsedItem.EnergyRecover + (int)((float)UsedItem.EnergyRecover_Percentage * (float)ThisMonster.energy);
 
             //Find This Monster
-            ThisMonster = FindMonster(UseItemInputValue.uniqueId, PlayerTeam);
+            ThisMonster = FindMonster(ConvertedInputData.MonsterUniqueID, PlayerTeam);
+
+            log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} found!");
 
             //If This Monster is Not NULL
             if(ThisMonster != null)
@@ -290,23 +278,26 @@ public static class UseItem
                 if(ThisMonster.hp > ThisMonster.maxHp)
                     ThisMonster.hp = ThisMonster.maxHp;
 
+                log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} HP Recovered!");
+
                 //Energy Recovery
                 ThisMonster.energy += TotalEnergyRecovery;
                 if(ThisMonster.energy > ThisMonster.maxEnergy)
                     ThisMonster.energy = ThisMonster.maxEnergy;
 
-                //Add Status Effect (TO DO, this is Hard)
-                ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects);
+                log.LogDebug($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Energy Recovered!");
+
+                //Add Status Effect
+                ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects, log);
 
                 //Remove Status Effect
-                RemoveStatusEffect(ThisMonster, UsedItem.RemovesStatusEffects);
+                RemoveStatusEffect(ThisMonster, UsedItem.RemovesStatusEffects, log);
 
-                //Once Done, let's Save the new Player Data into PlayFab Database. But first, convert it into Json Datatbase
-                string Team1String = JsonConvert.SerializeObject(PlayerTeam);
+                return JsonConvert.SerializeObject(PlayerTeam);
 
                 var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
                         PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, 
-                        Data = new Dictionary<string, string>{ {"CurrentPlayerTeam", JsonConvert.SerializeObject(Team1String)}
+                        Data = new Dictionary<string, string>{ {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)}
                     }
                 });
 
