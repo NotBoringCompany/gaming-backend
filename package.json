@@ -17,5 +17,11 @@
   "bugs": {
     "url": "https://github.com/NotBoringCompany/gaming-backend/issues"
   },
-  "homepage": "https://github.com/NotBoringCompany/gaming-backend#readme"
+  "homepage": "https://github.com/NotBoringCompany/gaming-backend#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "moralis": "^1.8.1"
+  }
 }
