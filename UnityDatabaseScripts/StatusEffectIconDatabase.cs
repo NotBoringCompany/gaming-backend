@@ -49,8 +49,8 @@ public class StatusEffectIconDatabase
     public static StatusConditionDataPlayFab FindStatusEffectIcon(NBMonProperties.StatusEffect statusEffect)
     {
         StatusEffectIconDatabase.StatusConditionDatabasePlayFabList StatusEffectDatabase = new StatusEffectIconDatabase.StatusConditionDatabasePlayFabList(); 
-        var PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
-        StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(PassiveDatabaseJsonString);
+        var StatusEffect = StatusEffectDatabaseJson.StatusEffectDataJson;
+        StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(StatusEffect);
 
         foreach (var statusData in StatusEffectDatabase.statusConditionDatabasePlayFab)
         {
