@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+
 public class StatusEffectIconDatabase
 {
 
@@ -44,9 +46,13 @@ public class StatusEffectIconDatabase
         public List<StatusConditionDataPlayFab> statusConditionDatabasePlayFab;
     }
 
-    public StatusConditionDataPlayFab FindStatusEffectIcon(NBMonProperties.StatusEffect statusEffect)
+    public static StatusConditionDataPlayFab FindStatusEffectIcon(NBMonProperties.StatusEffect statusEffect)
     {
-        foreach (var statusData in statusConditionDatabasePlayFab)
+        StatusEffectIconDatabase.StatusConditionDatabasePlayFabList StatusEffectDatabase = new StatusEffectIconDatabase.StatusConditionDatabasePlayFabList(); 
+        var PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
+        StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(PassiveDatabaseJsonString);
+
+        foreach (var statusData in StatusEffectDatabase.statusConditionDatabasePlayFab)
         {
             if (statusData.statusConditionName == statusEffect)
             {

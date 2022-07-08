@@ -63,7 +63,7 @@ public static class EvaluateOrder
         if(args["BattleAdvantage"] != null)
             BattleCondition = (int)args["BattleAdvantage"];
         else
-            BattleCondition = 0;
+            BattleCondition = 0; //Default Battle Condition
 
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
