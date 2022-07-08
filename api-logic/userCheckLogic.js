@@ -100,6 +100,45 @@ const addLoggedInUser = async (sessionToken) => {
 }
 
 /**
+ * Retrieves User Information from _Session by sessionToken.
+ */
+const retrieveUserBySessionToken = async (sessionToken) => {
+    try{
+        // we query the specific session token on the _Session class instance to obtain the record with the user
+        const SessionDB = new Moralis.Query("_Session");
+        const sessionTokenQuery = SessionDB.equalTo("sessionToken", sessionToken);
+
+        // we find the query result and parse it to return the object format of the record
+        const queryResult = await sessionTokenQuery.find({useMasterKey: true});
+        const queryResultParsed = parseJSON(queryResult);
+
+        // here we check if the result returns something. if it does, we return the user's eth address
+        if (queryResultParsed.length !== 0) {
+            // queryResultParsed returns an array of objects.
+            // since we only queried a single session token, we need to return the 0th index result.
+            // "user" here returns the user object for the session token.
+            // "objectId" returns the object id for the user to be queried in the `_User` database.
+            const userObjectId = queryResultParsed[0]["user"]["objectId"];
+            
+            const UserDB = new Moralis.Query("_User");
+            const userPipeline = [
+                { match: { _id: userObjectId } },
+                { project: { _id: 0, email: 1, ethAddress: 1 } },
+            ]
+
+            // just like `queryResultParsed`, we queried only a single user, so the array of objects returned should
+            // only return 1 object.
+            const userInfoRaw = await UserDB.aggregate(userPipeline);
+            const userInfo = userInfoRaw[0];
+            
+            return userInfo;
+        }
+    } catch(err){
+        throw new Error(err.stack);
+    }
+}
+
+/**
  * Removes a user that has been logged out from the `LoggedInUsers` database.
  * @param {*} ethAddress is the ethAddress that is stored after `addLoggedInUser` was called. This is the ethAddress
  * of the user that's logged in.
@@ -142,7 +181,7 @@ const removeSessionToken = async (sessionToken) => {
         const sessionTokenQuery = SessionDB.equalTo("sessionToken", sessionToken);
 
         // we find the query result and parse it to return the object format of the record
-        const queryResult = await sessionTokenQuery.first({useMasterKey: true});
+        const queryResult = await sessionTokenQuery.find({useMasterKey: true});
 
         // moralis doens't throw an error if session token is invalid. we throw it ourselves here
         if (queryResult.length === 0) {
@@ -169,6 +208,7 @@ const removeSessionToken = async (sessionToken) => {
 module.exports = {
     addLoggedInUser,
     removeLoggedInUser,
-    removeSessionToken
+    removeSessionToken,
+    retrieveUserBySessionToken
 }
 
