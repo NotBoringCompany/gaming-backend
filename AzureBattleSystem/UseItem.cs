@@ -86,7 +86,6 @@ public static class UseItem
         return null;
     }
 
-/*
     //Add Status Effect
     public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList)
     {
@@ -111,6 +110,7 @@ public static class UseItem
 
             // Store variables related with the status effect
             bool statusEffectExist = FindNBMonStatusEffect(ThisMonster, statusEffectInfo) != null;
+            var ThisMonsterStatusEffect = FindNBMonStatusEffect(ThisMonster, statusEffectInfo);
 
             //Get This Status Effect's Counter
             int statusEffectCounterMemory = FindNBMonStatusEffect(ThisMonster, statusEffectInfo).counter;
@@ -134,50 +134,83 @@ public static class UseItem
 
             if (statusEffectCounterMemory > 0)
             {
-                //Do the following when status effect counter memory is still larger than 0
-                if (!statusEffectExist)
+                if (!statusEffectExist) //If the Status Effect is not inside This Monster.
                 {
                     //Add new status effect if the NBMon don't have this status effect
-                    AddNewStatusEffect(statusEffectInfo.statusEffect, statusEffectCounterMemory, statusEffectInfo.stackAmount);
+                    AddNewStatusEffect(statusEffectInfo.statusEffect, statusEffectCounterMemory, statusEffectInfo.stackAmount, ThisMonster);
                 }
-                else if (statusEffectExist)
+                else if (statusEffectExist) //If the Status Effect already inside This Monster
                 {
-                    if(MockReference_StatusEffect.FindStatusEffectIcon(statusEffectInfo.statusEffect).stackable)
-                    {
-                        //Add Stack Value
-                        StatusEffectStackModifier(statusEffectInfo.statusEffect, statusEffectCounterMemory, statusEffectInfo.stackAmount, statusEffectInfo);
-                    }
-
-                    if(MockReference_StatusEffect.FindStatusEffectIcon(statusEffectInfo.statusEffect).durationStack)
-                    {
-                        //Add the counter if the status already exists
-                        ModifyStatusCounter(statusEffectInfo.statusEffect, statusEffectCounterMemory, statusEffectInfo.stackAmount, statusEffectInfo);
-                    }
-                    else
-                    {
-                        //Modify Status Counter for Status Effect with it's Duration non stackable.
-                        ModifyStatusCounterNonDurationStack(statusEffectInfo.statusEffect, statusEffectCounterMemory);
-                    }
+                    //Check if the Status Effect is Stackable
+                    ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectCounterMemory, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster);   
                 }
-
             }
 
-            //Apply passives that works when received status effect.
-            PassiveLogic.instances.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, monsterOnScreen, null, null);
+            //Apply passives that works when received status effect. (TO DO)
+
+
+            //PassiveLogic.instances.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, monsterOnScreen, null, null);
         }
     }
-*/
 
-/*
-    //Add New Status Effect to ThisMonster
-    private static void AddNewStatusEffect(NBMonProperties.StatusEffect statusEffect, int count, int stacks, NBMonBattleDataSave ThisMonster)
+    //Find Status Effect from Database
+    public static StatusEffectIconDatabase.StatusConditionDataPlayFab FindStatusEffectFromDatabase(int StatusEffectInt)
     {
-        //Add new status effec to the counter list group
-        var newStatusEffectGroup = new NBMonProperties.StatusEffectCountGroup(statusEffect, count, stacks);
+        //Get Passive Database
+        var PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
+        var StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(PassiveDatabaseJsonString);
 
-        ThisMonster.statusEffectList.Add(newStatusEffectGroup);
+        foreach (var StatusEffect in StatusEffectDatabase.statusConditionDatabasePlayFab)
+        {
+            if((int)StatusEffect.statusConditionName == StatusEffectInt)
+            {
+                return StatusEffect;
+            }
+        }
+
+        //if not found.
+        return null;
     }
-*/
+
+    //Add New Status Effect to ThisMonster
+    public static void AddNewStatusEffect(NBMonProperties.StatusEffect statusEffect, int count, int stacks, NBMonBattleDataSave ThisMonster)
+    {
+        //Declare New Variable
+        StatusEffectList AddNewStatus = new StatusEffectList();
+
+        //Insert New Data according to the Statement from this Function.
+        AddNewStatus.statusEffect = (int) statusEffect;
+        AddNewStatus.counter = count;
+        AddNewStatus.stacks = stacks;
+
+        //Add Monster's Status Effect into It's List.
+        ThisMonster.statusEffectList.Add(AddNewStatus);
+    }
+
+    //Add New Status Effect to ThisMonster
+    public static void ModifyStatusEffectValue(NBMonProperties.StatusEffect statusEffect, int count, int stacks, NBMonProperties.StatusEffectInfo statusEffectInfo, StatusEffectList thisMonsterStatusEffect, NBMonBattleDataSave ThisMonster)
+    {
+        //Get Passive Database and Declare Variables
+        var PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
+        var StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(PassiveDatabaseJsonString);
+        var StatusEffectFromDatabase = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect);
+        int MaximumStacks = StatusEffectFromDatabase.maxStacks;
+        bool Stackable = StatusEffectFromDatabase.stackable;
+
+        //Add Duration to the Status Effect (up to it's original value)
+        thisMonsterStatusEffect.counter = count;
+
+        //Check if the Status Effect can Stack
+        if(Stackable)
+        {
+            thisMonsterStatusEffect.stacks += stacks;
+
+            if(thisMonsterStatusEffect.stacks > MaximumStacks)
+            {
+                thisMonsterStatusEffect.stacks = MaximumStacks;
+            }
+        }
+    }
 
     //Remove Status Effect
     public static void RemoveStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList)
@@ -263,6 +296,7 @@ public static class UseItem
                     ThisMonster.energy = ThisMonster.maxEnergy;
 
                 //Add Status Effect (TO DO, this is Hard)
+                ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects);
 
                 //Remove Status Effect
                 RemoveStatusEffect(ThisMonster, UsedItem.RemovesStatusEffects);
@@ -271,10 +305,10 @@ public static class UseItem
                 string Team1String = JsonConvert.SerializeObject(PlayerTeam);
 
                 var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
-                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, 
-                    Data = new Dictionary<string, string>{ {"CurrentPlayerTeam", JsonConvert.SerializeObject(Team1String)}
-                }
-            });
+                        PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, 
+                        Data = new Dictionary<string, string>{ {"CurrentPlayerTeam", JsonConvert.SerializeObject(Team1String)}
+                    }
+                });
 
                 return "Item Usage Success";
             }
@@ -287,7 +321,5 @@ public static class UseItem
         {
             return "Item Data Not Found!";
         }
-
-        return null;
     }
 }
