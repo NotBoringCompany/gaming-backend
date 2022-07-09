@@ -103,19 +103,19 @@ public static class UseItem
             Random Rand = new Random();
             var RNG = Rand.Next(0, 100);
 
-            log.LogInformation($"Second Loop Step! Code C: {RNG}");
+            log.LogInformation($"Second Loop Step! Code C: RNG Value {RNG}");
 
             // Store variables related with the status effect
             bool statusEffectExist = FindNBMonStatusEffect(ThisMonster, statusEffectInfo) != null;
             var ThisMonsterStatusEffect = FindNBMonStatusEffect(ThisMonster, statusEffectInfo);
 
-            log.LogInformation($"Third Loop Step! Code D: {statusEffectExist} / {ThisMonsterStatusEffect}");
+            log.LogInformation($"Third Loop Step! Code D: Status Effect Exist? {statusEffectExist} / Status Effect {ThisMonsterStatusEffect}");
 
             bool ElementImmunity = StatusEffectIconDatabase.FindStatusEffectIcon(statusEffectInfo.statusEffect).elementImmunity;
 
             NBMonDatabase.MonsterInfoPlayFab MonsterData = NBMonDatabase.FindMonster(ThisMonster.monsterId);
 
-            log.LogInformation($"4th Loop Step! Code E: {ElementImmunity} / {MonsterData}");
+            log.LogInformation($"4th Loop Step! Code E: Element Immunity {ElementImmunity} / Monster Data {MonsterData}");
 
             bool MonsterImmune = MonsterData.elements.Contains(StatusEffectIconDatabase.FindStatusEffectIcon(statusEffectInfo.statusEffect).immuneAgainstElement);
 
@@ -137,6 +137,8 @@ public static class UseItem
                 continue;
             }
 
+
+
             if (!statusEffectExist) //If the Status Effect is not inside This Monster.
             {
                 //Add new status effect if the NBMon don't have this status effect
@@ -144,6 +146,8 @@ public static class UseItem
             }
             else if (statusEffectExist) //If the Status Effect already inside This Monster
             {
+                log.LogInformation($"5th Loop Step! Code F: Modify Status Effect Value!");
+
                 //Check if the Status Effect is Stackable
                 ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster);   
             }
@@ -158,9 +162,9 @@ public static class UseItem
     //Find Status Effect from Database
     public static StatusEffectIconDatabase.StatusConditionDataPlayFab FindStatusEffectFromDatabase(int StatusEffectInt)
     {
-        //Get Passive Database
-        var PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
-        var StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(PassiveDatabaseJsonString);
+        //Get Status Effect Database Database
+        var StatusEffectJsonString = StatusEffectDatabaseJson.StatusEffectDataJson;
+        var StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(StatusEffectJsonString);
 
         foreach (var StatusEffect in StatusEffectDatabase.statusConditionDatabasePlayFab)
         {
@@ -192,9 +196,7 @@ public static class UseItem
     //Add New Status Effect to ThisMonster
     public static void ModifyStatusEffectValue(NBMonProperties.StatusEffect statusEffect, int count, int stacks, NBMonProperties.StatusEffectInfo statusEffectInfo, StatusEffectList thisMonsterStatusEffect, NBMonBattleDataSave ThisMonster)
     {
-        //Get Passive Database and Declare Variables
-        var PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
-        var StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(PassiveDatabaseJsonString);
+        //Declare Variables
         var StatusEffectFromDatabase = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect);
         int MaximumStacks = StatusEffectFromDatabase.maxStacks;
         bool Stackable = StatusEffectFromDatabase.stackable;
