@@ -262,10 +262,10 @@ public class PassiveLogic
         if (passiveEffect.effectType == PassiveDatabase.EffectType.StatusEffect)
         {
             //Add the Status Effect to the Monster.
-            UseItem.ApplyStatusEffect(useMonsterMemory, passiveEffect.statusEffectInfoList);
+            UseItem.ApplyStatusEffect(useMonsterMemory, passiveEffect.statusEffectInfoList, null, true);
             
             //Remove the Status Effect to the Monster.
-            UseItem.RemoveStatusEffect(useMonsterMemory, passiveEffect.statusEffectInfoList);
+            UseItem.RemoveStatusEffect(useMonsterMemory, passiveEffect.removeStatusEffectInfoList);
 
             //Default Condition
             var SelfTeam = NBMonTeamData.PlayerTeam;
@@ -284,14 +284,14 @@ public class PassiveLogic
                 if (Monsters == originMonsterMemory)
                     continue;
 
-                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList);
+                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList, null, true);
                 UseItem.RemoveStatusEffect(Monsters, passiveEffect.removeEnemyTeamStatusEffectInfoList);
             }
 
             //Opposing Team
             foreach(var Monsters in EnemyTeam)
             {
-                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList);
+                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList, null, true);
                 UseItem.RemoveStatusEffect(Monsters, passiveEffect.removeEnemyTeamStatusEffectInfoList);
             }
             

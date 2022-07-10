@@ -90,9 +90,10 @@ public static class UseItem
     }
 
     //Add Status Effect
-    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null)
+    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null, bool DoNotApplyPassive = false)
     {
-        log.LogInformation($"First Step! Code A");
+        if(log != null)
+            log.LogInformation($"First Step! Code A");
         
         //If there is no existing opposite status start by adding new data
         foreach (var statusEffectInfo in statusEffectInfoList)
@@ -155,8 +156,15 @@ public static class UseItem
                 ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster);   
             }
            
-            //Apply passives that works when received status effect. (TO DO)
-            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null);
+            //Check if the function does not want to Apply Passive (used to avoid Infinite Loop Error).
+            if(!DoNotApplyPassive)
+            {
+                if(log != null)
+                    log.LogInformation($"6th Loop Step! Code G: Calling Apply Passive");
+
+                //Apply passives that works when received status effect.
+                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null);
+            }
         }
 
         if(log != null)
