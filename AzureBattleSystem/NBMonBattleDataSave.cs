@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 public class NBMonBattleDataSave
@@ -87,3 +88,60 @@ public class StatusEffectList
     public int counter;
     public int stacks;
 }
+
+public class NBMonTeamData
+{
+    public static List<NBMonBattleDataSave> PlayerTeam;
+    public static List<NBMonBattleDataSave> EnemyTeam;
+
+    //Change the stats based on percentage (Only for HP and Energy)
+    public static void StatsPercentageChange(NBMonBattleDataSave Monster, NBMonProperties.StatsType statsType, int percentageChange)
+    {
+        if (statsType == NBMonProperties.StatsType.Hp)
+        {
+            Monster.hp += Convert.ToInt32(Math.Floor((float)(Monster.maxHp * percentageChange) / 100));
+
+            if (Monster.hp > Monster.maxHp)
+                Monster.hp = Monster.maxHp;
+
+            if (Monster.hp < 0)
+                Monster.hp = 0;
+        } 
+        else if (statsType == NBMonProperties.StatsType.Energy)
+        {
+            Monster.energy += Convert.ToInt32(Math.Floor((float)(Monster.maxEnergy * percentageChange) / 100));
+
+            if (Monster.energy > Monster.maxEnergy)
+                Monster.energy = Monster.maxEnergy;
+
+            if (Monster.energy < 0)
+                Monster.energy = 0;
+        }
+    }
+
+    //Change the stats based on value
+    public static void StatsValueChange(NBMonBattleDataSave Monster, NBMonProperties.StatsType statsType, int value)
+    {
+        if (statsType == NBMonProperties.StatsType.Hp)
+        {
+            Monster.hp += value;
+
+            if (Monster.hp > Monster.maxHp)
+                Monster.hp = Monster.maxHp;
+
+            if (Monster.hp < 0)
+                Monster.hp = 0;
+        }
+        else if (statsType == NBMonProperties.StatsType.Energy)
+        {
+            Monster.energy += value;
+
+            if (Monster.energy > Monster.maxEnergy)
+                Monster.energy = Monster.maxEnergy;
+
+            if (Monster.energy < 0)
+                Monster.energy = 0;
+        }
+    }
+}
+

@@ -90,32 +90,36 @@ public static class UseItem
     }
 
     //Add Status Effect
-    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log)
+    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null)
     {
         log.LogInformation($"First Step! Code A");
         
         //If there is no existing opposite status start by adding new data
         foreach (var statusEffectInfo in statusEffectInfoList)
         {
-            log.LogInformation($"First Loop Step! Code B: {statusEffectInfo.statusEffect}");
+            if(log != null)
+                log.LogInformation($"First Loop Step! Code B: {statusEffectInfo.statusEffect}");
 
             //Make RNG Chances vary between Loop
             Random Rand = new Random();
             var RNG = Rand.Next(0, 100);
 
-            log.LogInformation($"Second Loop Step! Code C: RNG Value {RNG}");
+            if(log != null)
+                log.LogInformation($"Second Loop Step! Code C: RNG Value {RNG}");
 
             // Store variables related with the status effect
             bool statusEffectExist = FindNBMonStatusEffect(ThisMonster, statusEffectInfo) != null;
             var ThisMonsterStatusEffect = FindNBMonStatusEffect(ThisMonster, statusEffectInfo);
 
-            log.LogInformation($"Third Loop Step! Code D: Status Effect Exist? {statusEffectExist} / Status Effect {ThisMonsterStatusEffect}");
+            if(log != null)
+                log.LogInformation($"Third Loop Step! Code D: Status Effect Exist? {statusEffectExist} / Status Effect {ThisMonsterStatusEffect}");
 
             bool ElementImmunity = StatusEffectIconDatabase.FindStatusEffectIcon(statusEffectInfo.statusEffect).elementImmunity;
 
             NBMonDatabase.MonsterInfoPlayFab MonsterData = NBMonDatabase.FindMonster(ThisMonster.monsterId);
 
-            log.LogInformation($"4th Loop Step! Code E: Element Immunity {ElementImmunity} / Monster Data {MonsterData}");
+            if(log != null)
+                log.LogInformation($"4th Loop Step! Code E: Element Immunity {ElementImmunity} / Monster Data {MonsterData}");
 
             bool MonsterImmune = MonsterData.elements.Contains(StatusEffectIconDatabase.FindStatusEffectIcon(statusEffectInfo.statusEffect).immuneAgainstElement);
 
@@ -137,8 +141,6 @@ public static class UseItem
                 continue;
             }
 
-
-
             if (!statusEffectExist) //If the Status Effect is not inside This Monster.
             {
                 //Add new status effect if the NBMon don't have this status effect
@@ -146,17 +148,19 @@ public static class UseItem
             }
             else if (statusEffectExist) //If the Status Effect already inside This Monster
             {
-                log.LogInformation($"5th Loop Step! Code F: Modify Status Effect Value!");
+                if(log != null)
+                    log.LogInformation($"5th Loop Step! Code F: Modify Status Effect Value!");
 
                 //Check if the Status Effect is Stackable
                 ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster);   
             }
            
             //Apply passives that works when received status effect. (TO DO)
-            //PassiveLogic.instances.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, monsterOnScreen, null, null);
+            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null);
         }
 
-        log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Add Status Effect has been Called!");
+        if(log != null)
+            log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Add Status Effect has been Called!");
     }
 
     //Find Status Effect from Database
@@ -217,7 +221,7 @@ public static class UseItem
     }
 
     //Remove Status Effect
-    public static void RemoveStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log)
+    public static void RemoveStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null)
     {
         foreach (var statusEffectInfo in statusEffectInfoList)
         {
@@ -230,7 +234,8 @@ public static class UseItem
             }
         }
 
-        log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Remove Status Effect has been Called!");
+        if(log != null)
+            log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Remove Status Effect has been Called!");
     }
 
     //Cloud Methods
@@ -245,12 +250,13 @@ public static class UseItem
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam"}
             }
         );
         
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
         NBMonBattleDataSave ThisMonster = new NBMonBattleDataSave();
         UseItemDataInput ConvertedInputData = new UseItemDataInput();
         ItemsPlayFab UsedItem = new ItemsPlayFab();
@@ -271,6 +277,11 @@ public static class UseItem
 
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
+        EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+
+        //Send Data to Static Team Data
+        NBMonTeamData.PlayerTeam = PlayerTeam;
+        NBMonTeamData.EnemyTeam = EnemyTeam;
 
         //Find Item
         UsedItem = FindItem(ConvertedInputData.ItemName);

@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+
 public class PassiveDatabase
 {
     /// <summary>
@@ -167,15 +169,21 @@ public class PassiveDatabase
     }
 
     //Find Skill
-    public PassiveInfoPlayFab FindPassiveSkill(string passiveName)
+    public static PassiveInfoPlayFab FindPassiveSkill(string passiveName)
     {
-        foreach (var passive in passiveInfosPlayFab)
+        string PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
+        PassiveInfosPlayFabList ConvertedPassiveDatabase = JsonConvert.DeserializeObject<PassiveInfosPlayFabList>(PassiveDatabaseJsonString);
+
+        //Loop to find passive 1 by 1.
+        foreach (var passive in ConvertedPassiveDatabase.passiveInfosPlayFab)
         {
             if (passiveName == passive.name)
             {
                 return passive;
             }
         }
+
+        //If Passive is not found, return null
         return null;
     }
 
