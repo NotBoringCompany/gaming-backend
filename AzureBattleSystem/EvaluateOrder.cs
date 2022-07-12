@@ -35,7 +35,77 @@ public static class EvaluateOrder
         return new PlayFabServerInstanceAPI(apiSettings, authContext);
     }
 
-    //Cloud Methods
+    //Status Effect Counter (Decrease Counter)
+    private static void DecreaseCounter(NBMonBattleDataSave Monster)
+    {
+        //Reverse loop is needed to remove Status Effect
+        for(int i = Monster.statusEffectList.Count-1 ; i >= 0; i--)
+        {
+            //Decrease counter value
+            Monster.statusEffectList[i].counter--;
+
+            //Check if counter value equal 0 or below
+            if(Monster.statusEffectList[i].counter <= 0)
+                Monster.statusEffectList.RemoveAt(i);
+        }
+    }
+
+    //Change Battle Speed Value if there's Speed Buff or Speed Debuff and Apply Status Effect
+    public static void StatusEffectLogicDuringStartTurn(NBMonBattleDataSave ThisMonster)
+    {
+        //Let's return This Monster's Battle Speed into Normal Speed First.
+        ThisMonster.battleSpeed = ThisMonster.speed;
+
+        //Looping through All Status Effects from ThisMonster
+        for (int i = 0; i < ThisMonster.statusEffectList.Count; i++)
+        {
+            //Let's find status effect first (this is individual status effect for each list)
+            var TheStatusEffectParameter = UseItem.FindStatusEffectFromDatabase((int)ThisMonster.statusEffectList[i].statusEffect);
+            var StatusEffectStack = ThisMonster.statusEffectList[i].stacks;
+
+            //Get This Monster's Temporary Passive Data first.
+            var ThisNBMonTempPassive = ThisMonster.temporaryPassives;
+
+            //Do Logic about HP and Energy Recovery / Burn Damage
+            if(TheStatusEffectParameter.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.HP_Energy_Related)
+            {
+                NBMonTeamData.StatsValueChange(ThisMonster, NBMonProperties.StatsType.Hp, TheStatusEffectParameter.HPChangesInNumber * StatusEffectStack);
+                NBMonTeamData.StatsValueChange(ThisMonster, NBMonProperties.StatsType.Energy, TheStatusEffectParameter.EnergyChangesInNumber * StatusEffectStack);
+                NBMonTeamData.StatsPercentageChange(ThisMonster, NBMonProperties.StatsType.Hp, TheStatusEffectParameter.HPChangesInPercent * StatusEffectStack);
+                NBMonTeamData.StatsPercentageChange(ThisMonster, NBMonProperties.StatsType.Energy, TheStatusEffectParameter.EnergyChangesInPercent * StatusEffectStack);
+
+                //Make Sure This NBMon's HP stays at 1 as Death by Debuff is not possible (Will Break the game)
+                if(ThisMonster.hp <= 0)
+                    ThisMonster.hp = 1;
+            }
+
+            //Let's change the Battle Speed
+            if(TheStatusEffectParameter.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Speed_Related)
+            {
+                //Declare SpeedBuff and Calculate its Value
+                float SpeedBuff = TheStatusEffectParameter.Speed/100f * StatusEffectStack;
+
+                //Calculate This Monster Battle Speed
+                ThisMonster.battleSpeed += (int)MathF.Floor((float)ThisMonster.speed * SpeedBuff);
+            }
+
+            //If Paralyzed, This Monster's Battle Speed is Halved
+            if(TheStatusEffectParameter.statusConditionName == NBMonProperties.StatusEffect.Paralyzed)
+            {
+                //Calculate This Monster Battle Speed (Paralyzed, Reduced by 50%).
+                ThisMonster.battleSpeed -= (int)MathF.Floor((float)ThisMonster.speed * 0.5f);
+            }
+
+            //Add Temporary Passive from Status Effect
+            if(TheStatusEffectParameter.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Add_Temp_Passive_Related)
+            {   
+                if(!ThisNBMonTempPassive.Contains(TheStatusEffectParameter.passiveName))
+                    ThisNBMonTempPassive.Add(TheStatusEffectParameter.passiveName);
+            }
+        }
+    }
+
+    //Cloud Methods (Combine Evaluate Order and Start Turn Function, usually for Passive Activation, Active the Status Effect and Passive for Speed and Reduce the Status Effect Counter)
     [FunctionName("EvaluateOrder")]
     public static async Task<dynamic> EvaluteOrder([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
     {
@@ -58,6 +128,7 @@ public static class EvaluateOrder
         List<string> AllMonsterUniqueID_BF = new List<string>();
         List<string> SortedOrder = new List<string>();
         int BattleCondition = new int();
+        int CurrentTurn = new int();
 
         //Check args["BattleAdvantage"] if it's null or not
         if(args["BattleAdvantage"] != null)
@@ -65,17 +136,30 @@ public static class EvaluateOrder
         else
             BattleCondition = 0; //Default Battle Condition
 
+        //Check args["Turn"] if it's null or not
+        if(args["Turn"] != null)
+            CurrentTurn = (int)args["Turn"];
+        else
+            CurrentTurn = 1;
+
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         AllMonsterUniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["AllMonsterUniqueID_BF"].Value);
 
-        //Let's find NBMon in BF using AllMonsterUniqueID_BF
+        //Insert Player Team and Enemy Team from Local Variable into Static Variable
+        NBMonTeamData.PlayerTeam = PlayerTeam;
+        NBMonTeamData.EnemyTeam = EnemyTeam;
+
+        //Let's find NBMon in BF using AllMonsterUniqueID_BF, TO DO: Artifact Passives
         foreach(var MonsterID in AllMonsterUniqueID_BF)
         {
             ///BattleCondition = 0, Normal Battle
             ///BattleCondition = 1, Player Advantage
             ///BattleCondition = -1. Enemy Advantage
+
+            //CurrentTurn = 0, First Turn
+            //CurrentTurn > 0, Second Turn and So On
 
             if(BattleCondition == 0 || BattleCondition == 1)
             {
@@ -84,6 +168,32 @@ public static class EvaluateOrder
                 if(PlayerNBMonData != null)
                 {
                     CurrentNBMonOnBF.Add(PlayerNBMonData);
+
+                    //Reset Temporary Passive
+                    PlayerNBMonData.temporaryPassives.Clear();
+
+                    //Do Passive Logics for Player NBMon in Battle Field
+                    if(CurrentTurn == 0) //when Enter Battle Field.
+                    {
+                        //Apply passives that works when received status effect.
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null);
+                    }
+                    else //Second Turn and So On.
+                    {
+                        //Decrease Status Effect Counter At the start of the Turn
+                        DecreaseCounter(PlayerNBMonData);
+
+                        //Apply passives that works when received status effect. (Turn Start and Turn End combined).
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null);
+                    
+                        //Add NBMon Energy
+                        NBMonTeamData.StatsValueChange(PlayerNBMonData, NBMonProperties.StatsType.Energy, 25);
+                    }
+
+                    //Status Effect Logic during Start Turn.
+                    StatusEffectLogicDuringStartTurn(PlayerNBMonData);
+
                     continue;
                 }
             }
@@ -95,6 +205,32 @@ public static class EvaluateOrder
                 if(EnemyNBMonData != null)
                 {
                     CurrentNBMonOnBF.Add(EnemyNBMonData);
+
+                    //Reset Temporary Passive
+                    EnemyNBMonData.temporaryPassives.Clear();
+
+                    //Do Passive Logics for Enemy in Battle Field
+                    if(CurrentTurn == 0) //when Enter Battle Field.
+                    {
+                        //Apply passives that works when received status effect.
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null);
+                    }
+                    else //Second Turn and So On.
+                    {
+                        //Decrease Status Effect Counter At the start of the Turn
+                        DecreaseCounter(EnemyNBMonData);
+
+                        //Apply passives that works when received status effect. (Turn Start and Turn End combined).
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null);
+
+                        //Add NBMon Energy
+                        NBMonTeamData.StatsValueChange(EnemyNBMonData, NBMonProperties.StatsType.Energy, 25);
+                    }
+
+                    //Status Effect Logic during Start Turn.
+                    StatusEffectLogicDuringStartTurn(EnemyNBMonData);
+
                     continue;
                 }
             }
@@ -113,7 +249,9 @@ public static class EvaluateOrder
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
             new UpdateUserDataRequest {
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
-                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)}
+                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
+                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
+                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)}
                 }
             }
         );
