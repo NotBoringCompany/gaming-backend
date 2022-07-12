@@ -164,6 +164,7 @@ public static class EvaluateOrder
             if(BattleCondition == 0 || BattleCondition == 1)
             {
                 var PlayerNBMonData = NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(MonsterID, PlayerTeam);
+                int MonsterIndex = NBMonDatabase_Azure.FindNBMonTeamPositionUsingUniqueID(MonsterID, PlayerTeam);
 
                 if(PlayerNBMonData != null)
                 {
@@ -194,6 +195,9 @@ public static class EvaluateOrder
                     //Status Effect Logic during Start Turn.
                     StatusEffectLogicDuringStartTurn(PlayerNBMonData);
 
+                    //Update PlayerTeam Information
+                    PlayerTeam[MonsterIndex] = PlayerNBMonData;
+
                     continue;
                 }
             }
@@ -201,6 +205,7 @@ public static class EvaluateOrder
             if(BattleCondition == 0 || BattleCondition == -1)
             {
                 var EnemyNBMonData =  NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(MonsterID, EnemyTeam);
+                int MonsterIndex = NBMonDatabase_Azure.FindNBMonTeamPositionUsingUniqueID(MonsterID, EnemyTeam);
 
                 if(EnemyNBMonData != null)
                 {
@@ -230,6 +235,9 @@ public static class EvaluateOrder
 
                     //Status Effect Logic during Start Turn.
                     StatusEffectLogicDuringStartTurn(EnemyNBMonData);
+
+                    //Update Enemy Team Information
+                    EnemyTeam[MonsterIndex] = EnemyNBMonData;
 
                     continue;
                 }

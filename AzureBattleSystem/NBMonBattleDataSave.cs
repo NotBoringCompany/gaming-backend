@@ -70,15 +70,33 @@ public class NBMonDatabase_Azure
 {
     public static NBMonBattleDataSave FindNBMonDataUsingUniqueID(string UniqueID, List<NBMonBattleDataSave> Database)
     {
-        foreach(var Monster in Database)
+        foreach (var Monster in Database)
         {
-            if(Monster.uniqueId == UniqueID)
+            if (Monster.uniqueId == UniqueID)
             {
                 return Monster;
             }
         }
 
         return null;
+    }
+
+    public static int FindNBMonTeamPositionUsingUniqueID(string UniqueID, List<NBMonBattleDataSave> Database)
+    {   
+        int Count = new int();
+
+        foreach(var Monster in Database)
+        {
+            if(Monster.uniqueId == UniqueID)
+            {
+                return Count;
+            }
+
+            Count++;
+        }
+
+        //Indicate this is Not Found
+        return -1;
     }
 }
 
@@ -106,7 +124,7 @@ public class NBMonTeamData
 
             if (Monster.hp < 0)
                 Monster.hp = 0;
-        } 
+        }
         else if (statsType == NBMonProperties.StatsType.Energy)
         {
             Monster.energy += Convert.ToInt32(Math.Floor((float)(Monster.maxEnergy * percentageChange) / 100));
