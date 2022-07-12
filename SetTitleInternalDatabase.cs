@@ -15,6 +15,8 @@ using PlayFab.EconomyModels;
 using PlayFab.ServerModels;
 using System.Net.Http;
 using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace NBCompany.Setters
 {
@@ -349,8 +351,6 @@ namespace NBCompany.Setters
             return request;
         }
 
-        private static HttpClient httpClient = new HttpClient();
-
         [FunctionName("HerokuAddGenesisNBMons")]
         public static async Task<dynamic> HerokuAddGenesisNBMons([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
         {
@@ -371,11 +371,14 @@ namespace NBCompany.Setters
 
             var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
 
-            string address = args["address"];
+            var getUserReadOnlyDataRequest = await serverApi.GetUserInternalDataAsync(new GetUserDataRequest()
+            { PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId });
+
+            string address = getUserReadOnlyDataRequest.Result.Data["ethAddress"].Value.ToString();
 
             string GenesisNBMons = "";
 
-            HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://nbcompanytest.herokuapp.com/genesisNBMon/getOwnerGenesisNBMons/" + address);
+            HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://api-realmhunter.herokuapp.com/genesisNBMon/getOwnerGenesisNBMons/" + address);
             requestH.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             using (HttpWebResponse response = (HttpWebResponse)requestH.GetResponse())
@@ -396,6 +399,81 @@ namespace NBCompany.Setters
 
             return request;
         }
+
+        public class UserInfo{
+            public string ethAddress {get; set;}
+            public string email {get; set;}
+        }
+
+        [FunctionName("SetSessionToken")]
+        public static async Task<dynamic> SetSessionToken([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+        {
+            try{
+            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+            dynamic args = context.FunctionArgument;
+
+            var apiSettings = new PlayFabApiSettings
+            {
+                TitleId = context.TitleAuthenticationContext.Id,
+                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+            };
+
+            var authContext = new PlayFabAuthenticationContext
+            {
+                EntityId = context.TitleAuthenticationContext.EntityToken
+            };
+
+            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+
+            string sessionToken = args["sessionToken"]; 
+
+            var body = new Dictionary<string,string>
+                {
+                    {"sessionToken", sessionToken}
+                };
+
+            HttpClient client = new HttpClient();
+            
+            string URL = "https://nbgamingbackend.herokuapp.com/";
+            client.BaseAddress = new Uri(URL);
+            var api = "userCheck/retrieveUserBySessionToken";
+
+            var bodyContent = JsonConvert.SerializeObject(body);
+
+            var buffer = System.Text.Encoding.UTF8.GetBytes(bodyContent);
+            var byteContent = new ByteArrayContent(buffer);
+            byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            var task = Task.Run(() => client.PostAsync(api, byteContent));
+            task.Wait();
+            
+            var response = task.Result;
+            var contents = await response.Content.ReadAsStringAsync();
+            
+            client.Dispose();
+
+            UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(contents);
+
+            string ethAddress = userInfo.ethAddress;
+            string email = userInfo.email;
+
+            var request = await serverApi.UpdateUserInternalDataAsync(new UpdateUserInternalDataRequest
+                {
+                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                    Data = new Dictionary<string, string>(){
+                        {"ethAddress", ethAddress},
+                        {"email", email},
+                        {"sessionToken", sessionToken}
+                        }
+                });
+
+                return request;
+
+            } catch(Exception e){
+                return e;
+            }
+        }
+
 
         [FunctionName("GetItemDrops")]
         public static async Task<dynamic> GetItemDrops([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
