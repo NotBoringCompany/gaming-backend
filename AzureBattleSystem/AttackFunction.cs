@@ -89,6 +89,9 @@ public static class AttackFunction
         if(AttackerMonster == null)
             AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam);
 
+        //Inser Attacker Monster Unique ID.
+        DataFromAzureToClient.AttackerMonsterUniqueID = AttackerMonster.uniqueId;
+
         //Declare Skill Slot
         var SkillSlot = UnityData.SkillSlot;
 
@@ -113,30 +116,46 @@ public static class AttackFunction
             DefenderMonsters.Add(Monster);
         }
 
+        log.LogInformation($"Code A: 1st Step, Get Attacker Skill Data");
+
         //Let's get Attacker Data like Skill
         SkillsDataBase.SkillInfoPlayFab AttackerSkillData = SkillsDataBase.FindSkill(AttackerMonster.skillList[SkillSlot]);
+
+        log.LogInformation($"Code B: 2nd Step, Apply Passive for Attacker");
 
         //Let's Apply Passive to Attacker Monster before Attacking (ActionBefore)
         PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionBefore, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, AttackerSkillData);
 
+        log.LogInformation($"Code C: 3rd Step, Looping for each Monster Target");
+
         //After Applying passive, let's call Apply Skill for each Target Monster
         foreach(var TargetMonster in DefenderMonsters)
         {
+            log.LogInformation($"{TargetMonster.nickName}, Apply Skill");
+
             //Apply Skill
             ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient);
+
+            log.LogInformation($"{TargetMonster.nickName}, Apply Status Effect Immediately");
 
             //Apply status effect logic like Anti Poison/Anti Stun.
             StatusEffectIconDatabase.ApplyStatusEffectImmediately(TargetMonster);
 
+            log.LogInformation($"{TargetMonster.nickName}, Check Monster Died");
+
             //Let's Check Target Monster wether it's Fainted or not
             CheckTargetDied(TargetMonster, AttackerMonster, AttackerSkillData, PlayerTeam, EnemyTeam, Team1UniqueID_BF, DataFromAzureToClient);
         }
+
+        log.LogInformation($"Code D: 4th Step, Apply and Remove Status Effect from Attacker Monster");
 
         //Apply Status Effect to Attacker Monster
         UseItem.ApplyStatusEffect(AttackerMonster, AttackerSkillData.statusEffectListSelf);
 
         //Remove Status Effect to Attacker Monster
         UseItem.RemoveStatusEffect(AttackerMonster, AttackerSkillData.removeStatusEffectListSelf);
+
+        log.LogInformation($"Code E: 5th Step, Reset Combat Related Stats");
 
         //After the Combat, let's resets the Monster's Temporary Stats that only works in Combat Phase
         ResetTemporaryStatsAfterAttacking(AttackerMonster);
@@ -181,8 +200,8 @@ public static class AttackFunction
     public class DataSendToUnity
     {
         public string AttackerMonsterUniqueID;
-        public List<DamageData> DamageDatas;
-        public List<MonsterObtainedEXP> EXPDatas;
+        public List<DamageData> DamageDatas = new List<DamageData>();
+        public List<MonsterObtainedEXP> EXPDatas = new List<MonsterObtainedEXP>();
     }
 
     //Data Send From Client to Azure
@@ -202,6 +221,9 @@ public static class AttackFunction
         //Apply passive related with receiving element input before get hit!
         PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionReceiving, PassiveDatabase.TargetType.targetedMonster, AttackerMonster, DefenderMonster, Skill);
 
+        //Insert Defender Monster Unique ID.
+        ThisMonsterDamageData.DefenderMonsterUniqueID = DefenderMonster.uniqueId;
+        
         //When skill type is damage, calculate the damage based on element modifier
         if(Skill.actionType == SkillsDataBase.ActionType.Damage)
         {
@@ -410,7 +432,6 @@ public static class AttackFunction
         }
 
         //Let's get all necessary data from Calculate And Do Damage into This Monster Damage Data.
-        thisMonsterDamageData.DefenderMonsterUniqueID = DefenderMonster.uniqueId;
         thisMonsterDamageData.Damage = damageAttack;
         thisMonsterDamageData.SPDamage = damageSpAttack;
         thisMonsterDamageData.EnergyDamage = energyDamageAttack;

@@ -15,8 +15,6 @@ public class PassiveLogic
         originMonsterMemory = originMonsterPass; //Current Used Monster
         targetMonsterMemory = targetMonsterPass; //Target Monster
 
-        BattleEnvironment = AttackFunction.BattleEnvironment;
-
         //Check all the passive from the original monster
         if (targetType == PassiveDatabase.TargetType.originalMonster || targetType == PassiveDatabase.TargetType.both)
         {
