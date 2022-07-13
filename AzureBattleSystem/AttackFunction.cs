@@ -55,16 +55,27 @@ public static class AttackFunction
         List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
         NBMonBattleDataSave AttackerMonster = new NBMonBattleDataSave();
         List<NBMonBattleDataSave> DefenderMonster = new List<NBMonBattleDataSave>();
+        DataFromUnity UnityData = new DataFromUnity();
 
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
 
-        //Get Data From Unity
-        DataFromUnity UnityData = args["UnityDataInput"];
+        //Insert Data to Static Variable for (Passive Purpose)
+        NBMonTeamData.PlayerTeam = PlayerTeam;
+        NBMonTeamData.EnemyTeam = EnemyTeam;
+
+        //Get Data From Unity and Convert it back to Class.
+        if(args["UnityDataInput"] != null)
+        {
+            string ArgumentString = args["UnityDataInput"];
+
+            UnityData = JsonConvert.DeserializeObject<DataFromUnity>(ArgumentString);
+        }
 
         //Get Attacker Data from Unity Input
         AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, PlayerTeam);
+        
         //If Attacker not found in player team, Find monster on EnemyTeam
         if(AttackerMonster == null)
             AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam);
