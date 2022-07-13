@@ -63,6 +63,21 @@ public class StatusEffectIconDatabase
         return null;
     }
 
+    public static void ApplyStatusEffectImmediately(NBMonBattleDataSave thisNBMon)
+    {
+        for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
+        {
+            var TheStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
+            var ThisNBMonTempPassive = thisNBMon.temporaryPassives;
+
+            if(TheStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Add_Temp_Passive_Related)
+            {
+                if (!ThisNBMonTempPassive.Contains(TheStatusEffectParam.passiveName))
+                    ThisNBMonTempPassive.Add(TheStatusEffectParam.passiveName);
+            }
+        }
+    }
+
     public static int CriticalStatusEffectLogic(NBMonBattleDataSave thisNBMon)
     {
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)

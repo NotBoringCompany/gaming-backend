@@ -89,9 +89,12 @@ public class SkillsDataBase
 
     public List<SkillInfoPlayFab> skillInfosPlayFab;
 
-    public SkillInfoPlayFab FindSkill(string skillName)
+    public static SkillInfoPlayFab FindSkill(string skillName)
     {
-        foreach (var skill in skillInfosPlayFab)
+        var SkillDatabaseJsonString = SkillDatabaseJson.SkillDataJson;
+        SkillInfoPlayFabList SkillDatabase = JsonConvert.DeserializeObject<SkillInfoPlayFabList>(SkillDatabaseJsonString);
+
+        foreach (var skill in SkillDatabase.skillInfosPlayFab)
         {
             if(skillName == skill.skillName)
             {

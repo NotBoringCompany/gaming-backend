@@ -18,6 +18,12 @@ using System.Linq;
 
 public static class AttackFunction
 {
+    //Static Variables
+    static bool VS_NPC = new bool();
+    static bool VS_Boss = new bool(); 
+    static int MaxLevel = 40;
+    public static string BattleEnvironment = string.Empty;
+
     //Helper Methods
     public static PlayFabServerInstanceAPI SetupServerAPI(dynamic args, FunctionExecutionContext<dynamic> context)
     {
@@ -46,7 +52,7 @@ public static class AttackFunction
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF"}
             }
         );
 
@@ -54,12 +60,15 @@ public static class AttackFunction
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
         NBMonBattleDataSave AttackerMonster = new NBMonBattleDataSave();
-        List<NBMonBattleDataSave> DefenderMonster = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> DefenderMonsters = new List<NBMonBattleDataSave>();
         DataFromUnity UnityData = new DataFromUnity();
+        DataSendToUnity DataFromAzureToClient = new DataSendToUnity();
+        List<string> Team1UniqueID_BF = new List<string>();
 
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+        Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
 
         //Insert Data to Static Variable for (Passive Purpose)
         NBMonTeamData.PlayerTeam = PlayerTeam;
@@ -80,6 +89,16 @@ public static class AttackFunction
         if(AttackerMonster == null)
             AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam);
 
+        //Declare Skill Slot
+        var SkillSlot = UnityData.SkillSlot;
+
+        //Check Skill Slot Value, prevent using Value that is not 0 ~ 3
+        if(SkillSlot < 0)
+            SkillSlot = 0;
+
+        if(SkillSlot > AttackerMonster.skillList.Count - 1)
+            SkillSlot = AttackerMonster.skillList.Count - 1;
+
         //Get all Defender Data from Unity Input
         foreach(string TargetID in UnityData.TargetUniqueIDs){
             var Monster = UseItem.FindMonster(TargetID, PlayerTeam);
@@ -91,15 +110,46 @@ public static class AttackFunction
             }
 
             //Add Monster into DefenderMonster List
-            DefenderMonster.Add(Monster);
+            DefenderMonsters.Add(Monster);
         }
 
-        log.LogInformation($"{AttackerMonster.nickName}, Defender Monster {DefenderMonster.Count}");
+        //Let's get Attacker Data like Skill
+        SkillsDataBase.SkillInfoPlayFab AttackerSkillData = SkillsDataBase.FindSkill(AttackerMonster.skillList[SkillSlot]);
 
-        if(DefenderMonster != null && AttackerMonster != null)
-            return "Data has been received and processed!";
-        else
-            return "Data failed to be received or processed!";
+        //Let's Apply Passive to Attacker Monster before Attacking (ActionBefore)
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionBefore, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, AttackerSkillData);
+
+        //After Applying passive, let's call Apply Skill for each Target Monster
+        foreach(var TargetMonster in DefenderMonsters)
+        {
+            //Apply Skill
+            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient);
+
+            //Apply status effect logic like Anti Poison/Anti Stun.
+            StatusEffectIconDatabase.ApplyStatusEffectImmediately(TargetMonster);
+
+            //Let's Check Target Monster wether it's Fainted or not
+            CheckTargetDied(TargetMonster, AttackerMonster, AttackerSkillData, PlayerTeam, EnemyTeam, Team1UniqueID_BF, DataFromAzureToClient);
+        }
+
+        //Apply Status Effect to Attacker Monster
+        UseItem.ApplyStatusEffect(AttackerMonster, AttackerSkillData.statusEffectListSelf);
+
+        //Remove Status Effect to Attacker Monster
+        UseItem.RemoveStatusEffect(AttackerMonster, AttackerSkillData.removeStatusEffectListSelf);
+
+        //After the Combat, let's resets the Monster's Temporary Stats that only works in Combat Phase
+        ResetTemporaryStatsAfterAttacking(AttackerMonster);
+
+        foreach(var TargetMonster in DefenderMonsters)
+            ResetTemporaryStatsAfterAttacking(TargetMonster);
+
+        //Lets turn DataFromAzureToClient into JsonString.
+        string DataInJsonString = JsonConvert.SerializeObject(DataFromAzureToClient);
+
+        log.LogInformation($"{DataInJsonString}");
+
+        return DataFromAzureToClient;
     }
 
     //Data Send to Client
@@ -109,13 +159,22 @@ public static class AttackFunction
         public int Damage; //Normal Damage
         public int SPDamage; //Special Damage
         public int EnergyDamage; //Energy Damage
+        public int EnergySPDamage; //Energy Damage from Special Attack
         public bool IsCritical; //Determine if the Damage is Critical Hit.
         public bool DamageImmune; //Determine if the Monster is Immune to the Damage.
-        public int ElementalVariable; //Determine if the Monster is Very Effective or Not.
+        public float ElementalVariable; //Determine if the Monster is Very Effective or Not.
+        public int TotalHPRecovered;
+        public int TotalEnergyRecovered;
 
         //HP and Energy Drain to Attack Monster
         public int HPDrained;
         public int EnergyDrained;
+    }
+
+    public class MonsterObtainedEXP
+    {
+        public string MonsterUniqueID;
+        public int MonsterGetEXP;
     }
 
     //Data We gonna send to Client
@@ -123,6 +182,7 @@ public static class AttackFunction
     {
         public string AttackerMonsterUniqueID;
         public List<DamageData> DamageDatas;
+        public List<MonsterObtainedEXP> EXPDatas;
     }
 
     //Data Send From Client to Azure
@@ -133,9 +193,69 @@ public static class AttackFunction
         public List<string> TargetUniqueIDs;
     }
 
+    //Apply Skill Function
+    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient)
+    {
+        //Declare New DamageData
+        DamageData ThisMonsterDamageData = new DamageData();
+
+        //Apply passive related with receiving element input before get hit!
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionReceiving, PassiveDatabase.TargetType.targetedMonster, AttackerMonster, DefenderMonster, Skill);
+
+        //When skill type is damage, calculate the damage based on element modifier
+        if(Skill.actionType == SkillsDataBase.ActionType.Damage)
+        {
+            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData);
+        }
+
+        //Apply passive effect related to after action to the original monster
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionAfter, PassiveDatabase.TargetType.originalMonster, AttackerMonster, DefenderMonster, Skill);
+
+        //Apply passive effect that inflict status effect from this monster to attacker monster (aka original monster), make sure the attacker is not itself and the skill's type is damage
+        if (AttackerMonster != DefenderMonster && Skill.actionType == SkillsDataBase.ActionType.Damage)
+        {
+            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.InflictStatusEffect, PassiveDatabase.TargetType.originalMonster, DefenderMonster, AttackerMonster, Skill);
+        }
+
+        //If the skill is Healing Skill, e.g HP and Energy Recovery
+        if(Skill.actionType == SkillsDataBase.ActionType.StatsRecovery)
+            StatsRecoveryLogic(Skill, DefenderMonster, ThisMonsterDamageData);
+
+        //Apply Status Effect to Target
+        UseItem.ApplyStatusEffect(DefenderMonster, Skill.statusEffectList);
+
+        //Remove Status Effect to Target
+        UseItem.RemoveStatusEffect(DefenderMonster, Skill.removeStatusEffectList);
+
+        //Add ThisMonsterDamageData to DataFromAzureToClient
+        dataFromAzureToClient.DamageDatas.Add(ThisMonsterDamageData);
+    }
+
+    //Stats Recovery Logic
+    private static void StatsRecoveryLogic(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave ThisMonster, DamageData thisMonsterDamageData)
+    {
+        var HPRecoveryInPercent = (int)Math.Floor(ThisMonster.maxHp * skill.hpPercent / 100);
+        var EnergyRecoveryInPercent = (int)Math.Floor(ThisMonster.maxEnergy * skill.energyPercent / 100);
+
+        int TotalHPRecovery = HPRecoveryInPercent + skill.hp;
+        int TotalEnergyRecovery = EnergyRecoveryInPercent + skill.energy;
+
+        //HP and Energy Recovery
+        NBMonTeamData.StatsValueChange(ThisMonster, NBMonProperties.StatsType.Hp, skill.hp);
+        NBMonTeamData.StatsValueChange(ThisMonster, NBMonProperties.StatsType.Energy, skill.energy);
+
+        //HP and Energy Recovery but in Percentage
+        NBMonTeamData.StatsPercentageChange(ThisMonster, NBMonProperties.StatsType.Hp, HPRecoveryInPercent);
+        NBMonTeamData.StatsPercentageChange(ThisMonster, NBMonProperties.StatsType.Energy, EnergyRecoveryInPercent);
+
+        //Add HP and Energy Recovery into This Monster Damage Data
+        thisMonsterDamageData.TotalHPRecovered = TotalHPRecovery;
+        thisMonsterDamageData.TotalEnergyRecovered = TotalEnergyRecovery;
+    }
+
     //Damage Function
     //Calculate and do the damage to the monster
-    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster)
+    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData)
     {
         //Declare Random Variable
         Random R = new Random();
@@ -265,7 +385,7 @@ public static class AttackFunction
                 }
 
                 //HP and Energy Drain Logic -> Only for Skill with TechniqueType of Attack
-                HP_EN_DrainFunction(skill, damageAttack, AttackerMonster);
+                HP_EN_DrainFunction(skill, damageAttack, AttackerMonster, thisMonsterDamageData);
             }
             else
             {
@@ -288,6 +408,16 @@ public static class AttackFunction
                 NBMonTeamData.StatsValueChange(DefenderMonster, NBMonProperties.StatsType.Energy, energyDamageSPAttack * -1);
             }
         }
+
+        //Let's get all necessary data from Calculate And Do Damage into This Monster Damage Data.
+        thisMonsterDamageData.DefenderMonsterUniqueID = DefenderMonster.uniqueId;
+        thisMonsterDamageData.Damage = damageAttack;
+        thisMonsterDamageData.SPDamage = damageSpAttack;
+        thisMonsterDamageData.EnergyDamage = energyDamageAttack;
+        thisMonsterDamageData.EnergySPDamage = energyDamageSPAttack;
+        thisMonsterDamageData.IsCritical = (CriticalHitMultiplier > 1); //If Critical Hit Multiplier is higher than 1, it's Critical Hit.
+        thisMonsterDamageData.DamageImmune = (ElementModifier == 0); //This Monster will deal 0 Damage if Element Modifier = 0.
+        thisMonsterDamageData.ElementalVariable = ElementModifier;
     }
 
     private static int CriticalHitStatsCalculation(NBMonBattleDataSave originalMonster, SkillsDataBase.SkillInfoPlayFab skill)
@@ -312,7 +442,7 @@ public static class AttackFunction
         return modifier_element_1 * modifier_element_2;
     }
 
-    private static void HP_EN_DrainFunction(SkillsDataBase.SkillInfoPlayFab skill, int damageDone, NBMonBattleDataSave AttackerMonster)
+    private static void HP_EN_DrainFunction(SkillsDataBase.SkillInfoPlayFab skill, int damageDone, NBMonBattleDataSave AttackerMonster, DamageData thisMonsterDamageData)
     {
         int HPDrained = (int)Math.Floor((float)damageDone * skill.HPDrainInPercent / 100);
         int EnergyDrained = (int)Math.Floor((float)damageDone * skill.EnergyDrainInPercent / 100);
@@ -343,5 +473,118 @@ public static class AttackFunction
             //Energy Drain
             NBMonTeamData.StatsValueChange(AttackerMonster ,NBMonProperties.StatsType.Energy, EnergyDrained);
         }
+
+        //Insert HP and Energy Drain into This Monster Damage Data
+        thisMonsterDamageData.HPDrained = HPDrained;
+        thisMonsterDamageData.EnergyDrained = EnergyDrained;
+    }
+
+    //Monster Target Defeated
+    public static void CheckTargetDied(NBMonBattleDataSave TargetMonster, NBMonBattleDataSave AttackerMonster, SkillsDataBase.SkillInfoPlayFab AttackerSkillData, List<NBMonBattleDataSave> PlayerTeam, List<NBMonBattleDataSave> EnemyTeam, List<string> Team1UniqueID_BF, DataSendToUnity dataFromAzureToClient)
+    {
+        //Let's Check if the TargetMonster's HP reached 0.
+        if(TargetMonster.hp <= 0)
+        {
+            //Apply EXP to Every Single Monster (For Player Team Only), Check if the Attacker Monster is from Player 1 and the Killed Monster is not from Player 1
+            if(Team1UniqueID_BF.Contains(AttackerMonster.uniqueId) && !Team1UniqueID_BF.Contains(TargetMonster.uniqueId))
+            {
+                foreach(var Player1Monster in PlayerTeam)
+                {
+                    if(Team1UniqueID_BF.Contains(Player1Monster.uniqueId))
+                    {
+                        AddEXP(TargetMonster, Player1Monster, dataFromAzureToClient);
+                    }
+                }
+            }
+        }
+    }
+
+    //Add EXP Function
+    public static void AddEXP(NBMonBattleDataSave TargetMonster, NBMonBattleDataSave AttackerMonster, DataSendToUnity dataFromAzureToClient)
+    {
+        MonsterObtainedEXP ThisMonsterEXPData = new MonsterObtainedEXP();
+
+        //Level of Human Player's NBMon
+        var ThisMonsterLevel = AttackerMonster.level;
+
+        //Level of Defeated NBMon
+        var DefeatedMonsterLevel = TargetMonster.level;
+
+        //Get Target Monster's Base EXP from Monster Database
+        float DefeatedMonsterBaseEXP = NBMonDatabase.FindMonster(TargetMonster.monsterId).baseEXP;
+
+        //EXP Multiplier Depending On Team's Type (Wild, NPC, or Boss)
+        var Variable_A = 1f;
+
+        if(VS_Boss)
+        {
+            Variable_A = 5f;
+        }
+
+        if(VS_NPC)
+        {
+            Variable_A = 1.5f;
+        }
+
+        //EXPMultiplier Logic Based on Level
+        var EXPMultiplierByLevelDifferences = EXPMultiplierEquation(ThisMonsterLevel, DefeatedMonsterLevel);
+
+        //Step by Step Calculation
+        float Func_1 = (4f * (float)Math.Pow((float)DefeatedMonsterLevel, 3f) / 8f);
+        float Func_2 = (2f * (float)DefeatedMonsterLevel + 10f);
+        float Func_3 = (float)DefeatedMonsterLevel + (float)ThisMonsterLevel + 10f;
+        float Function = (float)(Math.Pow(Func_2/Func_3, 2.5f) / 2.3f);
+
+        //EXP Equation
+        int EXPEquation = (int)Math.Floor(
+            EXPMultiplierByLevelDifferences *
+            Func_1 *
+            Variable_A *
+            DefeatedMonsterBaseEXP * Function);
+
+        //Do Not Get Any EXP if defeating same team or Reached Max Level.
+        if (ThisMonsterLevel >= MaxLevel)
+            EXPEquation = 0;
+
+        //Add EXP to Monster (EXP Memory Storage)
+        AttackerMonster.expMemoryStorage += EXPEquation;
+
+        //Insert Necessary Data into ThisMonsterEXPData
+        ThisMonsterEXPData.MonsterUniqueID = AttackerMonster.uniqueId;
+        ThisMonsterEXPData.MonsterGetEXP = EXPEquation;
+
+        //Add ThisMonsterEXPData into dataFromAzureToClient.
+        dataFromAzureToClient.EXPDatas.Add(ThisMonsterEXPData);
+    }
+
+    //Related to EXPMultiplier variable in AddToEXPList function
+    private static float EXPMultiplierEquation(int ThisMonsterLevel, int monsterDiedLevel)
+    {
+        if (ThisMonsterLevel <= monsterDiedLevel + 10 && ThisMonsterLevel >= monsterDiedLevel - 10)
+            return 1f;
+
+        return 1f;
+    }
+
+    //Function to Resets Temporary Stats
+    public static void ResetTemporaryStatsAfterAttacking(NBMonBattleDataSave Monster)
+    {
+        //TemporaryStats
+        Monster.attackBuff = 0;
+        Monster.specialAttackBuff = 0;
+        Monster.defenseBuff = 0;
+        Monster.specialDefenseBuff = 0;
+        Monster.criticalBuff = 0;
+        Monster.ignoreDefenses = 0;
+        Monster.damageReduction = 0;
+        Monster.energyShieldValue = 0;
+
+        //Other Parameters
+        Monster.energyShield = 0;
+        Monster.mustCritical = 0;
+        Monster.surviveLethalBlow = 0;
+        Monster.totalIgnoreDefense = 0;
+        Monster.immuneCritical = 0;
+        Monster.elementDamageReduction = 0;
     }
 }
