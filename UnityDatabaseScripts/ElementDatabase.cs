@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 public class ElementDatabase
 {
@@ -86,7 +87,7 @@ public class ElementDatabase
         return 0;
     }
 
-    public float FindElementValueModifier_Prototype(Elements targetMonsterBaseType, Elements usedSkillElement)
+    public static float FindElementValueModifier_Prototype(Elements targetMonsterBaseType, Elements usedSkillElement)
     {
         ElementProperties_Prototype skillElementProperties = FindElementProperties_Prototype(usedSkillElement);
 
@@ -117,8 +118,11 @@ public class ElementDatabase
         return null;
     }
 
-    public ElementProperties_Prototype FindElementProperties_Prototype(Elements element)
+    public static ElementProperties_Prototype FindElementProperties_Prototype(Elements element)
     {
+        var ElementDatabaseJsonString = ElementDatabaseJson.ElementDataJson;
+        var elementProp_Prototype = JsonConvert.DeserializeObject<List<ElementProperties_Prototype>>(ElementDatabaseJsonString);
+
         foreach (var elementProperty in elementProp_Prototype)
         {
             if (element == elementProperty.element)
