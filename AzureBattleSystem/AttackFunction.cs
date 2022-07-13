@@ -35,6 +35,53 @@ public static class AttackFunction
         return new PlayFabServerInstanceAPI(apiSettings, authContext);
     }
 
+    [FunctionName("AttackLogic")]
+    public static async Task<dynamic> AttackLogic([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+    {
+        //Setup serverApi (Server API to PlayFab)
+        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+        dynamic args = context.FunctionArgument;
+        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+
+        //Request Team Information (Player and Enemy)
+        var requestTeamInformation = await serverApi.GetUserDataAsync(
+            new GetUserDataRequest { 
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam"}
+            }
+        );
+
+        //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
+        List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
+        NBMonBattleDataSave AttackerMonster = new NBMonBattleDataSave();
+        List<NBMonBattleDataSave> DefenderMonster = new List<NBMonBattleDataSave>();
+
+        //Convert from json to NBmonBattleDataSave
+        PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
+        EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+
+        //Get Data From Unity
+        DataFromUnity UnityData = args["UnityDataInput"];
+
+        //Get Attacker Data from Unity Input
+        AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, PlayerTeam);
+        //If Attacker not found in player team, Find monster on EnemyTeam
+        if(AttackerMonster == null)
+            AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam);
+
+        //Get all Defender Data from Unity Input
+        foreach(string TargetID in UnityData.TargetUniqueIDs){
+            var Monster = UseItem.FindMonster(TargetID, PlayerTeam);
+            //If Defender not found 
+            Monster = UseItem.FindMonster(TargetID, EnemyTeam);
+
+            //Add Monster into DefenderMonster List
+            DefenderMonster.Add(Monster);
+        }
+
+        return null;
+    }
+
     //Data Send to Client
     public class DamageData
     {
@@ -64,7 +111,6 @@ public static class AttackFunction
         public string AttackerMonsterUniqueID;
         public int SkillSlot;
         public List<string> TargetUniqueIDs;
-
     }
 
     //Damage Function
