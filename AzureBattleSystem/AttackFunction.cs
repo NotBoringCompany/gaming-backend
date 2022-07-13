@@ -83,14 +83,23 @@ public static class AttackFunction
         //Get all Defender Data from Unity Input
         foreach(string TargetID in UnityData.TargetUniqueIDs){
             var Monster = UseItem.FindMonster(TargetID, PlayerTeam);
-            //If Defender not found 
-            Monster = UseItem.FindMonster(TargetID, EnemyTeam);
+
+            if(Monster == null)
+            {
+                //If Target Monster not found, find this from Enemy Team 
+                Monster = UseItem.FindMonster(TargetID, EnemyTeam);
+            }
 
             //Add Monster into DefenderMonster List
             DefenderMonster.Add(Monster);
         }
 
-        return null;
+        log.LogInformation($"{AttackerMonster.nickName}, Defender Monster {DefenderMonster.Count}");
+
+        if(DefenderMonster != null && AttackerMonster != null)
+            return "Data has been received and processed!";
+        else
+            return "Data failed to be received or processed!";
     }
 
     //Data Send to Client
