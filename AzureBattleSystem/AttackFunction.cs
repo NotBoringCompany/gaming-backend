@@ -35,7 +35,7 @@ public static class AttackFunction
         return new PlayFabServerInstanceAPI(apiSettings, authContext);
     }
 
-    //Data To Send
+    //Data Send to Client
     public class DamageData
     {
         public string DefenderMonsterUniqueID; //Defender Monster Unique ID
@@ -49,6 +49,22 @@ public static class AttackFunction
         //HP and Energy Drain to Attack Monster
         public int HPDrained;
         public int EnergyDrained;
+    }
+
+    //Data We gonna send to Client
+    public class DataSendToUnity
+    {
+        public string AttackerMonsterUniqueID;
+        public List<DamageData> DamageDatas;
+    }
+
+    //Data Send From Client to Azure
+    public class DataFromUnity
+    {
+        public string AttackerMonsterUniqueID;
+        public int SkillSlot;
+        public List<string> TargetUniqueIDs;
+
     }
 
     //Damage Function
