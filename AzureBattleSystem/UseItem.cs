@@ -258,7 +258,7 @@ public static class UseItem
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "BattleEnvironment"}
             }
         );
         
@@ -283,9 +283,12 @@ public static class UseItem
             ConvertedInputData = JsonConvert.DeserializeObject<UseItemDataInput>(UseItemInputValueString);
         }
 
-        //Convert from json to NBmonBattleDataSave
+        //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+        
+        //Insert Battle Environment Value into Static Variable from Attack Function.
+        AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
 
         //Send Data to Static Team Data
         NBMonTeamData.PlayerTeam = PlayerTeam;
@@ -299,12 +302,12 @@ public static class UseItem
         //When UsedItem is not Null, Let's recover their stats.
         if(UsedItem != null)
         {
-            //Setup HP's Tooltip
-            int TotalHPRecovery = UsedItem.HPRecovery + (int)((float)UsedItem.HPRecovery_Percentage * (float)ThisMonster.maxHp);
-            int TotalEnergyRecovery = UsedItem.EnergyRecover + (int)((float)UsedItem.EnergyRecover_Percentage * (float)ThisMonster.energy);
-
             //Find This Monster
             ThisMonster = FindMonster(ConvertedInputData.MonsterUniqueID, PlayerTeam);
+
+            //Setup HP's Tooltip
+            int TotalHPRecovery = UsedItem.HPRecovery + (int)Math.Floor((float)UsedItem.HPRecovery_Percentage/100f * (float)ThisMonster.maxHp);
+            int TotalEnergyRecovery = UsedItem.EnergyRecover + (int)Math.Floor((float)UsedItem.EnergyRecover_Percentage/100f * (float)ThisMonster.energy);
 
             log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} found!");
 

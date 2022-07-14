@@ -41,6 +41,7 @@ public static class AttackFunction
         return new PlayFabServerInstanceAPI(apiSettings, authContext);
     }
 
+    //Cloud Function
     [FunctionName("AttackLogic")]
     public static async Task<dynamic> AttackLogic([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
     {
@@ -52,7 +53,7 @@ public static class AttackFunction
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "BattleEnvironment"}
             }
         );
 
@@ -69,6 +70,9 @@ public static class AttackFunction
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
+        
+        //Insert Battle Environment Value into Static Variable from Attack Function.
+        AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
 
         //Insert Data to Static Variable for (Passive Purpose)
         NBMonTeamData.PlayerTeam = PlayerTeam;
@@ -82,14 +86,26 @@ public static class AttackFunction
             UnityData = JsonConvert.DeserializeObject<DataFromUnity>(ArgumentString);
         }
 
+        //Get Variable if it's an NPC Battle
+        if(args["IsNPCBattle"] != null)
+        {
+            VS_NPC = (bool)args["IsNPCBattle"];
+        }
+
+        //Get Variable if it's an NPC Battle
+        if(args["IsBossBattle"] != null)
+        {
+            VS_Boss = (bool)args["IsBossBattle"];
+        }
+
         //Get Attacker Data from Unity Input
         AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, PlayerTeam);
         
-        //If Attacker not found in player team, Find monster on EnemyTeam
+        //If Attacker not found in Player Team, Find Attacker on Enemy Team
         if(AttackerMonster == null)
             AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam);
 
-        //Inser Attacker Monster Unique ID.
+        //Insert Attacker Monster Unique ID.
         DataFromAzureToClient.AttackerMonsterUniqueID = AttackerMonster.uniqueId;
 
         //Declare Skill Slot
@@ -120,6 +136,9 @@ public static class AttackFunction
 
         //Let's get Attacker Data like Skill
         SkillsDataBase.SkillInfoPlayFab AttackerSkillData = SkillsDataBase.FindSkill(AttackerMonster.skillList[SkillSlot]);
+
+        //Deduct Attacker Monster Energy
+        NBMonTeamData.StatsValueChange(AttackerMonster, NBMonProperties.StatsType.Energy, -AttackerSkillData.energyRequired);
 
         log.LogInformation($"Code B: 2nd Step, Apply Passive for Attacker");
 
@@ -162,6 +181,16 @@ public static class AttackFunction
 
         foreach(var TargetMonster in DefenderMonsters)
             ResetTemporaryStatsAfterAttacking(TargetMonster);
+
+        //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
+            new UpdateUserDataRequest {
+             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
+                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)}
+                }
+            }
+        );
 
         //Lets turn DataFromAzureToClient into JsonString.
         string DataInJsonString = JsonConvert.SerializeObject(DataFromAzureToClient);
@@ -506,6 +535,9 @@ public static class AttackFunction
         //Let's Check if the TargetMonster's HP reached 0.
         if(TargetMonster.hp <= 0)
         {
+            //TargetMonster becomes Fainted
+            TargetMonster.fainted = true;
+
             //Apply EXP to Every Single Monster (For Player Team Only), Check if the Attacker Monster is from Player 1 and the Killed Monster is not from Player 1
             if(Team1UniqueID_BF.Contains(AttackerMonster.uniqueId) && !Team1UniqueID_BF.Contains(TargetMonster.uniqueId))
             {

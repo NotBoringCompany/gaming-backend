@@ -11,6 +11,10 @@ public class PassiveLogic
     //Apply the passive according to the targetting type in script
     public static void ApplyPassive(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.TargetType targetType, NBMonBattleDataSave originMonsterPass, NBMonBattleDataSave targetMonsterPass, SkillsDataBase.SkillInfoPlayFab skill, string BattleEnvironment = "")
     {
+        //Get Battle Environment Value.
+        if(AttackFunction.BattleEnvironment != string.Empty)
+            BattleEnvironment = AttackFunction.BattleEnvironment;
+
         //Set the local data value 
         originMonsterMemory = originMonsterPass; //Current Used Monster
         targetMonsterMemory = targetMonsterPass; //Target Monster

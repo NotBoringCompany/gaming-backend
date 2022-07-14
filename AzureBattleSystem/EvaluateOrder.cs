@@ -117,7 +117,7 @@ public static class EvaluateOrder
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "AllMonsterUniqueID_BF"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "AllMonsterUniqueID_BF", "BattleEnvironment"}
             }
         );
 
@@ -146,6 +146,9 @@ public static class EvaluateOrder
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         AllMonsterUniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["AllMonsterUniqueID_BF"].Value);
+        
+        //Insert Battle Environment Value into Static Variable from Attack Function.
+        AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
 
         //Insert Player Team and Enemy Team from Local Variable into Static Variable
         NBMonTeamData.PlayerTeam = PlayerTeam;
