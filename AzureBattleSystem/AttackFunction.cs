@@ -423,8 +423,12 @@ public static class AttackFunction
             if(ElementModifier != 0)
             {
                 // If Damage is less than 0, make sure to return 1 damage
-                if (damageAttack <= 0 && (This_NBMon_Damage_Reduction_Modifier != 1 || This_NBMon_Damage_Reduction_From_Energy_Shield != 1))
+                if (damageAttack < 0 && (This_NBMon_Damage_Reduction_Modifier != 1 || This_NBMon_Damage_Reduction_From_Energy_Shield != 1))
                     damageAttack = 1;
+
+                //Damage becomes 0 if This_NBMon_Damage_Reduction_Modifier = 1
+                if(This_NBMon_Damage_Reduction_Modifier == 1)
+                    damageAttack = 0;
 
                 //Normal Damage
                 NBMonTeamData.StatsValueChange(DefenderMonster ,NBMonProperties.StatsType.Hp, damageAttack * -1);
@@ -447,8 +451,12 @@ public static class AttackFunction
         if(skill.techniqueType == SkillsDataBase.TechniqueType.SpecialAttack)
         {
             // If Damage is less than 0, make sure to return 1 damage
-            if (damageSpAttack <= 0 && This_NBMon_Damage_Reduction_Modifier != 1)
+            if (damageSpAttack < 0 && This_NBMon_Damage_Reduction_Modifier != 1)
                 damageSpAttack = 1;
+
+            //Damage becomes 0 if This_NBMon_Damage_Reduction_Modifier = 1
+            if(This_NBMon_Damage_Reduction_Modifier == 1)
+                damageSpAttack = 0;
 
             //Normal SP Damage
             NBMonTeamData.StatsValueChange(DefenderMonster, NBMonProperties.StatsType.Hp, damageSpAttack * -1);
