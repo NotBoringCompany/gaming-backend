@@ -23,6 +23,9 @@ public static class NBMonStatsCalculation
         //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
         NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(Monster.monsterId);
 
+        //Make this Monster Level Up = true for UI.
+        Monster.NBMonLevelUp = true;
+
         if(MonsterFromDatabase != null)
         {
             //Stats Calculation

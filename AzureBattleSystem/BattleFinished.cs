@@ -41,12 +41,16 @@ public static class BattleFinished
         //Gain EXP to every single NBMon in the Player Team
         GetEXPLogic(PlayerTeam, AllMonsterEXPMemoryStorage);
 
-        //Add Item Drops From Enemy Team
-        foreach(var EnemyMonster in EnemyTeam)
+        //Check if The battle is NPC Battle
+        if(!AttackFunction.VS_NPC)
         {
-            if(EnemyMonster.fainted)
+            //Add Item Drops From Enemy Team
+            foreach(var EnemyMonster in EnemyTeam)
             {
-                GetItemDropFromEnemyMonster(EnemyMonster, DroppedItemCredential);
+                if(EnemyMonster.fainted)
+                {
+                    GetItemDropFromEnemyMonster(EnemyMonster, DroppedItemCredential);
+                }
             }
         }
 
@@ -119,6 +123,7 @@ public static class BattleFinished
         {
             Monster.currentExp = 0;
             Monster.expMemoryStorage = 0;
+            Monster.NBMonLevelUp = false;
             return;
         }
 
@@ -189,6 +194,7 @@ public static class BattleFinished
         List<string> DroppedItemCredential = new List<string>();
         List<int> AllMonsterEXPMemoryStorage = new List<int>();
 
+
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
@@ -198,6 +204,18 @@ public static class BattleFinished
         //BattleResult = 0, Indicating Draw / Escape / Lost
         if(args["BattleResult"] != null)
             BattleResult = (int)args["BattleResult"];
+
+        //Get Variable if it's an NPC Battle
+        if(args["IsNPCBattle"] != null)
+        {
+            AttackFunction.VS_NPC = (bool)args["IsNPCBattle"];
+        }
+
+        //Get Variable if it's an NPC Battle
+        if(args["IsBossBattle"] != null)
+        {
+            AttackFunction.VS_Boss = (bool)args["IsBossBattle"];
+        }
 
         //Win Case
         //Azure needs to run a logic for Item Drop

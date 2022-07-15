@@ -19,8 +19,8 @@ using System.Linq;
 public static class AttackFunction
 {
     //Static Variables
-    static bool VS_NPC = new bool();
-    static bool VS_Boss = new bool(); 
+    public static bool VS_NPC = new bool();
+    public static bool VS_Boss = new bool(); 
     public static int MaxLevel = 40;
     public static string BattleEnvironment = string.Empty;
 

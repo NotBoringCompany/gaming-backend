@@ -64,9 +64,9 @@ public static class InitialTeamSetup
         //Looping Team 1
         byte P1Count = 0;
         foreach(var Monster in PlayerTeam)
-        {
+        {   
             if(P1Count == 2)
-                break;
+                continue;
 
             AllMonsterUniqueID_BF.Add(Monster.uniqueId);
             Team1UniqueID_BF.Add(Monster.uniqueId);
@@ -79,12 +79,26 @@ public static class InitialTeamSetup
         foreach(var Monster in EnemyTeam)
         {
             if(P2Count == 2)
-                break;
+                continue;
 
             AllMonsterUniqueID_BF.Add(Monster.uniqueId);
             Team2UniqueID_BF.Add(Monster.uniqueId);
 
             P2Count++;
+        }
+
+        //Purge NBMon Level Up Bool
+        foreach(var Monster in PlayerTeam)
+        {
+            Monster.NBMonLevelUp = false;
+            Monster.fainted = false;
+        }
+
+        //Purge NBMon Level Up Bool
+        foreach(var Monster in EnemyTeam)
+        {
+            Monster.NBMonLevelUp = false;
+            Monster.fainted = false;
         }
 
         //Update AllMonsterUniqueID_BF to Player Title Data
@@ -93,7 +107,9 @@ public static class InitialTeamSetup
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
                  {"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(AllMonsterUniqueID_BF)},
                  {"Team1UniqueID_BF", JsonConvert.SerializeObject(Team1UniqueID_BF)},
-                 {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)}
+                 {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)},
+                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
+                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)}
                 }
             }
         );
