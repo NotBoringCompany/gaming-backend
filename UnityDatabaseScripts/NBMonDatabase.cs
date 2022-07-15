@@ -11,9 +11,26 @@ public class NBMonDatabase
         Hybrid
     }
 
-    public int MaxHP, MaxEnergy, Speed, Attack, SPAttack, Defense, SPDefense;
-    public float Norm_MaxHP, Norm_MaxEnergy, Norm_Speed, Norm_Attack, Norm_SPAttack, Norm_Defense, Norm_SPDefense;
-    public float Potentialmodifier, EffortModifier;
+    //Generic Base Stats Modifier
+    public static int MaxHP = 8;
+    public static int MaxEnergy = 20;
+    public static int Speed = 3;
+    public static int Attack = 3;
+    public static int SPAttack = 3;
+    public static int Defense = 3;
+    public static int SPDefense = 3;
+
+    //Normalized Stats
+    public static float Norm_MaxHP = 0.7f;
+    public static float Norm_MaxEnergy = 2.5f;
+    public static float Norm_Speed = 0.15f;
+    public static float Norm_Attack = 0.15f;
+    public static float Norm_SPAttack = 0.15f;
+    public static float Norm_Defense = 0.15f;
+    public static float Norm_SPDefense = 0.15f;
+
+    public static float Potentialmodifier = 0.002f;
+    public static float EffortModifier = 0.0015f;
 
     //Stores relevant information related to the monster Database
     public ElementDatabase elementDatabase;

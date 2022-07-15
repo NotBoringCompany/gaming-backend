@@ -21,7 +21,7 @@ public static class AttackFunction
     //Static Variables
     static bool VS_NPC = new bool();
     static bool VS_Boss = new bool(); 
-    static int MaxLevel = 40;
+    public static int MaxLevel = 40;
     public static string BattleEnvironment = string.Empty;
 
     //Helper Methods
