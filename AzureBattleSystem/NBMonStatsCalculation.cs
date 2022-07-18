@@ -32,9 +32,106 @@ public static class NBMonStatsCalculation
             StatsCalculation(Monster, MonsterFromDatabase);
         }
     }   
+    
+    //Generate NBMon Level
+    public static void GenerateRandomLevel(NBMonBattleDataSave ThisMonsterInfo, int LevelAsked)
+    {
+        //Random Variable
+        Random R = new Random();
+        int LowerBase = LevelAsked - 2;
+        int UpperBase = LevelAsked + 2;
 
-//
-public static void StatsCalculation(NBMonBattleDataSave ThisMonsterInfo, NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase)
+        //Normalized Lower Base
+        if(LowerBase <= 0)
+            LowerBase = 1;
+
+        //Normalized Upper Base
+        if(UpperBase >= AttackFunction.MaxLevel)
+            UpperBase = AttackFunction.MaxLevel;
+
+        ThisMonsterInfo.level = R.Next(LowerBase, UpperBase);
+    }
+
+    //Generate Wild NBmon Unique ID
+    public static void GenerateWildMonsterCredential(NBMonBattleDataSave ThisMonsterInfo)
+    {
+        //Random Variable
+        Random R = new Random();
+
+        ThisMonsterInfo.uniqueId = R.Next(0, 999999999).ToString();
+    }
+
+    public static void GenerateThisMonsterQuality(NBMonBattleDataSave ThisMonsterInfo)
+    {
+        //Random Variable
+        Random R = new Random();
+
+        int RNG = R.Next(0, 100000);
+
+        //45% Chance to be Common
+        if(RNG >= 0 && RNG < 45000)
+            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Common;
+        
+        //30% Chance to be Uncommon
+        if(RNG >= 45000 && RNG < 75000)
+            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Uncommon;
+
+        //15% Chance to be Rare
+        if(RNG >= 75000 && RNG < 90000)
+            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Rare;
+
+        //9% Chance to be Elite
+        if(RNG >= 90000 && RNG < 99000)
+            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Elite;
+
+        //1% Chance to be Elite
+        if(RNG >= 99000 && RNG <= 100000)
+            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Legend;        
+    }
+
+    //Generate Random Potential Value
+    public static void GenerateRandomPotentialValue(NBMonBattleDataSave ThisMonsterInfo, NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase)
+    {
+        //Random Variable
+        Random R = new Random();
+
+        //Let's Generate Max Possible Potential Value
+        var MaxEffortValue = 0;
+
+        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Common)
+            MaxEffortValue = 20;
+
+        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Uncommon)
+            MaxEffortValue = 30;
+
+        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Rare)
+            MaxEffortValue = 40;
+
+        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Elite)
+            MaxEffortValue = 50;
+        
+        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Legend)
+            MaxEffortValue = 65;
+
+        if(MonsterFromDatabase.Tier == NBMonDatabase.NBMonTierType.Wild || MonsterFromDatabase.Tier == NBMonDatabase.NBMonTierType.Hybrid)
+        {
+            if(MaxEffortValue > 50)
+                MaxEffortValue = 50;
+        }
+
+        //After Defining This Monster's Max Possible Effort Value
+        ThisMonsterInfo.maxHpPotential = R.Next(0, MaxEffortValue);
+        ThisMonsterInfo.maxEnergyPotential = R.Next(0, MaxEffortValue);
+        ThisMonsterInfo.speedPotential = R.Next(0, MaxEffortValue);
+        ThisMonsterInfo.attackPotential = R.Next(0, MaxEffortValue);
+        ThisMonsterInfo.specialAttackPotential = R.Next(0, MaxEffortValue);
+        ThisMonsterInfo.defensePotential = R.Next(0, MaxEffortValue);
+        ThisMonsterInfo.specialDefensePotential = R.Next(0, MaxEffortValue);
+
+    }
+
+    //Calculate Base Stats (Used for Read Data from Database, during Level Up)).
+    public static void StatsCalculation(NBMonBattleDataSave ThisMonsterInfo, NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase)
     {
         ThisMonsterInfo.maxHp =
             EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.maxHpBase,
