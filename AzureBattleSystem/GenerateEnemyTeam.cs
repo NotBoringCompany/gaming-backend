@@ -97,6 +97,7 @@ public static class GenerateEnemyTeam
             NBMonBattleDataSave MonsterData = new NBMonBattleDataSave();
 
             //Insert Data from Databse into NBMonBattleDataSave
+            MonsterData.owner = "WILD";
             MonsterData.monsterId = MonsterDataFromRandomBattle.MonsterID;
             MonsterData.nickName = MonsterData.monsterId;
             MonsterData.skillList = MonsterDataFromRandomBattle.EquipSkill;
@@ -121,6 +122,15 @@ public static class GenerateEnemyTeam
             //Generate This Monster Base Stats
             NBMonStatsCalculation.StatsCalculation(MonsterData, MonsterFromDatabase);
 
+            //Fully Recovery HP and Energy
+            NBMonTeamData.StatsPercentageChange(MonsterData, NBMonProperties.StatsType.Hp, 100);
+            NBMonTeamData.StatsPercentageChange(MonsterData, NBMonProperties.StatsType.Energy, 100);
+
+            //Make Other Data not null.
+            MonsterData.statusEffectList = new List<StatusEffectList>();
+            MonsterData.temporaryPassives = new List<string>();
+            MonsterData.setSkillByHPBoundaries = new List<NBMonBattleDataSave.SkillByHP>();
+
             //Once Done Processing This Monster Data, Add This Monster into Enemy Team
             EnemyTeam.Add(MonsterData);
         }
@@ -138,6 +148,9 @@ public static class GenerateEnemyTeam
 
         foreach(var Monster in EnemyTeam)
         {
+            NBMonTeamData.StatsPercentageChange(Monster, NBMonProperties.StatsType.Hp, 100);
+            NBMonTeamData.StatsPercentageChange(Monster, NBMonProperties.StatsType.Energy, 100);
+
             Monster.owner = UsedData.OwnerName;
         }
     }
@@ -154,6 +167,9 @@ public static class GenerateEnemyTeam
 
         foreach(var Monster in EnemyTeam)
         {
+            NBMonTeamData.StatsPercentageChange(Monster, NBMonProperties.StatsType.Hp, 100);
+            NBMonTeamData.StatsPercentageChange(Monster, NBMonProperties.StatsType.Energy, 100);
+
             Monster.owner = "BOSS";
         }
     }
