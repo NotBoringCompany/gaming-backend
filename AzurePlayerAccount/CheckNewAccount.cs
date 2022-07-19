@@ -64,6 +64,9 @@ public static class CheckNewAccount
             List<string> ListOfItemIDs = new List<string>();
             ListOfItemIDs = JsonConvert.DeserializeObject<List<String>>(JsonStringData)!;
 
+            List<string> BundleIDs = new List<string>();
+
+            BundleIDs.Add("DemoStarterItem");
 
             //Send Data Into User Title Data
             var updateUserData = serverApi.UpdateUserDataAsync(
@@ -81,7 +84,7 @@ public static class CheckNewAccount
                 new GrantItemsToUserRequest
                 {
                     PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-                    ItemIds = ListOfItemIDs,
+                    ItemIds = BundleIDs,
                     CatalogVersion = "InventoryTest"
                 }
             );
