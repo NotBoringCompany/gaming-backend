@@ -354,6 +354,7 @@ namespace NBCompany.Setters
         [FunctionName("HerokuAddGenesisNBMons")]
         public static async Task<dynamic> HerokuAddGenesisNBMons([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
         {
+            try{
             FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
 
             dynamic args = context.FunctionArgument;
@@ -398,6 +399,10 @@ namespace NBCompany.Setters
             });
 
             return request;
+            }
+            catch(Exception e){
+                return e;
+            }
         }
 
         public class UserInfo{
@@ -453,6 +458,27 @@ namespace NBCompany.Setters
             client.Dispose();
 
             UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(contents);
+
+
+            // 2 - second request for addLoggedInUser so it doesn't override/mismatch info
+            HttpClient client2 = new HttpClient();
+            
+            string URL2 = "https://nbgamingbackend.herokuapp.com/";
+            client2.BaseAddress = new Uri(URL2);
+            var api2 = "userCheck/addLoggedInUser";
+
+            var bodyContent2 = JsonConvert.SerializeObject(body);
+
+            var buffer2 = System.Text.Encoding.UTF8.GetBytes(bodyContent2);
+            var byteContent2 = new ByteArrayContent(buffer2);
+            byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            var task2 = Task.Run(() => client.PostAsync(api2, byteContent2));
+            task.Wait();
+            
+            var response2 = task.Result;
+            var contents2 = await response.Content.ReadAsStringAsync();
+            
+            client2.Dispose();
 
             string ethAddress = userInfo.ethAddress;
             string email = userInfo.email;
