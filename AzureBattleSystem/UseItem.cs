@@ -269,6 +269,7 @@ public static class UseItem
         UseItemDataInput ConvertedInputData = new UseItemDataInput();
         ItemsPlayFab UsedItem = new ItemsPlayFab();
         dynamic UseItemInputValue = null;
+        bool NonCombat = new bool();
 
         //Check args["UseItemInput"] if it's null or not
         if(args["UseItemInput"] != null)
@@ -282,6 +283,12 @@ public static class UseItem
             //Convert that argument into Input variable.
             ConvertedInputData = JsonConvert.DeserializeObject<UseItemDataInput>(UseItemInputValueString);
         }
+
+        //Check it UseItem is called on Non Combat.
+        if(args["NonCombat"] != null)
+            NonCombat = true;
+        else
+            NonCombat = false;
 
         //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
@@ -328,14 +335,16 @@ public static class UseItem
 
                 log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Energy Recovered!");
 
-                //Add Status Effect
-                ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects, log);
+                if(!NonCombat) //Apply Status Effect is only called during Combat.
+                {
+                    //Add Status Effect
+                    ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects, log);
+                }
 
                 //Remove Status Effect
                 RemoveStatusEffect(ThisMonster, UsedItem.RemovesStatusEffects, log);
 
                 //return JsonConvert.SerializeObject(PlayerTeam);
-
                 var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
                         PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, 
                         Data = new Dictionary<string, string>{ {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)}
