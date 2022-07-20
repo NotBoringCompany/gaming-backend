@@ -11,6 +11,12 @@ using PlayFab.ServerModels;
 using System.Collections.Generic;
 
 public static class CapturedMonster{
+
+    //Class to Send Azure Data into Client
+    public class DataToClient{
+        public NBMonBattleDataSave WildMonsterData = new NBMonBattleDataSave();
+    }
+
     //Helper Methods
     public static PlayFabServerInstanceAPI SetupServerAPI(dynamic args, FunctionExecutionContext<dynamic> context)
     {
@@ -48,12 +54,15 @@ public static class CapturedMonster{
 
         //Declare Used Variable
         List<NBMonBattleDataSave> StellaPC = new List<NBMonBattleDataSave>();
-        NBMonBattleDataSave WildMonsterData = new NBMonBattleDataSave();
+        List<NBMonBattleDataSave> TeamInformation = new List<NBMonBattleDataSave>();
+        DataToClient ClientData = new DataToClient();
         int DataID = new int();
         
         //Get Value From Client
         if(args["DataID"] != null)
             DataID = (int)args["DataID"];
+
+        TeamInformation = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestUserTitleData.Result.Data["CurrentPlayerTeam"].Value);
 
         //Check if Title Data Exists run the script
         if(requestUserTitleData.Result.Data.ContainsKey("StellaPC")){
@@ -61,20 +70,24 @@ public static class CapturedMonster{
         }
 
         //Generate Wild NBMon Status and Save Add into Stella PC
-        CapturedWildNBMon(StellaPC, DataID, WildMonsterData);
+        CapturedWildNBMon(TeamInformation,StellaPC, DataID, ClientData);
         var updateStellaPC = await serverApi.UpdateUserDataAsync(
             new UpdateUserDataRequest{
                 PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
                 Data = new Dictionary<string, string>{
+                    {"CurrentPlayerTeam", JsonConvert.SerializeObject(TeamInformation)},
                     {"StellaPC", JsonConvert.SerializeObject(StellaPC)}
                 }
             }
         );
 
-        return "Wild NBMon Transferred Into Stella PC";
+        //Return Captured Monster Data into Client Using JsonString
+        string JsonString = JsonConvert.SerializeObject(ClientData.WildMonsterData).ToString();
+        log.LogInformation(JsonString);
+        return JsonString;
     }
 
-    public static void CapturedWildNBMon(List<NBMonBattleDataSave> StellaPC, int DataID, NBMonBattleDataSave WildMonsterData)
+    public static void CapturedWildNBMon(List<NBMonBattleDataSave> TeamInformation, List<NBMonBattleDataSave> StellaPC, int DataID, DataToClient ClientData)
     {
         NBMonBattleDatabase UsedData = RandomBattleDatabase.RandomBattleData[DataID];
 
@@ -117,9 +130,14 @@ public static class CapturedMonster{
             MonsterData.temporaryPassives = new List<string>();
             MonsterData.setSkillByHPBoundaries = new List<NBMonBattleDataSave.SkillByHP>();
 
-            //Once Done Processing This Monster Data, Add This Monster into Stella PC
-            StellaPC.Add(MonsterData);
-            WildMonsterData = MonsterData;
+            //Once Done Processing This Monster Data, Add This Monster Into Team Information if Slot is less than 4 or Stella PC
+            if(TeamInformation.Count < 4){
+                TeamInformation.Add(MonsterData);
+            }
+            else{
+                StellaPC.Add(MonsterData);
+            }
+            ClientData.WildMonsterData = MonsterData;
 
             //Break The Function to Prevent Looping
             break;
