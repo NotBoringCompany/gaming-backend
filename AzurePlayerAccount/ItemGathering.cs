@@ -65,6 +65,28 @@ public static class ItemGathering{
             }
         );
 
+        //Request User Inventory Item
+        var reqUserInventory = await serverApi.GetUserInventoryAsync(
+            new GetUserInventoryRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId
+            }
+        );
+
+        List<ItemInstance> ItemData = reqUserInventory.Result.Inventory;
+        //Let's update Player Inventory if the Player's item exceeded maximum item or not.
+        foreach (var IndividualItemInstance in ItemData)
+        {
+            if (IndividualItemInstance.RemainingUses >= 99)
+            {
+                var requestModifyItem = await serverApi.ModifyItemUsesAsync(new ModifyItemUsesRequest()
+                {
+                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                    ItemInstanceId = IndividualItemInstance.ItemInstanceId,
+                    UsesToAdd = (int)(99 - IndividualItemInstance.RemainingUses)
+                });
+            }
+        }
+
         return $"{itemId} Picked up, {itemQuantity}x "+JsonConvert.SerializeObject(itemIdList);
     }
 }
