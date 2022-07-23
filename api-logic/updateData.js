@@ -1,5 +1,8 @@
 const Moralis = require('moralis/node');
 
+//NOTE: SECURITY IMPLEMENTATION NOT ADDED YET. NOW ANYONE CAN ADD DATA TO MORALIS.
+// NEEDS TO BE FIXED LATER ON.
+
 /**
  * `updateGenesisNBMonData` updates the NBMon's game data and updates it to Moralis DB.
  */
