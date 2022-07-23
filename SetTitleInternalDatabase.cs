@@ -393,7 +393,7 @@ namespace NBCompany.Setters
             {
                 PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
                 Data = new Dictionary<string, string>(){
-                    {"GenesisNBMons", GenesisNBMons}
+                    {"BlockChainPC", GenesisNBMons}
                     },
                 Permission = UserDataPermission.Private
             });
