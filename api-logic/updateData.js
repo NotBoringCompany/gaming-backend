@@ -1,5 +1,10 @@
 const Moralis = require('moralis/node');
 
+require('dotenv').config();
+const serverUrl = process.env.MORALIS_SERVERURL;
+const appId = process.env.MORALIS_APPID;
+const masterKey = process.env.MORALIS_MASTERKEY;
+
 //NOTE: SECURITY IMPLEMENTATION NOT ADDED YET. NOW ANYONE CAN ADD DATA TO MORALIS.
 // NEEDS TO BE FIXED LATER ON.
 
@@ -8,7 +13,7 @@ const Moralis = require('moralis/node');
  */
 const updateGenesisNBMonData = async (
     nbmonId,
-    nickname,
+    nickName,
     level,
     currentExp,
     skillList,
@@ -21,6 +26,7 @@ const updateGenesisNBMonData = async (
     specialDefenseEffort
 ) => {
     try {
+        await Moralis.start({ serverUrl, appId, masterKey });
         // we are trying to query for the respective nbmon from Genesis_NBMons_GameData
         // by querying the nbmon via `nbmonId` in the Genesis_NBMons class and then
         // using the query result to obtain the nbmon in Genesis_NBMons_GameData
@@ -39,7 +45,7 @@ const updateGenesisNBMonData = async (
         // the nbmon record is obtained and we now can update its stats
         let result = await gdQuery.first({useMasterKey: true});
 
-        result.set("nickname", nickname);
+        result.set("nickName", nickName);
         result.set("level", level);
         result.set("currentExp", currentExp);
         result.set("skillList", skillList);
@@ -52,6 +58,7 @@ const updateGenesisNBMonData = async (
         result.set("specialDefenseEffort", specialDefenseEffort);
 
         result.save(null, {useMasterKey: true}).then((obj) => {
+            console.log("saved");
             return {
                 updated: "ok",
                 object: obj
@@ -61,6 +68,7 @@ const updateGenesisNBMonData = async (
         throw err;
     }
 }
+
 
 module.exports = {
     updateGenesisNBMonData

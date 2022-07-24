@@ -6,7 +6,7 @@ router.post("/updateData", async (req, res) => {
     try {
         const { 
             nbmonId,
-            nickname,
+            nickName,
             level,
             currentExp,
             skillList,
@@ -18,9 +18,9 @@ router.post("/updateData", async (req, res) => {
             defenseEffort,
             specialDefenseEffort
         } = req.body;
-        let updateData = await updateGenesisNBMonData(nbmonId,
+        let updateData = await updateGenesisNBMonData(
             nbmonId,
-            nickname,
+            nickName,
             level,
             currentExp,
             skillList,
