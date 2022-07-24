@@ -10,8 +10,8 @@ public class NBMonDataSave
 
     public string owner = "Jason";
     public string nickName = "Jason";
-    public string monsterId = "Floweria";
-    public string uniqueId = "dqwdqw";
+    public string monsterId = "Floweria"; //genus in the game
+    public string uniqueId = "dqwdqw"; //nbmonId in the block chain
     public NBMonProperties.Gender gender;
     public int level = 1;
     public int fertility;

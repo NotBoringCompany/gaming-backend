@@ -131,7 +131,7 @@ public static class NBMonStatsCalculation
     }
 
     //Calculate Base Stats (Used for Read Data from Database, during Level Up)).
-    public static void StatsCalculation(NBMonBattleDataSave ThisMonsterInfo, NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase)
+    public static void StatsCalculation(NBMonBattleDataSave ThisMonsterInfo, NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase, bool ResetMonsterStats = false)
     {
         ThisMonsterInfo.maxHp =
             EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.maxHpBase,
@@ -188,6 +188,13 @@ public static class NBMonStatsCalculation
             ThisMonsterInfo.level,
             ThisMonsterInfo.specialDefensePotential,
             ThisMonsterInfo.specialDefenseEffort);
+
+        //Recovery HP and Energy if ResetMonsterStats Bool is True
+        if(ResetMonsterStats)
+        {
+            ThisMonsterInfo.hp = ThisMonsterInfo.maxHp;
+            ThisMonsterInfo.energy = ThisMonsterInfo.maxEnergy;
+        }
 
         //Next EXP Required Calculation
         ThisMonsterInfo.nextLevelExpRequired = IncreaseExpRequirementFormula(ThisMonsterInfo.level);
