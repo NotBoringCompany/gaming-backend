@@ -21,8 +21,6 @@ const updateGenesisNBMonData = async (
     specialDefenseEffort
 ) => {
     try {
-        await Moralis.start({ serverUrl, appId, masterKey });
-
         // we are trying to query for the respective nbmon from Genesis_NBMons_GameData
         // by querying the nbmon via `nbmonId` in the Genesis_NBMons class and then
         // using the query result to obtain the nbmon in Genesis_NBMons_GameData
