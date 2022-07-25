@@ -1,10 +1,5 @@
 const Moralis = require('moralis/node');
 
-require('dotenv').config();
-const serverUrl = process.env.MORALIS_SERVERURL;
-const appId = process.env.MORALIS_APPID;
-const masterKey = process.env.MORALIS_MASTERKEY;
-
 //NOTE: SECURITY IMPLEMENTATION NOT ADDED YET. NOW ANYONE CAN ADD DATA TO MORALIS.
 // NEEDS TO BE FIXED LATER ON.
 
@@ -26,7 +21,6 @@ const updateGenesisNBMonData = async (
     specialDefenseEffort
 ) => {
     try {
-        await Moralis.start({ serverUrl, appId, masterKey });
         // we are trying to query for the respective nbmon from Genesis_NBMons_GameData
         // by querying the nbmon via `nbmonId` in the Genesis_NBMons class and then
         // using the query result to obtain the nbmon in Genesis_NBMons_GameData
@@ -57,13 +51,15 @@ const updateGenesisNBMonData = async (
         result.set("defenseEffort", defenseEffort);
         result.set("specialDefenseEffort", specialDefenseEffort);
 
+        let objSaved;
         result.save(null, {useMasterKey: true}).then((obj) => {
-            console.log("saved");
-            return {
-                updated: "ok",
-                object: obj
-            }
+            objSaved = obj;
         });
+
+        return {
+            updated: "ok",
+            obj: objSaved
+        }
     } catch (err) {
         throw err;
     }
