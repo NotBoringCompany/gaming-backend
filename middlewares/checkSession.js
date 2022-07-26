@@ -32,7 +32,7 @@ const parseJSON = (data) => JSON.parse(JSON.stringify(data));
 const updateGenesisNBMonCheck = async (req, res, next) => {
     try {
         const {sessionToken, nbmonId} = req.body;
-        
+
         // we get an instance of the Session DB for querying
         const SessionDB = new Moralis.Query("_Session");
         // we get an instance of the User DB for querying
@@ -106,7 +106,5 @@ const updateGenesisNBMonCheck = async (req, res, next) => {
         throw err;
     }   
 }
-
-updateGenesisNBMonCheck("r:cdcd24188de039bf576bb6036c3fc0f4", 1);
 
 module.exports = { updateGenesisNBMonCheck }
