@@ -14,10 +14,6 @@ using System.Collections.Generic;
 
 public static class NBMonConvert
 {
-    public class GenusDescription
-    {
-    }
-
     //NBMon's Moralis Data Structure
     public class NBMonMoralisData
     {
@@ -37,7 +33,7 @@ public static class NBMonConvert
         public string behavior;
         public string species;
         public string genus;
-        public GenusDescription genusDescription;
+        public string genusDescription;
         public int fertility;
         public int healthPotential;
         public int energyPotential;
@@ -144,6 +140,10 @@ public static class NBMonConvert
             if(string.IsNullOrEmpty(MonsterFromMoralis.rarity)) //Rarity is Quality of the Monster in the game
                 continue;
 
+            //Check if this Monster is an Egg, if it's an Egg, Skip Data Processing.
+            if(MonsterFromMoralis.isEgg)
+                continue;
+
             //Convertion Begin
             NewMonsterData.owner = MonsterFromMoralis.owner;
             
@@ -220,7 +220,6 @@ public static class NBMonConvert
             //Passives
             NewMonsterData.passiveList = MonsterFromMoralis.passives;
             NewMonsterData.temporaryPassives = new List<string>();
-
 
             //Once convertion is done, let's add into StellaBlockChainPC.
             StellaBlockChainPC.Add(NewMonsterData);
