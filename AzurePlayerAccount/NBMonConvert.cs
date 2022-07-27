@@ -24,7 +24,7 @@ public static class NBMonConvert
         public int nbmonId;
         public string owner;
         public int bornAt;
-        public object hatchedAt;
+        public int hatchedAt;
         public bool isHatchable;
         public int transferredAt;
         public int hatchingDuration;
@@ -33,8 +33,8 @@ public static class NBMonConvert
         public string gender;
         public string rarity;
         public string mutation;
-        public object mutationType;
-        public object behavior;
+        public string mutationType;
+        public string behavior;
         public string species;
         public string genus;
         public GenusDescription genusDescription;
@@ -47,17 +47,17 @@ public static class NBMonConvert
         public int spDefPotential;
         public int speedPotential;
         public bool isEgg;
-        public object currentExp;
-        public object level;
-        public object nickname;
-        public object skillList;
-        public object maxHpEffort;
-        public object maxEnergyEffort;
-        public object speedEffort;
-        public object attackEffort;
-        public object specialAttackEffort;
-        public object defenseEffort;
-        public object specialDefenseEffort;
+        public int currentExp;
+        public int level;
+        public string nickname;
+        public List<string> skillList;
+        public int maxHpEffort;
+        public int maxEnergyEffort;
+        public int speedEffort;
+        public int attackEffort;
+        public int specialAttackEffort;
+        public int defenseEffort;
+        public int specialDefenseEffort;
     }
 
     //Helper Methods
@@ -182,27 +182,13 @@ public static class NBMonConvert
             NewMonsterData.specialDefensePotential = MonsterFromMoralis.spDefPotential;
 
             //Effort Stats is an object Class, convert it to Null
-            if(MonsterFromMoralis.maxHpEffort != null)
-            {
-                //Insert Effort Stats
-                NewMonsterData.maxHpEffort = (int) MonsterFromMoralis.maxHpEffort;
-                NewMonsterData.maxEnergyEffort = (int) MonsterFromMoralis.maxEnergyEffort;
-                NewMonsterData.speedEffort = (int) MonsterFromMoralis.speedEffort;
-                NewMonsterData.attackEffort = (int) MonsterFromMoralis.attackEffort;
-                NewMonsterData.specialAttackEffort = (int) MonsterFromMoralis.specialAttackEffort;
-                NewMonsterData.defenseEffort = (int) MonsterFromMoralis.defenseEffort;
-                NewMonsterData.specialDefenseEffort = (int) MonsterFromMoralis.specialDefenseEffort;
-            }
-            else
-            {
-                NewMonsterData.maxHpEffort = 0;
-                NewMonsterData.maxEnergyEffort = 0;
-                NewMonsterData.speedEffort = 0;
-                NewMonsterData.attackEffort = 0;
-                NewMonsterData.specialAttackEffort = 0;
-                NewMonsterData.defenseEffort = 0;
-                NewMonsterData.specialDefenseEffort = 0;
-            }
+            NewMonsterData.maxHpEffort = MonsterFromMoralis.maxHpEffort;
+            NewMonsterData.maxEnergyEffort = MonsterFromMoralis.maxEnergyEffort;
+            NewMonsterData.speedEffort = MonsterFromMoralis.speedEffort;
+            NewMonsterData.attackEffort = MonsterFromMoralis.attackEffort;
+            NewMonsterData.specialAttackEffort = MonsterFromMoralis.specialAttackEffort;
+            NewMonsterData.defenseEffort = MonsterFromMoralis.defenseEffort;
+            NewMonsterData.specialDefenseEffort = MonsterFromMoralis.specialDefenseEffort;
 
             //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
             NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(NewMonsterData.monsterId);
@@ -211,9 +197,9 @@ public static class NBMonConvert
             NBMonStatsCalculation.StatsCalculation(NewMonsterData, MonsterFromDatabase, true);
 
             //insert Unique Skill List
-            if(MonsterFromMoralis.skillList != null)
+            if(MonsterFromMoralis.skillList != null || MonsterFromMoralis.skillList.Count > 0)
             {
-                NewMonsterData.uniqueSkillList = MonsterFromMoralis.skillList as List<string>;
+                NewMonsterData.uniqueSkillList = MonsterFromMoralis.skillList;
             }
             else
                 NewMonsterData.uniqueSkillList = new List<string>();

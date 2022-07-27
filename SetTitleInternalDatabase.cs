@@ -379,7 +379,9 @@ namespace NBCompany.Setters
 
             string GenesisNBMons = "";
 
-            HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://api-realmhunter.herokuapp.com/genesisNBMon/getOwnerGenesisNBMons/" + address);
+            // Original Function //HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://api-realmhunter.herokuapp.com/genesisNBMon/getOwnerGenesisNBMons/" + address);
+            
+            HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://api-realmhunter.herokuapp.com/genesisNBMon/getOwnerGenesisNBMonsAlt/" + address);
             requestH.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             using (HttpWebResponse response = (HttpWebResponse)requestH.GetResponse())
