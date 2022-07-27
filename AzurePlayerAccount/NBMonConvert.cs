@@ -133,15 +133,15 @@ public static class NBMonConvert
             //Declare New NBMonBattleDataSave Variable
             NBMonBattleDataSave NewMonsterData = new NBMonBattleDataSave();
 
+            //Check if this Monster is an Egg, if it's an Egg, Skip Data Processing Immediately.
+            if(MonsterFromMoralis.isEgg)
+                continue;
+
             //Check if The MonsterFromMoralis Data has Null or String Empty Data
             if(string.IsNullOrEmpty(MonsterFromMoralis.genus)) //Genus is MosnterId in the game
                 continue;
 
             if(string.IsNullOrEmpty(MonsterFromMoralis.rarity)) //Rarity is Quality of the Monster in the game
-                continue;
-
-            //Check if this Monster is an Egg, if it's an Egg, Skip Data Processing.
-            if(MonsterFromMoralis.isEgg)
                 continue;
 
             //Convertion Begin
