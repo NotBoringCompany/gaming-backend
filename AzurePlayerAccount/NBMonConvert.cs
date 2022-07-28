@@ -10,8 +10,6 @@ using PlayFab.Samples;
 using PlayFab.ServerModels;
 using System.Collections.Generic;
 
-
-
 public static class NBMonConvert
 {
     //NBMon's Moralis Data Structure
@@ -25,6 +23,10 @@ public static class NBMonConvert
         public int transferredAt;
         public int hatchingDuration;
         public List<string> types;
+        public List<string> strongAgainst;
+        public List<string> weakAgainst;
+        public List<string> resistantTo;
+        public List<string> vulnerableTo;
         public List<string> passives;
         public string gender;
         public string rarity;
@@ -35,6 +37,7 @@ public static class NBMonConvert
         public string genus;
         public string genusDescription;
         public int fertility;
+        public int fertilityDeduction;
         public int healthPotential;
         public int energyPotential;
         public int attackPotential;
@@ -97,10 +100,14 @@ public static class NBMonConvert
             });
 
         //Let's Declare Variable We Want To Uses.
+        List<NBMonBattleDataSave> CurrentPlayerTeam = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> StellaBlockChainPC = new List<NBMonBattleDataSave>();
         List<NBMonMoralisData> PlayerDataFromMoralis = new List<NBMonMoralisData>();
 
         //Let's Extract Data From PlayFab
+        if(reqTitleData.Result.Data.ContainsKey("CurrentPlayerTeam"))
+            CurrentPlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(reqTitleData.Result.Data["CurrentPlayerTeam"].Value);
+
         if(reqTitleData.Result.Data.ContainsKey("StellaBlockChainPC"))
             StellaBlockChainPC = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(reqTitleData.Result.Data["StellaBlockChainPC"].Value);
 
@@ -110,7 +117,7 @@ public static class NBMonConvert
         log.LogInformation(JsonConvert.SerializeObject(PlayerDataFromMoralis));
 
         //Convert Time
-        ConvertNBMonDataFromMoralisToPlayFab(StellaBlockChainPC, PlayerDataFromMoralis);
+        ConvertNBMonDataFromMoralisToPlayFab(CurrentPlayerTeam, StellaBlockChainPC, PlayerDataFromMoralis);
 
         //Update StellaBlockChainPC Data Into User Title Data
         var updateUserData = serverApi.UpdateUserDataAsync(
@@ -118,6 +125,7 @@ public static class NBMonConvert
             {
                 PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
                 Data = new Dictionary<string, string>{
+                    {"CurrentPlayerTeam", JsonConvert.SerializeObject(CurrentPlayerTeam)},
                     {"StellaBlockChainPC", JsonConvert.SerializeObject(StellaBlockChainPC)}
                 }
             }
@@ -126,12 +134,48 @@ public static class NBMonConvert
         return null;
     }
 
-    public static void ConvertNBMonDataFromMoralisToPlayFab(List<NBMonBattleDataSave> StellaBlockChainPC, List<NBMonMoralisData> PlayerDataFromMoralis)
+    public static NBMonBattleDataSave FindMonsterFromTeamByUniqueID(List<NBMonBattleDataSave> Team, NBMonMoralisData MonsterFromMoralis)
+    {
+        foreach(var Monster in Team)
+        {
+            if(MonsterFromMoralis.nbmonId.ToString() == Monster.uniqueId)
+            {
+                return Monster;
+            }
+        }
+
+        return null;
+    }
+
+    public static void MonsterStatUpdate(NBMonBattleDataSave MoralisMonsterInsideData, NBMonMoralisData MonsterFromMoralis)
+    {
+        //To Do
+    }
+
+    public static void ConvertNBMonDataFromMoralisToPlayFab(List<NBMonBattleDataSave> CurrentPlayerTeam, List<NBMonBattleDataSave> StellaBlockChainPC, List<NBMonMoralisData> PlayerDataFromMoralis)
     {
         foreach(var MonsterFromMoralis in PlayerDataFromMoralis)
         {
             //Declare New NBMonBattleDataSave Variable
             NBMonBattleDataSave NewMonsterData = new NBMonBattleDataSave();
+            NBMonBattleDataSave NBMonMoralisInPlayerTeam = FindMonsterFromTeamByUniqueID(CurrentPlayerTeam, MonsterFromMoralis);
+            NBMonBattleDataSave NBMonMoralisInStellaBCPC = FindMonsterFromTeamByUniqueID(StellaBlockChainPC, MonsterFromMoralis);
+
+            //Check if this Monster exist in the Current Player's Team.
+            if(NBMonMoralisInPlayerTeam != null)
+            {
+                //To Do, Monster Stats Update.
+                MonsterStatUpdate(NBMonMoralisInPlayerTeam, MonsterFromMoralis);
+                continue;
+            } 
+
+            //Check if this Monster exist in the Stella Blockchain PC.
+            if(NBMonMoralisInStellaBCPC != null)
+            {
+                //To Do, Monster Stats Update from .
+                MonsterStatUpdate(NBMonMoralisInStellaBCPC, MonsterFromMoralis);
+                continue;
+            } 
 
             //Check if this Monster is an Egg, if it's an Egg, Skip Data Processing Immediately.
             if(MonsterFromMoralis.isEgg)
@@ -199,18 +243,33 @@ public static class NBMonConvert
             //After that Recalculate NBMon Stats
             NBMonStatsCalculation.StatsCalculation(NewMonsterData, MonsterFromDatabase, true);
 
+            //Make Status Effect List not null.
+            NewMonsterData.statusEffectList = new List<StatusEffectList>();
+
             //insert Unique Skill List (//To Do)
             NewMonsterData.uniqueSkillList = new List<string>();
+
+            //insert Equipped Skill List (//To Do)
+            NewMonsterData.skillList = new List<string>();
 
             //insert Equipped Skill List
             if(MonsterFromMoralis.skillList.Count > 0) //Uses Skill List from Moralis
                 NewMonsterData.skillList = MonsterFromMoralis.skillList;
             else if(NewMonsterData.uniqueSkillList.Count == 0) //Check Unique Skill List aka Breeding Skill
             {
-                NewMonsterData.skillList.Add(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill[0]);
+                //Check if the Monster From Database has zero skill in baseSkillAndPassive
+                if(MonsterFromDatabase.baseSkillAndPassive.Count != 0)
+                {
+                    //Check if the Monster From Database has zero skill in allBaseSkill
+                    if(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill.Count != 0) 
+                    {
+                        if(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill.Count > 0)
+                            NewMonsterData.skillList.Add(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill[0]);
 
-                if(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill.Count > 1)
-                    NewMonsterData.skillList.Add(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill[1]);
+                        if(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill.Count > 1)
+                            NewMonsterData.skillList.Add(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill[1]);
+                    }
+                }
             }
             else //Uses Unique Skill List.
             {
