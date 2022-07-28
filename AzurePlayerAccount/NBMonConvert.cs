@@ -156,6 +156,12 @@ public static class NBMonConvert
             NewMonsterData.monsterId = MonsterFromMoralis.genus;
             NewMonsterData.gender = DefineNBMonGender(MonsterFromMoralis.gender);
             
+            //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
+            NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(NewMonsterData.monsterId);
+
+            if(MonsterFromDatabase == null) //Check if this Monster From Database is null, skip the data Processing.
+                continue;   
+
             //Monster Level is not Defined, will uses Default Lv. 5
             NewMonsterData.level = 5;
             NewMonsterData.fertility = MonsterFromMoralis.fertility;
@@ -190,29 +196,23 @@ public static class NBMonConvert
             NewMonsterData.defenseEffort = MonsterFromMoralis.defenseEffort;
             NewMonsterData.specialDefenseEffort = MonsterFromMoralis.specialDefenseEffort;
 
-            //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
-            NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(NewMonsterData.monsterId);
-
             //After that Recalculate NBMon Stats
             NBMonStatsCalculation.StatsCalculation(NewMonsterData, MonsterFromDatabase, true);
 
-            //insert Unique Skill List
-            if(MonsterFromMoralis.skillList != null || MonsterFromMoralis.skillList.Count > 0)
-            {
-                NewMonsterData.uniqueSkillList = MonsterFromMoralis.skillList;
-            }
-            else
-                NewMonsterData.uniqueSkillList = new List<string>();
+            //insert Unique Skill List (//To Do)
+            NewMonsterData.uniqueSkillList = new List<string>();
 
             //insert Equipped Skill List
-            if(NewMonsterData.uniqueSkillList.Count == 0)
+            if(MonsterFromMoralis.skillList.Count > 0) //Uses Skill List from Moralis
+                NewMonsterData.skillList = MonsterFromMoralis.skillList;
+            else if(NewMonsterData.uniqueSkillList.Count == 0) //Check Unique Skill List aka Breeding Skill
             {
                 NewMonsterData.skillList.Add(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill[0]);
 
                 if(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill.Count > 1)
                     NewMonsterData.skillList.Add(MonsterFromDatabase.baseSkillAndPassive[0].allBaseSkill[1]);
             }
-            else
+            else //Uses Unique Skill List.
             {
                 NewMonsterData.skillList = NewMonsterData.uniqueSkillList;
             }
