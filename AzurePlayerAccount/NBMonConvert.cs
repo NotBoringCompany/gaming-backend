@@ -166,6 +166,11 @@ public static class NBMonConvert
             {
                 //To Do, Monster Stats Update.
                 MonsterStatUpdate(NBMonMoralisInPlayerTeam, MonsterFromMoralis);
+
+                //Remove NBMon Data from StellaBlockChainPC because the Data Exist in the CurrentPlayerTeam.
+                if(NBMonMoralisInStellaBCPC != null)
+                    StellaBlockChainPC.Remove(NBMonMoralisInStellaBCPC);
+
                 continue;
             } 
 
