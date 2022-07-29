@@ -1,36 +1,19 @@
 const express = require("express");
 const { updateGenesisNBMonData } = require("../api-logic/updateData");
+const { updateGenesisNBMonCheck } = require("../middlewares/checkSession");
 const router = express.Router();
 
-router.post("/updateData", async (req, res) => {
+router.post("/updateData", updateGenesisNBMonCheck, async (req, res) => {
     try {
         const { 
             nbmonId,
-            nickName,
-            level,
-            currentExp,
-            skillList,
-            maxHpEffort,
-            maxEnergyEffort,
-            speedEffort,
-            attackEffort,
-            specialAttackEffort,
-            defenseEffort,
-            specialDefenseEffort
+            playFabId,
+            xSecretKey
         } = req.body;
         let updateData = await updateGenesisNBMonData(
             nbmonId,
-            nickName,
-            level,
-            currentExp,
-            skillList,
-            maxHpEffort,
-            maxEnergyEffort,
-            speedEffort,
-            attackEffort,
-            specialAttackEffort,
-            defenseEffort,
-            specialDefenseEffort
+            playFabId,
+            xSecretKey
         );
         res.json(updateData);
     } catch (err) {

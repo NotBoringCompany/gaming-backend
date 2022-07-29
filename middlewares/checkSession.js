@@ -98,7 +98,9 @@ const updateGenesisNBMonCheck = async (req, res, next) => {
 
         // if isOwner is still false, then we know the user doesn't own the nbmon. an error will be thrown.
         if (isOwner === false) {
-            throw new Error(`${nbmonId} is not owned by the user.`);
+            res.status(403).json({
+                errorMessage: "User doesn't own specified NBMon"
+            })
         } else {
             next();
         }

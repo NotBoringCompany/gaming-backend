@@ -8,11 +8,8 @@ const appId = process.env.MORALIS_APPID;
 const masterKey = process.env.MORALIS_MASTERKEY;
 /**
  * `updateGenesisNBMonData` updates the NBMon's game data and updates it to Moralis DB.
- * @param {string} sessionId the Moralis Session ID of the logged in user
- * @param {number} nbmonId the nbmon ID to be updated
  */
 const updateGenesisNBMonData = async (
-    sessionId,
     nbmonId,
     playfabId,
     xSecretKey
@@ -50,11 +47,50 @@ const updateGenesisNBMonData = async (
         axios.post(`https://${titleId}.playfabapi.com/Server/GetUserData`, data, {
             headers: headers
         }).then((response) => {
-            let nbmonData = response.data.data["Data"];
-            console.log(nbmonData);
+            let nbmonData = response.data.data["Data"]["StellaBlockChainPC"]["Value"];
 
-            // let parsedData = JSON.parse(nbmonData);
-            // console.log(parsedData);
+            let parsedData = JSON.parse(nbmonData);
+
+            let nbmonIdMatches = false;
+            let parsedDataIndex;
+            // once we get the data from playfab, we check if any of the nbmons the user has matches the nbmon id specified.
+            // if it does, nbmonIdMatches becomes true.
+            for (let i = 0; i < parsedData.length; i++) {
+                let idToCheck = parsedData[i]["uniqueId"];
+                if (idToCheck === parseInt(nbmonId)) {
+                    parsedDataIndex = i;
+                    nbmonIdMatches = true;
+                }
+            }
+            
+            // if nbmonIdMatches is still false, then we will throw an error since the user doesnt have the specified nbmon id to check
+            if (nbmonIdMatches === false) {
+                throw new Error("User doesn't have any NBMons that match the specified NBMon ID");
+            }
+
+            let nbmonToUpdate = parsedData[parsedDataIndex];
+
+            result.set("currentExp", nbmonToUpdate["currentExp"]);
+            result.set("level", nbmonToUpdate["level"]);
+            result.set("nickName", nbmonToUpdate["nickName"]);
+            result.set("skillList", nbmonToUpdate["skillList"]);
+            result.set("maxHpEffort", nbmonToUpdate["maxHpEffort"]);
+            result.set("maxEnergyEffort", nbmonToUpdate["maxEnergyEffort"]);
+            result.set("speedEffort", nbmonToUpdate["speedEffort"]);
+            result.set("attackEffort", nbmonToUpdate["attackEffort"]);
+            result.set("specialAttackEffort", nbmonToUpdate["specialAttackEffort"]);
+            result.set("defenseEffort", nbmonToUpdate["defenseEffort"]);
+            result.set("specialDefenseEffort", nbmonToUpdate["specialDefenseEffort"]);
+
+            let res;
+
+            await result.save(null, {useMasterKey: true}).then((result) => {
+                res = result;
+            })
+
+            return {
+                result: res
+            }
         }).catch((err) => {
             if (err.response) {
                 console.log(err.response.data);
@@ -91,7 +127,7 @@ const updateGenesisNBMonData = async (
     }
 }
 
-updateGenesisNBMonData("asdasd", 1, "6A5EF3AB2ADF3DE", "Q1XAQDB4TQ8R8QD6Z9IUMJI15W1GSSE1OQXQPO3UPRP6BWABFN");
+updateGenesisNBMonData("asdasd", 1, "74059183E65B33CF", "Q1XAQDB4TQ8R8QD6Z9IUMJI15W1GSSE1OQXQPO3UPRP6BWABFN");
 
 module.exports = {
     updateGenesisNBMonData
