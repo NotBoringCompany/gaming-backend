@@ -6,12 +6,12 @@ const router = express.Router();
 router.post("/updateData", updateGenesisNBMonCheck, async (req, res) => {
     try {
         const { 
-            nbmonId,
+            nbmonIds,
             playFabId,
             xSecretKey
         } = req.body;
         let updateData = await updateGenesisNBMonData(
-            nbmonId,
+            nbmonIds,
             playFabId,
             xSecretKey
         );
