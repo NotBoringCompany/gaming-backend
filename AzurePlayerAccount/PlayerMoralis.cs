@@ -36,6 +36,22 @@ public static class PlayerMoralis{
         return new PlayFabServerInstanceAPI(apiSettings, authContext);
     }
 
+    public static void CopyCurrentTeamData(List<NBMonBattleDataSave> currTeam, List<NBMonBattleDataSave> stellaBC, List<NBMonConvert.NBMonMoralisData> monsterData){
+        foreach(var monster in monsterData){
+            //Find Current index monster data inside CurrentPlayerTeam and StellaBlockChainPC
+            NBMonBattleDataSave monsterCurrTeam = NBMonConvert.FindMonsterFromTeamByUniqueID(currTeam, monster);
+            NBMonBattleDataSave monsterStellaBC = NBMonConvert.FindMonsterFromTeamByUniqueID(stellaBC, monster);
+            
+            //If current index monster found inside StellaBlockChainPC, continue into next index
+            if(monsterStellaBC != null)
+                continue;
+
+            //Add Into stellaBC if monsterCurrTeam found
+            if(monsterCurrTeam != null)
+                stellaBC.Add(monsterCurrTeam);
+        }
+    }
+
     [FunctionName("UpdateMonsterToMoralis")]
     public static async Task<dynamic> UpdateMonsterToMoralis([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
         
@@ -43,6 +59,13 @@ public static class PlayerMoralis{
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
         PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+
+        //Request Read Only Title Data
+        var reqTitleData = await serverApi.GetUserDataAsync(
+            new GetUserDataRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId
+            }
+        );
 
         //Request Read Only Title Data
         var reqReadOnlyTitleData = await serverApi.GetUserReadOnlyDataAsync(
@@ -68,14 +91,29 @@ public static class PlayerMoralis{
         //Declare new variable
         MoralisData newData = new MoralisData();
         List<NBMonConvert.NBMonMoralisData> monsterData = new List<NBMonConvert.NBMonMoralisData>();
+        List<NBMonBattleDataSave> currTeam = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> stellaBC = new List<NBMonBattleDataSave>();
 
         //Set variable from requested data
         monsterData = JsonConvert.DeserializeObject<List<NBMonConvert.NBMonMoralisData>>(reqReadOnlyTitleData.Result.Data["BlockChainPC"].Value);
+        currTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(reqTitleData.Result.Data["CurrentPlayerTeam"].Value);
+        stellaBC = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(reqTitleData.Result.Data["StellaBlockChainPC"].Value);
         newData.sessionToken = reqInternalData.Result.Data["sessionToken"].Value;
         newData.secretKey = serverApi.apiSettings.DeveloperSecretKey;
         newData.playerId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId;
-        //log newData except nbmonId
-        log.LogInformation(JsonConvert.SerializeObject(newData));
+
+        //Copy CurrentTeamPlayer into StellaBlockChainPC
+        CopyCurrentTeamData(currTeam, stellaBC, monsterData);
+
+        //Update StellaBlockChainPC In PlayFab
+        var updateUserData =  await serverApi.UpdateUserDataAsync(
+            new UpdateUserDataRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Data = new Dictionary<string, string>{
+                    {"StellaBlockChainPC", JsonConvert.SerializeObject(stellaBC)}
+                }
+            }
+        );
 
         //Looping monsterData To Get nbmonId;
         foreach(var monster in monsterData){
