@@ -1,16 +1,11 @@
-require('dotenv').config();
 const Moralis = require('moralis/node');
 const axios = require('axios').default;
 
 let titleId = process.env.TITLE_ID;
-// const serverUrl = process.env.MORALIS_SERVERURL;
-// const appId = process.env.MORALIS_APPID;
-// const masterKey = process.env.MORALIS_MASTERKEY;
+const xSecretKey = process.env.PLAYFAB_XSECRETKEY;
 
-const updateGenesisNBMonData = async (nbmonIds, playfabId, xSecretKey) => {
+const updateGenesisNBMonData = async (nbmonIds, playfabId) => {
     try {
-        // await Moralis.start({ serverUrl, appId, masterKey });
-
         // we need to first check that `nbmonIds` is not empty.
         if (nbmonIds.length === 0) {
             throw new Error("Please specify at least 1 NBMon ID");
@@ -55,7 +50,6 @@ const updateGenesisNBMonData = async (nbmonIds, playfabId, xSecretKey) => {
         if (parsedPlayfabData.length === 0) {
             throw new Error("User doesn't have any NBMons in StellaBlockChainPC");
         }
-
         let res = [];
 
         for (let i = 0; i < parsedPlayfabData.length; i++) {
@@ -104,8 +98,6 @@ const updateGenesisNBMonData = async (nbmonIds, playfabId, xSecretKey) => {
         throw err;
     }
 }
-
-// updateGenesisNBMonData([12, 123, 993], "74059183E65B33CF", "Q1XAQDB4TQ8R8QD6Z9IUMJI15W1GSSE1OQXQPO3UPRP6BWABFN");
 
 module.exports = {
     updateGenesisNBMonData

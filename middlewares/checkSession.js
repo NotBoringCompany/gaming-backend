@@ -29,7 +29,7 @@ const parseJSON = (data) => JSON.parse(JSON.stringify(data));
  * `updateGenesisNBMonCheck` checks if the user is logged in and the session token belongs to the user.
  * if it does, it checks if the nbmon IDs that are being updated/to be updated belongs to this user.
  */
-const updateGenesisNBMonCheck = async (nbmonIds) => {
+const updateGenesisNBMonCheck = async (req, res, next) => {
     try {
         const {sessionToken, nbmonIds} = req.body;
 
@@ -44,9 +44,7 @@ const updateGenesisNBMonCheck = async (nbmonIds) => {
 
         // if the query is undefined, the session token isn't found in the database.
         if (queryResult === undefined) {
-            res.status(403).json({
-                errorMessage: "Session token not found. Please try again."
-            });
+            throw new Error("Session token not found. Please try again");
         }
         const queryResultParsed = parseJSON(queryResult);
         // we obtain the pointer (obj ID) to the user from the _Session class.
@@ -58,9 +56,7 @@ const updateGenesisNBMonCheck = async (nbmonIds) => {
 
         // if somehow the user can't be found, this error will be thrown.
         if (userQueryResult === undefined) {
-            res.status(403).json({
-                errorMessage: "User not found. Please try again."
-            });
+            throw new Error("User not found in DB. Please try again.");
         }
 
         const userQueryResultParsed = parseJSON(userQueryResult);
@@ -70,9 +66,7 @@ const updateGenesisNBMonCheck = async (nbmonIds) => {
 
         // if somehow the user doesn't have an eth address, this error will be thrown.
         if (ethAddress === undefined || ethAddress.length === 0) {
-            res.status(403).json({
-                errorMessage: "User does not have an ETH address."
-            });
+            throw new Error("User does not have an ETH address");
         }
 
         // now we obtain the IDs owned by this user from the genesis contract.
@@ -81,9 +75,7 @@ const updateGenesisNBMonCheck = async (nbmonIds) => {
         // if the user doesn't own any nbmons, then this error is thrown since there is no need
         // for further checks.
         if (ownerIds.length === 0) {
-            res.status(403).json({
-                errorMessage: "User does not own any NBMons."
-            });
+            throw new Error("User does not own any NBMons");
         }
 
         // by default, the result returned from Solidity's uints are always in BigNumber.
@@ -100,17 +92,13 @@ const updateGenesisNBMonCheck = async (nbmonIds) => {
         const checker = nbmonIds.every(ids => convertedArray.includes(ids));
 
         if (!checker) {
-            res.status(403).json({
-                errorMessage: "One or more of the specified NBMon IDs are not owned by the user."
-            });
+            throw new Error("One or more of the specified NBMon IDs are not owned by the user.");
         } else {
             next();
         }
     } catch (err) {
         res.status(403).json({
-            error: err.message,
-			errorMessage:
-				"Error occured. Please try again.",
+            error: err.message
 		});
     }
 }
