@@ -9,12 +9,15 @@ using PlayFab;
 using PlayFab.Samples;
 using PlayFab.ServerModels;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 
 public static class PlayerMoralis{
 
     public class MoralisData{
         public string sessionToken;
-        public int nbmonId;
+        public List<int> nbmonId;
         public string playerId;
         public string secretKey;
     }
@@ -101,6 +104,7 @@ public static class PlayerMoralis{
         newData.sessionToken = reqInternalData.Result.Data["sessionToken"].Value;
         newData.secretKey = serverApi.apiSettings.DeveloperSecretKey;
         newData.playerId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId;
+        newData.nbmonId = new List<int>();
 
         //Copy CurrentTeamPlayer into StellaBlockChainPC
         CopyCurrentTeamData(currTeam, stellaBC, monsterData);
@@ -122,13 +126,49 @@ public static class PlayerMoralis{
                 continue;
 
             //Get Monter nbmonId
-            newData.nbmonId = monster.nbmonId;
-            
-            //Do Something...
-            //To Do, call moralis API
-            log.LogInformation(JsonConvert.SerializeObject(newData));
+            newData.nbmonId.Add(monster.nbmonId);
         }
 
-        return "Success";
+        log.LogInformation("Calling the Moralis API");
+        log.LogInformation("Overall Data To Send: " + JsonConvert.SerializeObject(newData));
+        log.LogInformation($"NBMonIds in Array: {JsonConvert.SerializeObject(newData.nbmonId.ToArray())}");
+
+        //Let's Call Moralis API
+        var body = new Dictionary<string,string>
+        {
+            {"nbmonIds", JsonConvert.SerializeObject(newData.nbmonId.ToArray())},
+            {"playFabId", newData.playerId },
+            {"sessionToken", newData.sessionToken }
+        };
+
+        HttpClient client = new HttpClient();
+
+        //https://gamingbackend.herokuapp.com/updateData/updateData
+        //https://api-gamingbackend.herokuapp.com/updateData/updateData
+
+        string URL = "https://api-gamingbackend.herokuapp.com/";
+        client.BaseAddress = new Uri(URL);
+        var api = "updateData/updateData";
+
+        var bodyContent = JsonConvert.SerializeObject(body);
+
+        log.LogInformation(bodyContent);
+
+        var buffer = System.Text.Encoding.UTF8.GetBytes(bodyContent);
+        var byteContent = new ByteArrayContent(buffer);
+        byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        var task = Task.Run(() => client.PostAsync(api, byteContent));
+        task.Wait();
+
+        var response = task.Result;
+        var contents = await response.Content.ReadAsStringAsync();
+
+        client.Dispose();
+
+        log.LogInformation($"Moralis API Called");
+        log.LogInformation($"Response: {response}");
+        log.LogInformation("Contents:" + JsonConvert.SerializeObject(contents));
+
+        return JsonConvert.SerializeObject(contents);
     }
 }
