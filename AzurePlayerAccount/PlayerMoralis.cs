@@ -131,12 +131,12 @@ public static class PlayerMoralis{
 
         log.LogInformation("Calling the Moralis API");
         log.LogInformation("Overall Data To Send: " + JsonConvert.SerializeObject(newData));
-        log.LogInformation($"NBMonIds in Array: {JsonConvert.SerializeObject(newData.nbmonId.ToArray())}");
+        log.LogInformation($"NBMonIds in List: {newData.nbmonId}");
 
         //Let's Call Moralis API
-        var body = new Dictionary<string,string>
+        var body = new Dictionary<string,dynamic>
         {
-            {"nbmonIds", JsonConvert.SerializeObject(newData.nbmonId.ToArray())},
+            {"nbmonIds", newData.nbmonId},
             {"playFabId", newData.playerId },
             {"sessionToken", newData.sessionToken }
         };
