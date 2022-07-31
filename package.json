@@ -26,6 +26,7 @@
     "fs": "^0.0.1-security",
     "moment": "^2.29.4",
     "moralis": "^1.8.1",
-    "nodemon": "^2.0.19"
+    "nodemon": "^2.0.19",
+    "path": "^0.12.7"
   }
 }
