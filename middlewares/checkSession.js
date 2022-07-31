@@ -9,7 +9,7 @@ const nodeURL = process.env.RPC_URL;
 const customHttpProvider = new ethers.providers.JsonRpcProvider(nodeURL);
 
 const genesisNBMonABI = fs.readFileSync(
-	path.resolve(__dirname, "../abi/genesisNBMon.json")
+	path.resolve(__dirname, "../abi/GenesisNBMon.json")
 );
 const genesisABI = JSON.parse(genesisNBMonABI);
 const genesisContract = new ethers.Contract(
