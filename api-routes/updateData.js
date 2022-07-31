@@ -8,12 +8,10 @@ router.post("/updateData", updateGenesisNBMonCheck, async (req, res) => {
         const { 
             nbmonIds,
             playFabId,
-            xSecretKey
         } = req.body;
         let updateData = await updateGenesisNBMonData(
             nbmonIds,
-            playFabId,
-            xSecretKey
+            playFabId
         );
         res.json(updateData);
     } catch (err) {
