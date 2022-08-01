@@ -442,7 +442,7 @@ namespace NBCompany.Setters
 
             HttpClient client = new HttpClient();
             
-            string URL = "https://gamingbackend.herokuapp.com/";
+            string URL = "https://api-gamingbackend.herokuapp.com/";
             client.BaseAddress = new Uri(URL);
             var api = "userCheck/retrieveUserBySessionToken";
 
@@ -459,13 +459,15 @@ namespace NBCompany.Setters
             
             client.Dispose();
 
+            log.LogInformation(contents);
+
             UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(contents);
 
 
             // 2 - second request for addLoggedInUser so it doesn't override/mismatch info
             HttpClient client2 = new HttpClient();
             
-            string URL2 = "https://gamingbackend.herokuapp.com/";
+            string URL2 = "https://api-gamingbackend.herokuapp.com/";
             client2.BaseAddress = new Uri(URL2);
             var api2 = "userCheck/addLoggedInUser";
 
