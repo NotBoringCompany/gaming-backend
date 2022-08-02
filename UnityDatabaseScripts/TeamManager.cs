@@ -5,7 +5,6 @@ using System;
 
 public class TeamManager
 {
-    private int maxCapacity = 4;
     public List<NBMonDataSave> teamList;
     public string Owner;
     public bool isHuman = false;

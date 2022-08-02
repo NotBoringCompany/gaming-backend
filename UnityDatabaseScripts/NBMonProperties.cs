@@ -82,8 +82,6 @@ public class NBMonProperties
         public StatusEffect negativeStatus;
     }
 
-    private List<StatusEffectOpposites> statusEffectOppositesDatabase;
-
     public enum StatsType
     {
         Hp,
@@ -94,24 +92,5 @@ public class NBMonProperties
         Defense,
         SpecialDefense
     }
-
-
-    public StatusEffect returnOppositeStatusEffect(StatusEffect statusEffect)
-    {
-        //Returns the oppostite status, if it doesn't exists return none
-        foreach (var database in statusEffectOppositesDatabase)
-        {
-            if (statusEffect == database.positiveStatus)
-            {
-                return database.negativeStatus;
-            }
-            else if (statusEffect == database.negativeStatus)
-            {
-                return database.positiveStatus;
-            }
-        }
-
-        return StatusEffect.None;
-    }
-    }
+}
 

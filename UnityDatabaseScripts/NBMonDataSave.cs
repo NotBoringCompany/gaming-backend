@@ -40,7 +40,6 @@ public class NBMonDataSave
 
     //Related to Level Up Logic.
     public int expMemoryStorage;
-    private int giveExpAmount;
     public int currentExp = 0;
     public int nextLevelExpRequired = 1000;
     public bool fainted;
@@ -344,12 +343,6 @@ public class NBMonDataSave
     ///// Related with Stat Change when level up
     ///// </summary>
     ///// 
-
-    public int returnExpAmount()
-    {
-        return giveExpAmount;
-    }
-
     public void updateMonsterStat()
     {
         //Debug.Log("Updating" + MockReferenceManager.instances.monsterDatabase.FindMonster(monsterId).monsterName);
