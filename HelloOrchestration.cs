@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
@@ -25,7 +23,6 @@ namespace Company.Function
             outputs.Add(await context.CallActivityAsync<string>("HelloOrchestration_Hello", "London"));
 
             // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
-            Trace.WriteLine(outputs);
             return outputs;
         }
 
