@@ -60,6 +60,22 @@ public static class UseItem
         return null;
     }
 
+    public static string FindPlayFabItemID(string ItemName)
+        {
+        //Get ItemDatabase
+        InventoryItemsPlayFabLists ItemDatabase = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(ItemDatabaseJson.ItemDataJson);
+
+        for(int i = 0; i < ItemDatabase.ItemDataBasePlayFab.Count; i++)
+        {
+            if(ItemDatabase.ItemDataBasePlayFab[i].Name == ItemName)
+            {
+                return i.ToString("000000");
+            }
+        }
+
+        return string.Empty;
+    }
+
     //Find Corresponding NBMon
     public static NBMonBattleDataSave FindMonster(string UniqueID, List<NBMonBattleDataSave> TeamList)
     {
