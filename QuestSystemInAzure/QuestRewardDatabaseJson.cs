@@ -8,9 +8,9 @@ public class QuestRewardDatabaseJson
 
 public class QuestRewardDatabase
 {
-    public static questData FindQuestUsingID(int questID)
+    public static QuestData FindQuestUsingID(int questID)
     {
-        List<questData> convertedQuestData = JsonConvert.DeserializeObject<List<questData>>(QuestRewardDatabaseJson.questRewardJson);
+        List<QuestData> convertedQuestData = JsonConvert.DeserializeObject<List<QuestData>>(QuestRewardDatabaseJson.questRewardJson);
 
         foreach(var data in convertedQuestData)
         {
@@ -24,7 +24,7 @@ public class QuestRewardDatabase
 
 //Data Structure
 [System.Serializable]
-public class questData{
+public class QuestData{
     public int questId;
     public string questName;
     public float shardReward;
