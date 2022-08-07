@@ -12,7 +12,6 @@ using System.Collections.Generic;
 
 public static class CheckNewAccount
 {
-
     //Helper Methods
     public static PlayFabServerInstanceAPI SetupServerAPI(dynamic args, FunctionExecutionContext<dynamic> context)
     {
@@ -33,7 +32,6 @@ public static class CheckNewAccount
     [FunctionName("IsNewAccount")]
     public static async Task<dynamic> IsNewAccount([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
     {
-
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
