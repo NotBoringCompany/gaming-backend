@@ -1,4 +1,3 @@
-require('dotenv').config();
 const Moralis = require('moralis/node');
 const ethers = require('ethers');
 const fs = require('fs');
