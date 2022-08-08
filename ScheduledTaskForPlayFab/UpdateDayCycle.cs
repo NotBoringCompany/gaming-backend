@@ -37,6 +37,18 @@ public static class UpdateDayCycle
         return new PlayFabServerInstanceAPI(apiSettings, authContext);
     }
 
+    [FunctionName("ColdStart")]
+    public static async Task<dynamic> ColdStart([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+    {
+        //Setup serverApi (Server API to PlayFab)
+        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+
+        //Setup serverAPI
+        PlayFabServerInstanceAPI serverApi = SetupScheduledServerAPI();
+
+        return "Cold Start Function";
+    }
+
     [FunctionName("UpdateDayCount")]
     public static async Task<dynamic> UpdateDayCount([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
     {    
@@ -50,7 +62,7 @@ public static class UpdateDayCycle
         int dayCount = new int();
 
         //Get Title Data
-        var readRequest = await serverApi.GetTitleDataAsync(new GetTitleDataRequest {});
+        var readRequest = await serverApi.GetTitleDataAsync(new GetTitleDataRequest { Keys = new List<string>() {{"DayCount"}} });
 
         //Get "DayCount" data from Title Data
         if(readRequest.Result.Data.ContainsKey("DayCount"))
@@ -84,7 +96,7 @@ public static class UpdateDayCycle
         int weekCount = new int();
 
         //Get Title Data
-        var readRequest = await serverApi.GetTitleDataAsync(new GetTitleDataRequest {});
+        var readRequest = await serverApi.GetTitleDataAsync(new GetTitleDataRequest { Keys = new List<string>() {{"WeekCount"}} });
 
         //Get "DayCount" data from Title Data
         if(readRequest.Result.Data.ContainsKey("WeekCount"))

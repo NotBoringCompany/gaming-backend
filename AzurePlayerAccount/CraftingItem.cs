@@ -41,7 +41,7 @@ public static class CraftingItem{
         List<string> itemIdList = new List<string>();
         string itemId = "";
         int itemQuantity;
-        double totalCost = 0f;
+        decimal totalCost = new decimal();
 
         //Get ID Data From Client
         if(args["itemID"] != null)
@@ -60,7 +60,7 @@ public static class CraftingItem{
 
         //Get total Cost From Client
         if(args["totalCost"] != null)
-            totalCost = (double) args["totalCost"];
+            totalCost = (decimal) args["totalCost"];
 
         //Grant User The Item List
         var reqGrantItem = await serverApi.GrantItemsToUserAsync(
@@ -85,9 +85,9 @@ public static class CraftingItem{
         );
 
         //Deduct xRes From User
-        double xResUser = float.Parse(reqUserReadOnly.Result.Data["xRES"].Value);
+        decimal xResUser = decimal.Parse(reqUserReadOnly.Result.Data["xRES"].Value);
         xResUser -= totalCost;
-        xResUser = Math.Round(xResUser, 2);
+        xResUser = Math.Round(xResUser, 18);
 
         //Update xRes into PlayFab
         var updateUserReadOnly = await serverApi.UpdateUserReadOnlyDataAsync(
