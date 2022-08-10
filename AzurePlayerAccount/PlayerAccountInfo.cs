@@ -31,8 +31,8 @@ public static class PlayerAccountInfo{
         return new PlayFabServerInstanceAPI(apiSettings, authContext);
     }
 
-    [FunctionName("SendAccountInfo")]
-    public static async Task<dynamic> SendAccountInfo([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
+    [FunctionName("AddPlayFabId")]
+    public static async Task<dynamic> AddPlayFabId([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
 
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
@@ -62,7 +62,6 @@ public static class PlayerAccountInfo{
         var body = new Dictionary<string,dynamic>
         {
             {"userObjId", moralisObjId},
-            {"ethAddress", reqInternalData.Result.Data["ethAddress"].Value},
             {"playfabId", context.CallerEntityProfile.Lineage.MasterPlayerAccountId }
         };
         
@@ -84,11 +83,11 @@ public static class PlayerAccountInfo{
         log.LogInformation($"Response: {response}");
         log.LogInformation("Contents:" + JsonConvert.SerializeObject(contents));
         
-        return "Send Account Info Success";
+        return "Add PlayFab Id Success";
     }
 
-    [FunctionName("AddAccountInfo")]
-    public static async Task<dynamic> AddAccountInfo([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
+    [FunctionName("AddUserData")]
+    public static async Task<dynamic> AddUserData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
 
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
@@ -118,7 +117,6 @@ public static class PlayerAccountInfo{
         var body = new Dictionary<string,dynamic>
         {
             {"userObjId", moralisObjId},
-            {"ethAddress", reqInternalData.Result.Data["ethAddress"].Value},
             {"playfabId", context.CallerEntityProfile.Lineage.MasterPlayerAccountId }
         };
         
@@ -140,6 +138,6 @@ public static class PlayerAccountInfo{
         log.LogInformation($"Response: {response}");
         log.LogInformation("Contents:" + JsonConvert.SerializeObject(contents));
         
-        return "Send Account Info Success";
+        return "Add User Data Success";
     }
 }
