@@ -46,6 +46,14 @@ public static class PlayerAccountInfo{
             }
         );
 
+        string moralisObjId = string.Empty;
+
+        //Get Obj ID Data From Client
+        if(args["userObjId"] != null)
+            moralisObjId = args["userObjId"].ToString();
+        else
+            return $"Error: objId not found or not inserted!";
+
         //Check if User ethAddress, If not found terminate this function immediately.
         if(!reqInternalData.Result.Data.ContainsKey("ethAddress"))
             return "Address undefined!! Terminating function.";
@@ -53,6 +61,7 @@ public static class PlayerAccountInfo{
         //Create new Body Dictionary for Andre's API
         var body = new Dictionary<string,dynamic>
         {
+            {"userObjId", moralisObjId},
             {"ethAddress", reqInternalData.Result.Data["ethAddress"].Value},
             {"playfabId", context.CallerEntityProfile.Lineage.MasterPlayerAccountId }
         };
@@ -72,6 +81,62 @@ public static class PlayerAccountInfo{
         var contents = await response.Content.ReadAsStringAsync();
 
         log.LogInformation($"Moralis API Called");
+        log.LogInformation($"Response: {response}");
+        log.LogInformation("Contents:" + JsonConvert.SerializeObject(contents));
+        
+        return "Send Account Info Success";
+    }
+
+    [FunctionName("AddAccountInfo")]
+    public static async Task<dynamic> AddAccountInfo([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
+
+        //Setup serverApi (Server API to PlayFab)
+        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+        dynamic args = context.FunctionArgument;
+        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+
+        //Request User Internal Data
+        var reqInternalData = await serverApi.GetUserInternalDataAsync(
+            new GetUserDataRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId
+            }
+        );
+
+        string moralisObjId = string.Empty;
+
+        //Get Obj ID Data From Client
+        if(args["userObjId"] != null)
+            moralisObjId = args["userObjId"].ToString();
+        else
+            return $"Error: objId not found or not inserted!";
+
+        //Check if User ethAddress, If not found terminate this function immediately.
+        if(!reqInternalData.Result.Data.ContainsKey("ethAddress"))
+            return "Address undefined!! Terminating function.";
+
+        //Create new Body Dictionary for Andre's API
+        var body = new Dictionary<string,dynamic>
+        {
+            {"userObjId", moralisObjId},
+            {"ethAddress", reqInternalData.Result.Data["ethAddress"].Value},
+            {"playfabId", context.CallerEntityProfile.Lineage.MasterPlayerAccountId }
+        };
+        
+        //Declare new Variable
+        HttpClient client = new HttpClient();
+        string url = "https://api-realmhunter.herokuapp.com/account/addUserData";
+        string jsonBody = JsonConvert.SerializeObject(body);
+
+        var buffer = System.Text.Encoding.UTF8.GetBytes(jsonBody);
+        var byteContent = new ByteArrayContent(buffer);
+        byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        var task = Task.Run(() => client.PostAsync(url, byteContent));
+        task.Wait();
+
+        var response = task.Result;
+        var contents = await response.Content.ReadAsStringAsync();
+
+        log.LogInformation($"Moralis API Called addUserData");
         log.LogInformation($"Response: {response}");
         log.LogInformation("Contents:" + JsonConvert.SerializeObject(contents));
         
