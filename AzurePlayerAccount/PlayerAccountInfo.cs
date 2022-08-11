@@ -61,7 +61,7 @@ public static class PlayerAccountInfo{
         //Create new Body Dictionary for Andre's API
         var body = new Dictionary<string,dynamic>
         {
-            {"ObjId", moralisObjId},
+            {"userObjId", moralisObjId},
             {"playfabId", context.CallerEntityProfile.Lineage.MasterPlayerAccountId }
         };
         
@@ -118,7 +118,7 @@ public static class PlayerAccountInfo{
         var body = new Dictionary<string,dynamic>
         {
             {"objId", moralisObjId},
-            {"playfabId", context.CallerEntityProfile.Lineage.MasterPlayerAccountId }
+            {"playfabId", context.CallerEntityProfile.Lineage.MasterPlayerAccountId }   
         };
         
         //Declare new Variable
