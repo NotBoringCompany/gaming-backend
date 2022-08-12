@@ -27,7 +27,7 @@ public static class QuestReward
 
         return new PlayFabServerInstanceAPI(apiSettings, authContext);
     }
-
+ 
     [FunctionName("GetQuestReward")]
     public static async Task<dynamic> GetQuestReward([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
     {            
