@@ -61,6 +61,7 @@ public static class PlayerAccountInfo{
         //Create new Body Dictionary for Andre's API
         var body = new Dictionary<string,dynamic>
         {
+            {"ethAddress", reqInternalData.Result.Data["ethAddress"].Value},
             {"userObjId", moralisObjId},
             {"playfabId", context.CallerEntityProfile.Lineage.MasterPlayerAccountId }
         };
