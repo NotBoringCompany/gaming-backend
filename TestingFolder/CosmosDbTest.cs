@@ -32,8 +32,8 @@ public static class CosmosDbTest{
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]
             HttpRequest req,
         [CosmosDB(
-            databaseName: "TestDb",
-            collectionName: "Data",
+            databaseName: "TestDb", //The Name of Database in Cosmos DB, Case Sensitive
+            collectionName: "Data", //The Collection Name of the Database in Cosmos DB, Case Sensitive
             ConnectionStringSetting = "CosmosDBConnection",
             SqlQuery = "SELECT * FROM c")]
             IEnumerable<ToDoItem> toDoItems,
