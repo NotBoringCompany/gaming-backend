@@ -1,22 +1,24 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Documents.Client;
+using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using Microsoft.Azure.Documents;
 
-
-public static class CosmosDbTest{
+public static class CosmosDbTest
+{
     public class ToDoItem
     {
         [JsonProperty("id")]
         public string Id { get; set; }
-
-        [JsonProperty("partitionKey")]
-        public string PartitionKey { get; set; }
-
         public string Description { get; set; }
     }
 
@@ -28,12 +30,12 @@ public static class CosmosDbTest{
     }
 
     [FunctionName("DocsBySqlQuery")]
-    public static IActionResult Run(
+    public static IActionResult Run1(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]
             HttpRequest req,
         [CosmosDB(
-            databaseName: "TestDb", //The Name of Database in Cosmos DB, Case Sensitive
-            collectionName: "Data", //The Collection Name of the Database in Cosmos DB, Case Sensitive
+            databaseName: "TestDb",
+            collectionName: "Data",
             ConnectionStringSetting = "CosmosDBConnection",
             SqlQuery = "SELECT * FROM c")]
             IEnumerable<ToDoItem> toDoItems,
@@ -46,4 +48,40 @@ public static class CosmosDbTest{
         }
         return new OkResult();
     }
+
+    [FunctionName("DocsByUsingDocumentClient")]
+        public static async Task<IActionResult> Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post",
+                Route = null)]HttpRequest req,
+            [CosmosDB(
+                databaseName: "TestDb",
+                collectionName: "Data",
+                ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
+            ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request.");
+            
+            List<ToDoItem> toDoItems = new List<ToDoItem>();
+
+            var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
+
+            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("TestDb", "Data");
+
+            // List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db WHERE db.description = 'This is work description'",option).ToList();
+            List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db",option).ToList();
+
+            // log.LogInformation(query.HasMoreResults.ToString());
+
+            // while (query.HasMoreResults)
+            // {
+            //     foreach (ToDoItem result in await query.ExecuteNextAsync())
+            //     {
+            //         toDoItems.Add(result);
+            //     }
+            // }
+
+            log.LogInformation(JsonConvert.SerializeObject(query));
+            
+            return new OkResult();
+        }
 }
