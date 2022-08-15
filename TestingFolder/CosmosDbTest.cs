@@ -63,12 +63,13 @@ public static class CosmosDbTest
             
             List<ToDoItem> toDoItems = new List<ToDoItem>();
 
+            //An option that is a must if 
             var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
-
             Uri collectionUri = UriFactory.CreateDocumentCollectionUri("TestDb", "Data");
 
-            // List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db WHERE db.description = 'This is work description'",option).ToList();
-            List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db",option).ToList();
+            //Query Data Function, turn it as a List of something you use as a Data Type.
+            List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db WHERE db.description = 'This is work description'",option).ToList();
+            //List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db",option).ToList();
 
             // log.LogInformation(query.HasMoreResults.ToString());
 
