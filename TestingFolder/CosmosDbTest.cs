@@ -66,13 +66,15 @@ public static class CosmosDbTest
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
+            string reqName = "Complete Recovery Kit";
+
             //An option that is a must if 
             var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
             Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "ItemsData");
 
             //Query Data Function, turn it as a List of something you use as a Data Type.
             ItemsPlayFab item = new ItemsPlayFab();
-            item = client.CreateDocumentQuery<ItemsPlayFab>(collectionUri, "SELECT * FROM db WHERE db.Name = 'Complete Recovery Kit'",option).AsEnumerable().FirstOrDefault();
+            item = client.CreateDocumentQuery<ItemsPlayFab>(collectionUri, $"SELECT * FROM db WHERE db.Name = '{reqName}'",option).AsEnumerable().FirstOrDefault();
 
             log.LogInformation(JsonConvert.SerializeObject(item));
             
