@@ -15,6 +15,7 @@ using PlayFab.ServerModels;
 using System.Net.Http;
 using System.Net;
 using System.Linq;
+using Microsoft.Azure.Documents.Client;
 
 public static class GenerateEnemyTeam
 {
@@ -37,7 +38,8 @@ public static class GenerateEnemyTeam
 
     //Cloud Method
     [FunctionName("GenerateEnemyTeamData")]
-    public static async Task<dynamic> GenerateEnemyTeamData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+    public static async Task<dynamic> GenerateEnemyTeamData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, 
+    [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log)
     {   
         //Convert JsonString into a Class
         RandomBattleDatabase.GetData();
@@ -62,17 +64,16 @@ public static class GenerateEnemyTeam
         if(args["BattleCategory"] != null)
             BattleCategory = (int)args["BattleCategory"];
         
-
         //Do Generate Wild NBMon Logic
         if(BattleCategory == 0)
-            GenerateWildNBMon(EnemyTeam, DataID);
+            GenerateWildNBMon(EnemyTeam, DataID, client);
 
         //Do Generate NPC NBMon Logic
         if(BattleCategory == 1)
-            GenerateNPCTeam(EnemyTeam, DataID);
+            GenerateNPCTeam(EnemyTeam, DataID, client);
 
         if(BattleCategory == 2)
-            GenerateBossTeam(EnemyTeam, DataID);
+            GenerateBossTeam(EnemyTeam, DataID, client);
 
         //Let's convert it into Json String and Send it into PlayFab (Player Title Data).
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
@@ -88,9 +89,17 @@ public static class GenerateEnemyTeam
     }
 
     //Generate Wild NBMon
-    public static void GenerateWildNBMon(List<NBMonBattleDataSave> EnemyTeam, int DataID)
+    public static void GenerateWildNBMon(List<NBMonBattleDataSave> EnemyTeam, int DataID, DocumentClient client)
     {
-        NBMonBattleDatabase UsedData = RandomBattleDatabase.RandomBattleData[DataID];
+        //Declare Variable For Cosmos Usage
+        var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
+        Uri wildUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "WildBattle");
+        Uri monsterUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "NBMonData");
+
+        // NBMonBattleDatabase UsedData = RandomBattleDatabase.RandomBattleData[DataID];
+        NBMonBattleDatabase UsedData = client.CreateDocumentQuery<NBMonBattleDatabase>(wildUri, 
+        $"SELECT * FROM db WHERE db.id = '{DataID}'",
+        option).AsEnumerable().FirstOrDefault();
 
         foreach(var MonsterDataFromRandomBattle in UsedData.MonsterDatas)
         {
@@ -105,7 +114,10 @@ public static class GenerateEnemyTeam
             MonsterData.passiveList = MonsterDataFromRandomBattle.Passive;
 
             //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
-            NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(MonsterData.monsterId);
+            // NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(MonsterData.monsterId);
+            NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = client.CreateDocumentQuery<NBMonDatabase.MonsterInfoPlayFab>(monsterUri, 
+            $"SELECT * FROM db WHERE db.monsterName = '{MonsterData.monsterId}'",
+            option).AsEnumerable().FirstOrDefault();
 
             //Let's Generate This Monster's Level
             NBMonStatsCalculation.GenerateRandomLevel(MonsterData, UsedData.LevelRange);
@@ -137,9 +149,17 @@ public static class GenerateEnemyTeam
     }
 
     //Generate NPC Team
-    public static void GenerateNPCTeam(List<NBMonBattleDataSave> EnemyTeam, int DataID)
+    public static void GenerateNPCTeam(List<NBMonBattleDataSave> EnemyTeam, int DataID, DocumentClient client)
     {
-        FixedNBMonBattleDatabase UsedData = FixedBattleDatabase.NPCBattleData[DataID];
+        //Declare Variable For Cosmos Usage
+        var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
+        Uri npcUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "NPCBattle");
+
+        // FixedNBMonBattleDatabase UsedData = FixedBattleDatabase.NPCBattleData[DataID];
+        FixedNBMonBattleDatabase UsedData = client.CreateDocumentQuery<FixedNBMonBattleDatabase>(npcUri, 
+        $"SELECT * FROM db WHERE db.id = '{DataID}'",
+        option).AsEnumerable().FirstOrDefault();
+
 
         foreach(var Monster in UsedData.MonsterTeam)
         {
@@ -156,9 +176,16 @@ public static class GenerateEnemyTeam
     }
 
     //Generate Boss Team
-    public static void GenerateBossTeam(List<NBMonBattleDataSave> EnemyTeam, int DataID)
+    public static void GenerateBossTeam(List<NBMonBattleDataSave> EnemyTeam, int DataID, DocumentClient client)
     {
-        FixedNBMonBattleDatabase UsedData = FixedBattleDatabase.BossBattleData[DataID];
+        //Declare Variable For Cosmos Usage
+        var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
+        Uri bossUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "BossBattle");
+        
+        // FixedNBMonBattleDatabase UsedData = FixedBattleDatabase.BossBattleData[DataID];
+        FixedNBMonBattleDatabase UsedData = client.CreateDocumentQuery<FixedNBMonBattleDatabase>(bossUri, 
+        $"SELECT * FROM db WHERE db.id = '{DataID}'",
+        option).AsEnumerable().FirstOrDefault();
 
         foreach(var Monster in UsedData.MonsterTeam)
         {

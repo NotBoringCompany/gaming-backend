@@ -21,11 +21,6 @@ public static class CosmosDbTest
         public string Id { get; set; }
         public string Description { get; set; }
     }
-    
-    public class I
-    {
-        public List<ItemsPlayFab> item {get; set;}
-    }
 
     public class ToDoItemLookup
     {
@@ -55,65 +50,88 @@ public static class CosmosDbTest
     }
 
     [FunctionName("DocsByUsingDocumentClient")]
-        public static dynamic Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post",
-                Route = null)]HttpRequest req,
-            [CosmosDB(
-                databaseName: "RealmDb",
-                collectionName: "ItemsData",
-                ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
-            ILogger log)
-        {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+    public static dynamic Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post",
+            Route = null)]HttpRequest req,
+        [CosmosDB(
+            ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
+        ILogger log)
+    {
+        log.LogInformation("C# HTTP trigger function processed a request.");
 
-            string reqName = "Complete Recovery Kit";
+        string reqName = "Lamox";
 
-            //An option that is a must if 
-            var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
-            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "ItemsData");
+        //An option that is a must if 
+        var option = new FeedOptions() { EnableCrossPartitionQuery = true };
+        Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "NPCBattle");
 
-            //Query Data Function, turn it as a List of something you use as a Data Type.
-            ItemsPlayFab item = new ItemsPlayFab();
-            item = client.CreateDocumentQuery<ItemsPlayFab>(collectionUri, $"SELECT * FROM db WHERE db.Name = '{reqName}'",option).AsEnumerable().FirstOrDefault();
+        //Query Data Function, turn it as a List of something you use as a Data Type.
+        FixedNBMonBattleDatabase UsedData = new FixedNBMonBattleDatabase();
+        UsedData = client.CreateDocumentQuery<FixedNBMonBattleDatabase>(collectionUri, $"SELECT * FROM db WHERE db.id = '0'", option).AsEnumerable().FirstOrDefault();
 
-            log.LogInformation(JsonConvert.SerializeObject(item));
-            
-            return JsonConvert.SerializeObject(item);
-        }
+        return JsonConvert.SerializeObject(UsedData);
+    }
 
-        // [FunctionName("DocsByUsingDocumentClient")]
-        // public static IActionResult Run(
-        //     [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post",
-        //         Route = null)]HttpRequest req,
-        //     [CosmosDB(
-        //         databaseName: "TestDb",
-        //         collectionName: "Data",
-        //         ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
-        //     ILogger log)
-        // {
-        //     log.LogInformation("C# HTTP trigger function processed a request.");
-            
-        //     List<ToDoItem> toDoItems = new List<ToDoItem>();
+    // [FunctionName("DocsByUsingDocumentClient")]
+    // public static dynamic Run(
+    //         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post",
+    //             Route = null)]HttpRequest req,
+    //         [CosmosDB(
+    //             databaseName: "RealmDb",
+    //             collectionName: "ItemsData",
+    //             ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
+    //         ILogger log)
+    // {
+    //     log.LogInformation("C# HTTP trigger function processed a request.");
 
-        //     var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
+    //     string reqName = "Complete Recovery Kit";
 
-        //     Uri collectionUri = UriFactory.CreateDocumentCollectionUri("TestDb", "Data");
+    //     //An option that is a must if 
+    //     var option = new FeedOptions() { EnableCrossPartitionQuery = true };
+    //     Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "ItemsData");
 
-        //     // List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db WHERE db.description = 'This is work description'",option).ToList();
-        //     List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db",option).ToList();
+    //     //Query Data Function, turn it as a List of something you use as a Data Type.
+    //     ItemsPlayFab item = new ItemsPlayFab();
+    //     item = client.CreateDocumentQuery<ItemsPlayFab>(collectionUri, $"SELECT * FROM db WHERE db.Name = '{reqName}'", option).AsEnumerable().FirstOrDefault();
 
-        //     // log.LogInformation(query.HasMoreResults.ToString());
+    //     log.LogInformation(JsonConvert.SerializeObject(item));
 
-        //     // while (query.HasMoreResults)
-        //     // {
-        //     //     foreach (ToDoItem result in await query.ExecuteNextAsync())
-        //     //     {
-        //     //         toDoItems.Add(result);
-        //     //     }
-        //     // }
+    //     return JsonConvert.SerializeObject(item);
+    // }
 
-        //     log.LogInformation(JsonConvert.SerializeObject(query));
-            
-        //     return new OkResult();
-        // }
+    // [FunctionName("DocsByUsingDocumentClient")]
+    // public static IActionResult Run(
+    //     [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post",
+    //         Route = null)]HttpRequest req,
+    //     [CosmosDB(
+    //         databaseName: "TestDb",
+    //         collectionName: "Data",
+    //         ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,
+    //     ILogger log)
+    // {
+    //     log.LogInformation("C# HTTP trigger function processed a request.");
+
+    //     List<ToDoItem> toDoItems = new List<ToDoItem>();
+
+    //     var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
+
+    //     Uri collectionUri = UriFactory.CreateDocumentCollectionUri("TestDb", "Data");
+
+    //     // List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db WHERE db.description = 'This is work description'",option).ToList();
+    //     List<ToDoItem> query = client.CreateDocumentQuery<ToDoItem>(collectionUri, "SELECT * FROM database db",option).ToList();
+
+    //     // log.LogInformation(query.HasMoreResults.ToString());
+
+    //     // while (query.HasMoreResults)
+    //     // {
+    //     //     foreach (ToDoItem result in await query.ExecuteNextAsync())
+    //     //     {
+    //     //         toDoItems.Add(result);
+    //     //     }
+    //     // }
+
+    //     log.LogInformation(JsonConvert.SerializeObject(query));
+
+    //     return new OkResult();
+    // }
 }
