@@ -46,23 +46,6 @@ public class StatusEffectIconDatabase
         public List<StatusConditionDataPlayFab> statusConditionDatabasePlayFab;
     }
 
-    public static StatusConditionDataPlayFab FindStatusEffectIcon(NBMonProperties.StatusEffect statusEffect)
-    {
-        StatusEffectIconDatabase.StatusConditionDatabasePlayFabList StatusEffectDatabase = new StatusEffectIconDatabase.StatusConditionDatabasePlayFabList(); 
-        var StatusEffect = StatusEffectDatabaseJson.StatusEffectDataJson;
-        StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(StatusEffect);
-
-        foreach (var statusData in StatusEffectDatabase.statusConditionDatabasePlayFab)
-        {
-            if (statusData.statusConditionName == statusEffect)
-            {
-                return statusData;
-            }
-        }
-
-        return null;
-    }
-
     public static void ApplyStatusEffectImmediately(NBMonBattleDataSave thisNBMon)
     {
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
