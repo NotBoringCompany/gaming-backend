@@ -87,11 +87,13 @@ public static class InitialTeamSetup
             P2Count++;
         }
 
-        //Purge NBMon Level Up Bool
+        //Purge NBMon Level Up Bool, Status Effect List, and Temporary Stats;
         foreach(var Monster in PlayerTeam)
         {
             Monster.NBMonLevelUp = false;
             Monster.fainted = false;
+            Monster.statusEffectList.Clear();
+            Monster.temporaryPassives.Clear();
         }
 
         //Purge NBMon Level Up Bool
@@ -99,6 +101,8 @@ public static class InitialTeamSetup
         {
             Monster.NBMonLevelUp = false;
             Monster.fainted = false;
+            Monster.statusEffectList.Clear();
+            Monster.temporaryPassives.Clear();
         }
 
         //Update AllMonsterUniqueID_BF to Player Title Data
