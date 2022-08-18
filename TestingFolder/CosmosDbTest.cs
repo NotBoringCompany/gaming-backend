@@ -58,9 +58,7 @@ public static class CosmosDbTest
         ILogger log)
     {
         log.LogInformation("C# HTTP trigger function processed a request.");
-
-        string reqName = "Lamox";
-
+        
         //An option that is a must if 
         var option = new FeedOptions() { EnableCrossPartitionQuery = true };
         Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "NPCBattle");
