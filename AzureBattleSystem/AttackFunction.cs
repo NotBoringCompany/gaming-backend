@@ -15,6 +15,7 @@ using PlayFab.ServerModels;
 using System.Net.Http;
 using System.Net;
 using System.Linq;
+using Microsoft.Azure.Documents.Client;
 
 public static class AttackFunction
 {
@@ -43,7 +44,8 @@ public static class AttackFunction
 
     //Cloud Function
     [FunctionName("AttackLogic")]
-    public static async Task<dynamic> AttackLogic([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+    public static async Task<dynamic> AttackLogic([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+    [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log)
     {
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
@@ -135,7 +137,7 @@ public static class AttackFunction
         log.LogInformation($"Code A: 1st Step, Get Attacker Skill Data");
 
         //Let's get Attacker Data like Skill
-        SkillsDataBase.SkillInfoPlayFab AttackerSkillData = SkillsDataBase.FindSkill(AttackerMonster.skillList[SkillSlot]);
+        SkillsDataBase.SkillInfoPlayFab AttackerSkillData = SkillsDataBase.FindSkill(AttackerMonster.skillList[SkillSlot], client);
 
         //Deduct Attacker Monster Energy
         NBMonTeamData.StatsValueChange(AttackerMonster, NBMonProperties.StatsType.Energy, -AttackerSkillData.energyRequired);

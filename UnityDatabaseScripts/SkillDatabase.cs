@@ -18,6 +18,8 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Drawing;
+using Microsoft.Azure.Documents.Client;
+using System.Linq;
 
 public class SkillsDataBase
 {
@@ -89,18 +91,30 @@ public class SkillsDataBase
 
     public List<SkillInfoPlayFab> skillInfosPlayFab;
 
-    public static SkillInfoPlayFab FindSkill(string skillName)
+    public static SkillInfoPlayFab FindSkill(string skillName, DocumentClient client)
     {
-        var SkillDatabaseJsonString = SkillDatabaseJson.SkillDataJson;
-        SkillInfoPlayFabList SkillDatabase = JsonConvert.DeserializeObject<SkillInfoPlayFabList>(SkillDatabaseJsonString);
+        // var SkillDatabaseJsonString = SkillDatabaseJson.SkillDataJson;
+        // SkillInfoPlayFabList SkillDatabase = JsonConvert.DeserializeObject<SkillInfoPlayFabList>(SkillDatabaseJsonString);
 
-        foreach (var skill in SkillDatabase.skillInfosPlayFab)
-        {
-            if(skillName == skill.skillName)
-            {
-                return skill;
-            }
-        }
+        // foreach (var skill in SkillDatabase.skillInfosPlayFab)
+        // {
+        //     if(skillName == skill.skillName)
+        //     {
+        //         return skill;
+        //     }
+        // }
+
+        //Declare Variable For Cosmos Usage
+        var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
+        Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "Skilldata");
+
+        SkillInfoPlayFab usedData = client.CreateDocumentQuery<SkillInfoPlayFab>(collectionUri, $"SELECT * FROM db WHERE db.skillName = '{skillName}'",option).AsEnumerable().FirstOrDefault();
+        
+        //If usedData exists, return value
+        if(usedData != null)
+            return usedData;
+
+        //else return null
         return null;
     }
 
