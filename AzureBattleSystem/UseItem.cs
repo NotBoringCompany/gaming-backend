@@ -161,7 +161,7 @@ public static class UseItem
                     log.LogInformation($"6th Loop Step! Code G: Calling Apply Passive");
 
                 //Apply passives that works when received status effect.
-                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null);
+                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null, client);
             }
         }
 

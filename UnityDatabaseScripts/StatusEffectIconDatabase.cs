@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Microsoft.Azure.Documents.Client;
 using Newtonsoft.Json;
 
 public class StatusEffectIconDatabase
@@ -46,11 +47,11 @@ public class StatusEffectIconDatabase
         public List<StatusConditionDataPlayFab> statusConditionDatabasePlayFab;
     }
 
-    public static void ApplyStatusEffectImmediately(NBMonBattleDataSave thisNBMon)
+    public static void ApplyStatusEffectImmediately(NBMonBattleDataSave thisNBMon, DocumentClient client)
     {
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
         {
-            var TheStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
+            var TheStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect, client);
             var ThisNBMonTempPassive = thisNBMon.temporaryPassives;
 
             if(TheStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Add_Temp_Passive_Related)

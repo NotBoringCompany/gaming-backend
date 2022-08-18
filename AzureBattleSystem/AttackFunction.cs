@@ -145,7 +145,7 @@ public static class AttackFunction
         log.LogInformation($"Code B: 2nd Step, Apply Passive for Attacker");
 
         //Let's Apply Passive to Attacker Monster before Attacking (ActionBefore)
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionBefore, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, AttackerSkillData);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionBefore, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, AttackerSkillData, client);
 
         log.LogInformation($"Code C: 3rd Step, Looping for each Monster Target");
 
@@ -155,12 +155,12 @@ public static class AttackFunction
             log.LogInformation($"{TargetMonster.nickName}, Apply Skill");
 
             //Apply Skill
-            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient);
+            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, client);
 
             log.LogInformation($"{TargetMonster.nickName}, Apply Status Effect Immediately");
 
             //Apply status effect logic like Anti Poison/Anti Stun.
-            StatusEffectIconDatabase.ApplyStatusEffectImmediately(TargetMonster);
+            StatusEffectIconDatabase.ApplyStatusEffectImmediately(TargetMonster, client);
 
             log.LogInformation($"{TargetMonster.nickName}, Check Monster Died");
 
@@ -171,7 +171,7 @@ public static class AttackFunction
         log.LogInformation($"Code D: 4th Step, Apply and Remove Status Effect from Attacker Monster");
 
         //Apply Status Effect to Attacker Monster
-        UseItem.ApplyStatusEffect(AttackerMonster, AttackerSkillData.statusEffectListSelf);
+        UseItem.ApplyStatusEffect(AttackerMonster, AttackerSkillData.statusEffectListSelf, null, false, client);
 
         //Remove Status Effect to Attacker Monster
         UseItem.RemoveStatusEffect(AttackerMonster, AttackerSkillData.removeStatusEffectListSelf);
@@ -244,13 +244,13 @@ public static class AttackFunction
     }
 
     //Apply Skill Function
-    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient)
+    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient, DocumentClient client)
     {
         //Declare New DamageData
         DamageData ThisMonsterDamageData = new DamageData();
 
         //Apply passive related with receiving element input before get hit!
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionReceiving, PassiveDatabase.TargetType.targetedMonster, AttackerMonster, DefenderMonster, Skill);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionReceiving, PassiveDatabase.TargetType.targetedMonster, AttackerMonster, DefenderMonster, Skill, client);
 
         //Insert Defender Monster Unique ID.
         ThisMonsterDamageData.DefenderMonsterUniqueID = DefenderMonster.uniqueId;
@@ -258,16 +258,16 @@ public static class AttackFunction
         //When skill type is damage, calculate the damage based on element modifier
         if(Skill.actionType == SkillsDataBase.ActionType.Damage)
         {
-            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData);
+            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData, client);
         }
 
         //Apply passive effect related to after action to the original monster
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionAfter, PassiveDatabase.TargetType.originalMonster, AttackerMonster, DefenderMonster, Skill);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionAfter, PassiveDatabase.TargetType.originalMonster, AttackerMonster, DefenderMonster, Skill, client);
 
         //Apply passive effect that inflict status effect from this monster to attacker monster (aka original monster), make sure the attacker is not itself and the skill's type is damage
         if (AttackerMonster != DefenderMonster && Skill.actionType == SkillsDataBase.ActionType.Damage)
         {
-            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.InflictStatusEffect, PassiveDatabase.TargetType.originalMonster, DefenderMonster, AttackerMonster, Skill);
+            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.InflictStatusEffect, PassiveDatabase.TargetType.originalMonster, DefenderMonster, AttackerMonster, Skill, client);
         }
 
         //If the skill is Healing Skill, e.g HP and Energy Recovery
@@ -275,7 +275,7 @@ public static class AttackFunction
             StatsRecoveryLogic(Skill, DefenderMonster, ThisMonsterDamageData);
 
         //Apply Status Effect to Target
-        UseItem.ApplyStatusEffect(DefenderMonster, Skill.statusEffectList);
+        UseItem.ApplyStatusEffect(DefenderMonster, Skill.statusEffectList, null, false, client);
 
         //Remove Status Effect to Target
         UseItem.RemoveStatusEffect(DefenderMonster, Skill.removeStatusEffectList);
@@ -308,17 +308,17 @@ public static class AttackFunction
 
     //Damage Function
     //Calculate and do the damage to the monster
-    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData)
+    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData, DocumentClient client)
     {
         //Declare Random Variable
         Random R = new Random();
 
         //Apply passives and artifact passives that only works during combat to Attacker
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, null);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, null, client);
         //TO DO, Apply Artifact Passive to Attacker Monster.
 
         //Apply passives and artifact passives that only works during combat to This Monster
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, DefenderMonster, null, null);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, DefenderMonster, null, null, client);
         //TO DO, Apply Artifact Passive to Defender Monster.
 
         //Calculate Critical Hit RNG
