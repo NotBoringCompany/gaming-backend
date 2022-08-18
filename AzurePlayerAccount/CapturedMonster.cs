@@ -9,6 +9,8 @@ using PlayFab;
 using PlayFab.Samples;
 using PlayFab.ServerModels;
 using System.Collections.Generic;
+using Microsoft.Azure.Documents.Client;
+using System.Linq;
 
 public static class CapturedMonster{
 
@@ -36,7 +38,8 @@ public static class CapturedMonster{
 
     //Azure Function
     [FunctionName("CapturedWildMonster")]
-    public static async Task<dynamic> CapturedWildMonster([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
+    public static async Task<dynamic> CapturedWildMonster([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, 
+    [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log){
         //Convert JsonString into a Class
         RandomBattleDatabase.GetData();
 
@@ -52,16 +55,26 @@ public static class CapturedMonster{
             }
         );
 
+        var reqUserInternalTitleData = await serverApi.GetUserInternalDataAsync( new GetUserDataRequest{
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId
+        });
+
         //Declare Used Variable
         List<NBMonBattleDataSave> StellaPC = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> TeamInformation = new List<NBMonBattleDataSave>();
         DataToClient ClientData = new DataToClient();
         int DataID = new int();
+        string playerETHAdress = "";
+
+        //Check Player's ETH Adress as Owner
+        if(reqUserInternalTitleData.Result.Data.ContainsKey("ethAddress"))
+            playerETHAdress = reqUserInternalTitleData.Result.Data["ethAddress"].Value;
         
         //Get Value From Client
         if(args["DataID"] != null)
             DataID = (int)args["DataID"];
 
+        //Extract Player's Team
         TeamInformation = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestUserTitleData.Result.Data["CurrentPlayerTeam"].Value);
 
         //Check if Title Data Exists run the script
@@ -69,8 +82,8 @@ public static class CapturedMonster{
             StellaPC = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestUserTitleData.Result.Data["StellaPC"].Value);
         }
 
-        //Generate Wild NBMon Status and Save Add into Stella PC
-        CapturedWildNBMon(TeamInformation,StellaPC, DataID, ClientData);
+        //Generate Wild NBMon Status and Add into Stella PC or Player's Current Equipped Team depending on situation (Player NBMon Slot).
+        CapturedWildNBMon(TeamInformation, StellaPC, DataID, ClientData, client, playerETHAdress);
         var updateStellaPC = await serverApi.UpdateUserDataAsync(
             new UpdateUserDataRequest{
                 PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
@@ -87,57 +100,68 @@ public static class CapturedMonster{
         return JsonString;
     }
 
-    public static void CapturedWildNBMon(List<NBMonBattleDataSave> TeamInformation, List<NBMonBattleDataSave> StellaPC, int DataID, DataToClient ClientData)
+    public static void CapturedWildNBMon(List<NBMonBattleDataSave> TeamInformation, List<NBMonBattleDataSave> StellaPC, int DataID, DataToClient ClientData, DocumentClient client, string playerETHAdress)
     {
+        //Declare Variable For Cosmos Usage
+        var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
+        Uri wildUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "WildBattle");
+        Uri monsterUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "NBMonData");
+
         NBMonBattleDatabase UsedData = RandomBattleDatabase.RandomBattleData[DataID];
 
         foreach(var MonsterDataFromRandomBattle in UsedData.MonsterDatas)
         {
-            NBMonBattleDataSave MonsterData = new NBMonBattleDataSave();
+            NBMonBattleDataSave monsterData = new NBMonBattleDataSave();
 
             //Insert Data from Databse into NBMonBattleDataSave
-            MonsterData.owner = "WILD";
-            MonsterData.monsterId = MonsterDataFromRandomBattle.MonsterID;
-            MonsterData.nickName = MonsterData.monsterId;
-            MonsterData.skillList = MonsterDataFromRandomBattle.EquipSkill;
-            MonsterData.uniqueSkillList = MonsterDataFromRandomBattle.InheritedSkill;
-            MonsterData.passiveList = MonsterDataFromRandomBattle.Passive;
+            if(string.IsNullOrEmpty(playerETHAdress))
+                monsterData.owner = "WILD";
+            else
+                monsterData.owner = playerETHAdress;
+
+            monsterData.monsterId = MonsterDataFromRandomBattle.MonsterID;
+            monsterData.nickName = monsterData.monsterId;
+            monsterData.skillList = MonsterDataFromRandomBattle.EquipSkill;
+            monsterData.uniqueSkillList = MonsterDataFromRandomBattle.InheritedSkill;
+            monsterData.passiveList = MonsterDataFromRandomBattle.Passive;
 
             //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
-            NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(MonsterData.monsterId);
+            // NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(MonsterData.monsterId); Original Function
+            NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = client.CreateDocumentQuery<NBMonDatabase.MonsterInfoPlayFab>(monsterUri, 
+            $"SELECT * FROM db WHERE db.monsterName = '{monsterData.monsterId}'", option).AsEnumerable().FirstOrDefault();
 
             //Let's Generate This Monster's Level
-            NBMonStatsCalculation.GenerateRandomLevel(MonsterData, UsedData.LevelRange);
+            NBMonStatsCalculation.GenerateRandomLevel(monsterData, UsedData.LevelRange);
 
             //Let's Generate This Monster UniqueID
-            MonsterData.uniqueId = "Demo" + new Random().Next(0, 999999999).ToString();
+            monsterData.uniqueId = "Demo" + new Random().Next(0, 999999999).ToString();
 
             //Let's Generate This Monster's Quality
-            NBMonStatsCalculation.GenerateThisMonsterQuality(MonsterData);
+            NBMonStatsCalculation.GenerateThisMonsterQuality(monsterData);
 
             //Let's Generate It's Potential Stats
-            NBMonStatsCalculation.GenerateRandomPotentialValue(MonsterData, MonsterFromDatabase);
+            NBMonStatsCalculation.GenerateRandomPotentialValue(monsterData, MonsterFromDatabase);
 
             //Generate This Monster Base Stats
-            NBMonStatsCalculation.StatsCalculation(MonsterData, MonsterFromDatabase);
+            NBMonStatsCalculation.StatsCalculation(monsterData, MonsterFromDatabase);
 
             //Fully Recovery HP and Energy
-            NBMonTeamData.StatsPercentageChange(MonsterData, NBMonProperties.StatsType.Hp, 100);
-            NBMonTeamData.StatsPercentageChange(MonsterData, NBMonProperties.StatsType.Energy, 100);
+            NBMonTeamData.StatsPercentageChange(monsterData, NBMonProperties.StatsType.Hp, 100);
+            NBMonTeamData.StatsPercentageChange(monsterData, NBMonProperties.StatsType.Energy, 100);
 
             //Make Other Data not null.
-            MonsterData.statusEffectList = new List<StatusEffectList>();
-            MonsterData.temporaryPassives = new List<string>();
-            MonsterData.setSkillByHPBoundaries = new List<NBMonBattleDataSave.SkillByHP>();
+            monsterData.statusEffectList = new List<StatusEffectList>();
+            monsterData.temporaryPassives = new List<string>();
+            monsterData.setSkillByHPBoundaries = new List<NBMonBattleDataSave.SkillByHP>();
 
             //Once Done Processing This Monster Data, Add This Monster Into Team Information if Slot is less than 4 or Stella PC
             if(TeamInformation.Count < 4){
-                TeamInformation.Add(MonsterData);
+                TeamInformation.Add(monsterData);
             }
             else{
-                StellaPC.Add(MonsterData);
+                StellaPC.Add(monsterData);
             }
-            ClientData.WildMonsterData = MonsterData;
+            ClientData.WildMonsterData = monsterData;
 
             //Break The Function to Prevent Looping
             break;

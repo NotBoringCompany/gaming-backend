@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Azure.Documents.Client;
 
 public class PassiveLogic
 {
@@ -9,7 +10,7 @@ public class PassiveLogic
 
     //Logics
     //Apply the passive according to the targetting type in script
-    public static void ApplyPassive(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.TargetType targetType, NBMonBattleDataSave originMonsterPass, NBMonBattleDataSave targetMonsterPass, SkillsDataBase.SkillInfoPlayFab skill, string BattleEnvironment = "")
+    public static void ApplyPassive(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.TargetType targetType, NBMonBattleDataSave originMonsterPass, NBMonBattleDataSave targetMonsterPass, SkillsDataBase.SkillInfoPlayFab skill, string BattleEnvironment = "", DocumentClient client = null)
     {
         //Get Battle Environment Value.
         if(AttackFunction.BattleEnvironment != string.Empty)
@@ -19,6 +20,8 @@ public class PassiveLogic
         originMonsterMemory = originMonsterPass; //Current Used Monster
         targetMonsterMemory = targetMonsterPass; //Target Monster
 
+        //To do, get Passive Data using CosmosDB by using the new variable PassiveDatabase.PassiveInfoPlayFab
+
         //Check all the passive from the original monster
         if (targetType == PassiveDatabase.TargetType.originalMonster || targetType == PassiveDatabase.TargetType.both)
         {
@@ -27,6 +30,7 @@ public class PassiveLogic
             foreach (var passive in originMonsterPass.passiveList)
             {
                 PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(passive), skill, BattleEnvironment);
+                //To do, change the PassiveDatabase.FindPassiveSkill(passive) into the variable you created, applies to other as well.
             }
 
             foreach (var tempPassive in originMonsterPass.temporaryPassives)

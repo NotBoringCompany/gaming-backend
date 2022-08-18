@@ -263,7 +263,7 @@ public static class UseItem
     //Cloud Function Method With Cosmos DB
     [FunctionName("UseItemCosmos")]
     public static async Task<dynamic> UseItemAzureCosmos([HttpTrigger(AuthorizationLevel.Function, "get", "post",Route = null)]HttpRequest req,
-    [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client,ILogger log)
+    [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log)
     {
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
