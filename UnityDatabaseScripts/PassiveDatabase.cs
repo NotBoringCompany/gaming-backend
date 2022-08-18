@@ -1,5 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Azure.Documents.Client;
 using Newtonsoft.Json;
 
 public class PassiveDatabase
@@ -169,10 +172,25 @@ public class PassiveDatabase
     }
 
     //Find Skill
-    public static PassiveInfoPlayFab FindPassiveSkill(string passiveName)
+    public static PassiveInfoPlayFab FindPassiveSkill(string passiveName, DocumentClient client)
     {
         string PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
         PassiveInfosPlayFabList ConvertedPassiveDatabase = JsonConvert.DeserializeObject<PassiveInfosPlayFabList>(PassiveDatabaseJsonString);
+
+        if(client != null)
+        {
+            //Declare Variable for Cosmos Usage
+            var option = new FeedOptions() { EnableCrossPartitionQuery = true };
+            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "PassiveData");
+
+            PassiveInfoPlayFab usedData = client.CreateDocumentQuery<PassiveInfoPlayFab>(collectionUri, $"SELECT * FROM db WHERE db.name = '{passiveName}'", option).AsEnumerable().FirstOrDefault();
+            
+            //if usedData exists, return the data
+            if(usedData != null)
+                return usedData;
+
+            return null;
+        }
 
         //Loop to find passive 1 by 1.
         foreach (var passive in ConvertedPassiveDatabase.passiveInfosPlayFab)
