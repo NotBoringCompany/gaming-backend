@@ -42,8 +42,8 @@ public static class GenerateEnemyTeam
     [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log)
     {   
         //Convert JsonString into a Class
-        //RandomBattleDatabase.GetData();
-        //FixedBattleDatabase.GetData();
+        RandomBattleDatabase.GetData();
+        FixedBattleDatabase.GetData();
 
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
@@ -96,10 +96,13 @@ public static class GenerateEnemyTeam
         Uri wildUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "WildBattle");
         Uri monsterUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "NBMonData");
 
-        // NBMonBattleDatabase UsedData = RandomBattleDatabase.RandomBattleData[DataID];
+        NBMonBattleDatabase usedData = RandomBattleDatabase.RandomBattleData[dataId];
+
+        /*
         NBMonBattleDatabase usedData = client.CreateDocumentQuery<NBMonBattleDatabase>(wildUri, 
         $"SELECT * FROM db WHERE db.id = '{dataId}'",
         option).AsEnumerable().FirstOrDefault();
+        */
 
         foreach(var randomMonsterData in usedData.MonsterDatas)
         {
@@ -114,10 +117,13 @@ public static class GenerateEnemyTeam
             monsterData.passiveList = randomMonsterData.Passive;
 
             //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
-            // NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(MonsterData.monsterId);
+            NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = NBMonDatabase.FindMonster(monsterData.monsterId);
+            
+            /*
             NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = client.CreateDocumentQuery<NBMonDatabase.MonsterInfoPlayFab>(monsterUri, 
             $"SELECT * FROM db WHERE db.monsterName = '{monsterData.monsterId}'",
             option).AsEnumerable().FirstOrDefault();
+            */
 
             //Let's Generate This Monster's Level
             NBMonStatsCalculation.GenerateRandomLevel(monsterData, usedData.LevelRange);
@@ -155,10 +161,13 @@ public static class GenerateEnemyTeam
         var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
         Uri npcUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "NPCBattle");
 
-        // FixedNBMonBattleDatabase UsedData = FixedBattleDatabase.NPCBattleData[DataID];
+        FixedNBMonBattleDatabase usedData = FixedBattleDatabase.NPCBattleData[dataID];
+        
+        /*
         FixedNBMonBattleDatabase usedData = client.CreateDocumentQuery<FixedNBMonBattleDatabase>(npcUri, 
         $"SELECT * FROM db WHERE db.id = '{dataID}'",
         option).AsEnumerable().FirstOrDefault();
+        */
 
 
         foreach(var monster in usedData.MonsterTeam)
@@ -182,12 +191,15 @@ public static class GenerateEnemyTeam
         var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
         Uri bossUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "BossBattle");
         
-        // FixedNBMonBattleDatabase UsedData = FixedBattleDatabase.BossBattleData[DataID];
+        FixedNBMonBattleDatabase usedData = FixedBattleDatabase.BossBattleData[dataId];
+
+        /*
         FixedNBMonBattleDatabase userData = client.CreateDocumentQuery<FixedNBMonBattleDatabase>(bossUri, 
         $"SELECT * FROM db WHERE db.id = '{dataId}'",
         option).AsEnumerable().FirstOrDefault();
+        */
 
-        foreach(var monster in userData.MonsterTeam)
+        foreach(var monster in usedData.MonsterTeam)
         {
             enemyTeam.Add(monster);
         }

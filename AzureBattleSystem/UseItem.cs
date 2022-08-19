@@ -130,14 +130,14 @@ public static class UseItem
             if(log != null)
                 log.LogInformation($"Third Loop Step! Code D: Status Effect Exist? {statusEffectExist} / Status Effect {ThisMonsterStatusEffect}");
 
-            bool ElementImmunity = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect, client).elementImmunity;
+            bool ElementImmunity = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect).elementImmunity;
 
             NBMonDatabase.MonsterInfoPlayFab MonsterData = NBMonDatabase.FindMonster(ThisMonster.monsterId);
 
             if(log != null)
                 log.LogInformation($"4th Loop Step! Code E: Element Immunity {ElementImmunity} / Monster Data {MonsterData}");
 
-            bool MonsterImmune = MonsterData.elements.Contains(FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect, client).immuneAgainstElement);
+            bool MonsterImmune = MonsterData.elements.Contains(FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect).immuneAgainstElement);
 
             //Status Effect Immunity based on Monster's Element.
             if(ElementImmunity)
@@ -177,7 +177,7 @@ public static class UseItem
                     log.LogInformation($"6th Loop Step! Code G: Calling Apply Passive");
 
                 //Apply passives that works when received status effect.
-                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null, client);
+                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null);
             }
         }
 
@@ -239,7 +239,7 @@ public static class UseItem
     public static void ModifyStatusEffectValue(NBMonProperties.StatusEffect statusEffect, int count, int stacks, NBMonProperties.StatusEffectInfo statusEffectInfo, StatusEffectList thisMonsterStatusEffect, NBMonBattleDataSave ThisMonster, DocumentClient client = null)
     {
         //Declare Variables
-        var StatusEffectFromDatabase = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect, client);
+        var StatusEffectFromDatabase = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect);
         int MaximumStacks = StatusEffectFromDatabase.maxStacks;
         bool Stackable = StatusEffectFromDatabase.stackable;
 
@@ -397,6 +397,7 @@ public static class UseItem
     }
 
     //Cloud Function Method With Cosmos DB
+    /*
     [FunctionName("UseItemCosmos")]
     public static async Task<dynamic> UseItemAzureCosmos([HttpTrigger(AuthorizationLevel.Function, "get", "post",Route = null)]HttpRequest req,
     [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log)
@@ -517,5 +518,5 @@ public static class UseItem
         {
             return "Item Data Not Found!";
         }
-    }
+    }*/
 }

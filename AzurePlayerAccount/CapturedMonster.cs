@@ -126,9 +126,12 @@ public static class CapturedMonster{
             monsterData.passiveList = MonsterDataFromRandomBattle.Passive;
 
             //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
-            // NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(MonsterData.monsterId); Original Function
-            NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = client.CreateDocumentQuery<NBMonDatabase.MonsterInfoPlayFab>(monsterUri, 
+            NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = NBMonDatabase.FindMonster(monsterData.monsterId);
+            
+            /*
+            NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = client.CreateDocumentQuery<NBMonDatabase.MonsterInfoPlayFab>(monsterUri, 
             $"SELECT * FROM db WHERE db.monsterName = '{monsterData.monsterId}'", option).AsEnumerable().FirstOrDefault();
+            */
 
             //Let's Generate This Monster's Level
             NBMonStatsCalculation.GenerateRandomLevel(monsterData, UsedData.LevelRange);
@@ -140,10 +143,10 @@ public static class CapturedMonster{
             NBMonStatsCalculation.GenerateThisMonsterQuality(monsterData);
 
             //Let's Generate It's Potential Stats
-            NBMonStatsCalculation.GenerateRandomPotentialValue(monsterData, MonsterFromDatabase);
+            NBMonStatsCalculation.GenerateRandomPotentialValue(monsterData, monsterFromDatabase);
 
             //Generate This Monster Base Stats
-            NBMonStatsCalculation.StatsCalculation(monsterData, MonsterFromDatabase);
+            NBMonStatsCalculation.StatsCalculation(monsterData, monsterFromDatabase);
 
             //Fully Recovery HP and Energy
             NBMonTeamData.StatsPercentageChange(monsterData, NBMonProperties.StatsType.Hp, 100);

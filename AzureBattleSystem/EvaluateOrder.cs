@@ -182,7 +182,7 @@ public static class EvaluateOrder
                     if(CurrentTurn == 0) //when Enter Battle Field.
                     {
                         //Apply passives that works when received status effect.
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null, client);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null);
                     }
                     else //Second Turn and So On.
                     {
@@ -190,8 +190,8 @@ public static class EvaluateOrder
                         DecreaseCounter(PlayerNBMonData);
 
                         //Apply passives that works when received status effect. (Turn Start and Turn End combined).
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null, client);
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null, client);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null);
                     
                         //Add NBMon Energy
                         NBMonTeamData.StatsValueChange(PlayerNBMonData, NBMonProperties.StatsType.Energy, 25);
@@ -223,7 +223,7 @@ public static class EvaluateOrder
                     if(CurrentTurn == 0) //when Enter Battle Field.
                     {
                         //Apply passives that works when received status effect.
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null, client);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null);
                     }
                     else //Second Turn and So On.
                     {
@@ -231,8 +231,8 @@ public static class EvaluateOrder
                         DecreaseCounter(EnemyNBMonData);
 
                         //Apply passives that works when received status effect. (Turn Start and Turn End combined).
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null, client);
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null, client);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null);
 
                         //Add NBMon Energy
                         NBMonTeamData.StatsValueChange(EnemyNBMonData, NBMonProperties.StatsType.Energy, 25);
