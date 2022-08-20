@@ -25,8 +25,8 @@ public static class UpdateDayCycle
     {
         var apiSettings = new PlayFabApiSettings
         {
-            TitleId = "D91AF",
-            DeveloperSecretKey = "P8MPZ9CZ35C4TOFDZM9XFASPNZNXBUEQ6X64T7HKZJ7CMKI6DM"
+            TitleId = Environment.GetEnvironmentVariable("PLAYFAB_TITLE_ID", EnvironmentVariableTarget.Process),
+            DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
         };
 
         var authContext = new PlayFabAuthenticationContext
