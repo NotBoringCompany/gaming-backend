@@ -62,6 +62,6 @@ public static class MongoDBTest
             foundUser = result[0];;
         }
 
-        return $"All Users = {JsonConvert.SerializeObject(dataObtained)}, Single Requested User = {JsonConvert.SerializeObject(foundUser)}";
+        return $"All Users = {dataObtained.ToJson()}, Single Requested User = {foundUser}";
     }
 }
