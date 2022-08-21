@@ -39,7 +39,7 @@ public static class GenerateEnemyTeam
     //Cloud Method
     [FunctionName("GenerateEnemyTeamData")]
     public static async Task<dynamic> GenerateEnemyTeamData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, 
-    [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log)
+    ILogger log)
     {   
         //Convert JsonString into a Class
         RandomBattleDatabase.GetData();
@@ -66,14 +66,14 @@ public static class GenerateEnemyTeam
         
         //Do Generate Wild NBMon Logic
         if(battleCategory == 0)
-            GenerateWildNBMon(enemyTeam, dataId, client);
+            GenerateWildNBMon(enemyTeam, dataId, null);
 
         //Do Generate NPC NBMon Logic
         if(battleCategory == 1)
-            GenerateNPCTeam(enemyTeam, dataId, client);
+            GenerateNPCTeam(enemyTeam, dataId, null);
 
         if(battleCategory == 2)
-            GenerateBossTeam(enemyTeam, dataId, client);
+            GenerateBossTeam(enemyTeam, dataId, null);
 
         //Let's convert it into Json String and Send it into PlayFab (Player Title Data).
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(

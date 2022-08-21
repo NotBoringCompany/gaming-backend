@@ -47,7 +47,7 @@ public class StatusEffectIconDatabase
         public List<StatusConditionDataPlayFab> statusConditionDatabasePlayFab;
     }
 
-    public static void ApplyStatusEffectImmediately(NBMonBattleDataSave thisNBMon, DocumentClient client)
+    public static void ApplyStatusEffectImmediately(NBMonBattleDataSave thisNBMon)
     {
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
         {

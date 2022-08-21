@@ -45,7 +45,7 @@ public static class AttackFunction
     //Cloud Function
     [FunctionName("AttackLogic")]
     public static async Task<dynamic> AttackLogic([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-    [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log)
+    ILogger log)
     {
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
@@ -155,12 +155,12 @@ public static class AttackFunction
             log.LogInformation($"{TargetMonster.nickName}, Apply Skill");
 
             //Apply Skill
-            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, client);
+            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, null);
 
             log.LogInformation($"{TargetMonster.nickName}, Apply Status Effect Immediately");
 
             //Apply status effect logic like Anti Poison/Anti Stun.
-            StatusEffectIconDatabase.ApplyStatusEffectImmediately(TargetMonster, client);
+            StatusEffectIconDatabase.ApplyStatusEffectImmediately(TargetMonster);
 
             log.LogInformation($"{TargetMonster.nickName}, Check Monster Died");
 
@@ -171,7 +171,7 @@ public static class AttackFunction
         log.LogInformation($"Code D: 4th Step, Apply and Remove Status Effect from Attacker Monster");
 
         //Apply Status Effect to Attacker Monster
-        UseItem.ApplyStatusEffect(AttackerMonster, AttackerSkillData.statusEffectListSelf, null, false, client);
+        UseItem.ApplyStatusEffect(AttackerMonster, AttackerSkillData.statusEffectListSelf, null, false);
 
         //Remove Status Effect to Attacker Monster
         UseItem.RemoveStatusEffect(AttackerMonster, AttackerSkillData.removeStatusEffectListSelf);
