@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
+using MongoDB.Bson;
 using Newtonsoft.Json;
 
 public class NBMonBattleDatabase
 {
+    public ObjectId _id { get; set; }
+    public int id;
     //Monster Level Range
     public int LevelRange;
-    
     //Information of The Monster
     public List<NBMonData> MonsterDatas;
 }

@@ -19,21 +19,14 @@ using MongoDB.Bson.Serialization;
 
 public static class MongoDBTest
 {
-    //setting for the MongoDB.
-    public static MongoClientSettings settings = MongoClientSettings.FromConnectionString(Environment.GetEnvironmentVariable("MONGO_DB_CONNECTION", EnvironmentVariableTarget.Process));
-
-    [FunctionName("TestMongoDB")]
+    [FunctionName("MongoTest")]
     public static async Task<dynamic> TestMongoDBFunction([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
     {
         //Default Setting to call MongoDB.
-        settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-        var client = new MongoClient(settings);
-
-        //Setting to call Database
-        var database = client.GetDatabase("myFirstDatabase");
+        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
 
         //Setting for Collection
-        var collection = database.GetCollection<BsonDocument>("users");
+        var collection = MongoHelper.db.GetCollection<BsonDocument>("users");
         List<BsonDocument> dataObtained = new List<BsonDocument>();
 
         //Data Processing to add all obtained datas into a list of BsonDocument.
@@ -66,19 +59,15 @@ public static class MongoDBTest
         return $"All Users = {dataObtained.ToJson()}, Single Requested User = {foundUser}";
     }
 
-    [FunctionName("ItemMongoDB")]
+    [FunctionName("MongoItem")]
     public static dynamic ItemMongoDB([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
         //Default Setting to call MongoDB.
-        settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-        var client = new MongoClient(settings);
-
-        //Setting to call Database
-        var database = client.GetDatabase("myFirstDatabase");
+        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
 
         //Let's create a filter to query single data
         var filter = Builders<BsonDocument>.Filter.Eq("Name", "Small Healing Potion");
         //Setting for Collection
-        var collection = database.GetCollection<BsonDocument>("itemData").Find(filter).FirstOrDefault().AsEnumerable();;
+        var collection = MongoHelper.db.GetCollection<BsonDocument>("itemData").Find(filter).FirstOrDefault().AsEnumerable();
 
         ItemsPlayFab newItem = new ItemsPlayFab();
 
@@ -88,19 +77,15 @@ public static class MongoDBTest
         return JsonConvert.SerializeObject(newItem);
     }
 
-    [FunctionName("PassiveMongoDB")]
+    [FunctionName("MongoPassive")]
     public static dynamic PassiveMongoDB([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
         //Default Setting to call MongoDB.
-        settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-        var client = new MongoClient(settings);
-
-        //Setting to call Database
-        var database = client.GetDatabase("myFirstDatabase");
+        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
 
         //Let's create a filter to query single data
         var filter = Builders<BsonDocument>.Filter.Eq("name", "Overexertion");
         //Setting for Collection
-        var collection = database.GetCollection<BsonDocument>("passiveData").Find(filter).FirstOrDefault().AsEnumerable();;
+        var collection = MongoHelper.db.GetCollection<BsonDocument>("passiveData").Find(filter).FirstOrDefault().AsEnumerable();
 
         PassiveDatabase.PassiveInfoPlayFab newData = new PassiveDatabase.PassiveInfoPlayFab();
 
@@ -109,4 +94,28 @@ public static class MongoDBTest
 
         return JsonConvert.SerializeObject(newData);
     }
+    
+    [FunctionName("MongoBattle")]
+    public static dynamic BattleData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
+        //Default Setting to call MongoDB.
+        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+
+        //Let's create a filter to query single data
+        var filter = Builders<BsonDocument>.Filter.Eq("id", 0);
+        //Setting for Collection
+        var collection = MongoHelper.db.GetCollection<BsonDocument>("wildData").Find(filter).FirstOrDefault().AsEnumerable();
+
+        NBMonBattleDatabase newData = new NBMonBattleDatabase();
+
+        //Convert the Result into desire Class
+        newData = BsonSerializer.Deserialize<NBMonBattleDatabase>(collection.ToBsonDocument());
+
+        return JsonConvert.SerializeObject(newData);
+    }
+}
+
+public static class MongoHelper{
+    public static MongoClientSettings settings = MongoClientSettings.FromConnectionString(Environment.GetEnvironmentVariable("MONGO_DB_CONNECTION", EnvironmentVariableTarget.Process)); 
+    public static MongoClient client = new MongoClient(settings);
+    public static IMongoDatabase db = client.GetDatabase("myFirstDatabase");
 }

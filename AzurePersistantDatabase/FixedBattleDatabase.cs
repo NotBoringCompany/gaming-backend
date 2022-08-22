@@ -1,10 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using MongoDB.Bson;
 using Newtonsoft.Json;
 
 [System.Serializable]
 public class FixedNBMonBattleDatabase
 {
+    public ObjectId _id { get; set; }
+    public int id;
     //Owner Name Information
     public string OwnerName;
     //Monster Team Information
