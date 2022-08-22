@@ -77,6 +77,17 @@ public static class CheckNewAccount
                 }
             );
 
+            //Send Data Into User ReadOnlyData
+            var updateReadOnly = serverApi.UpdateUserReadOnlyDataAsync(
+              new UpdateUserDataRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                    Data = new Dictionary<string, string>{
+                        {"xREC", "0"},
+                        {"xRES", "0"}
+                    }
+              }  
+            );
+
             //Send Inventory Data
             var updateInventoryData = serverApi.GrantItemsToUserAsync(
                 new GrantItemsToUserRequest
