@@ -91,7 +91,7 @@ public class SkillsDataBase
 
     public List<SkillInfoPlayFab> skillInfosPlayFab;
 
-    public static SkillInfoPlayFab FindSkill(string skillName, DocumentClient client)
+    public static SkillInfoPlayFab FindSkill(string skillName)
     {
         var SkillDatabaseJsonString = SkillDatabaseJson.SkillDataJson;
         SkillInfoPlayFabList SkillDatabase = JsonConvert.DeserializeObject<SkillInfoPlayFabList>(SkillDatabaseJsonString);
@@ -102,19 +102,6 @@ public class SkillsDataBase
             {
                 return skill;
             }
-        }
-
-        if(client != null)
-        {
-            //Declare Variable For Cosmos Usage
-            var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
-            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "Skilldata");
-
-            SkillInfoPlayFab usedData = client.CreateDocumentQuery<SkillInfoPlayFab>(collectionUri, $"SELECT * FROM db WHERE db.skillName = '{skillName}'",option).AsEnumerable().FirstOrDefault();
-            
-            //If usedData exists, return value
-            if(usedData != null)
-                return usedData;
         }
     
         //else return null

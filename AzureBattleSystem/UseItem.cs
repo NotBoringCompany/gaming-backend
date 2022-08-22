@@ -132,7 +132,7 @@ public static class UseItem
     }
 
     //Add Status Effect
-    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null, bool DoNotApplyPassive = false, DocumentClient client = null)
+    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null, bool DoNotApplyPassive = false)
     {
         if(log != null)
             log.LogInformation($"First Step! Code A");
@@ -194,7 +194,7 @@ public static class UseItem
                     log.LogInformation($"5th Loop Step! Code F: Modify Status Effect Value!");
 
                 //Check if the Status Effect is Stackable
-                ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster, client);
+                ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster);
             }
            
             //Check if the function does not want to Apply Passive (used to avoid Infinite Loop Error).
@@ -213,27 +213,11 @@ public static class UseItem
     }
 
     //Find Status Effect from Database
-    public static StatusEffectIconDatabase.StatusConditionDataPlayFab FindStatusEffectFromDatabase(int StatusEffectInt, DocumentClient client = null)
+    public static StatusEffectIconDatabase.StatusConditionDataPlayFab FindStatusEffectFromDatabase(int StatusEffectInt)
     {
         //Get Status Effect Database Database
         var StatusEffectJsonString = StatusEffectDatabaseJson.StatusEffectDataJson;
         var StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(StatusEffectJsonString);
-
-        //If client exists, run Cosmos DB query
-        if(client != null){
-            //Declare Variable for Cosmos DB
-            var option = new FeedOptions() { EnableCrossPartitionQuery = true };
-            Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "StatusEffect");
-
-            StatusEffectIconDatabase.StatusConditionDataPlayFab UsedData = new StatusEffectIconDatabase.StatusConditionDataPlayFab();
-            UsedData = client.CreateDocumentQuery<StatusEffectIconDatabase.StatusConditionDataPlayFab>(collectionUri, $"SELECT * FROM db WHERE db.statusConditionName = {StatusEffectInt}", option).AsEnumerable().FirstOrDefault();
-
-            //If data found return it
-            if(UsedData != null)
-                return UsedData;
-            
-            return null;
-        }
 
         foreach (var StatusEffect in StatusEffectDatabase.statusConditionDatabasePlayFab)
         {
@@ -263,7 +247,7 @@ public static class UseItem
     }
 
     //Add New Status Effect to ThisMonster
-    public static void ModifyStatusEffectValue(NBMonProperties.StatusEffect statusEffect, int count, int stacks, NBMonProperties.StatusEffectInfo statusEffectInfo, StatusEffectList thisMonsterStatusEffect, NBMonBattleDataSave ThisMonster, DocumentClient client = null)
+    public static void ModifyStatusEffectValue(NBMonProperties.StatusEffect statusEffect, int count, int stacks, NBMonProperties.StatusEffectInfo statusEffectInfo, StatusEffectList thisMonsterStatusEffect, NBMonBattleDataSave ThisMonster)
     {
         //Declare Variables
         var StatusEffectFromDatabase = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect);
@@ -305,7 +289,7 @@ public static class UseItem
 
     
 
-    //Cloud Function Method With Cosmos DB
+    //Cloud Function Method
     [FunctionName("UseItem")]
     public static async Task<dynamic> UseItemAzure([HttpTrigger(AuthorizationLevel.Function, "get", "post",Route = null)]HttpRequest req, ILogger log)
     {
@@ -360,7 +344,7 @@ public static class UseItem
         NBMonTeamData.PlayerTeam = PlayerTeam;
         NBMonTeamData.EnemyTeam = EnemyTeam;
 
-        //Find Item using Cosmos DB query API
+        //Find Item
         UsedItem = FindItem(ConvertedInputData.ItemName);
 
         log.LogInformation($"Is Item {ConvertedInputData.ItemName} Found? {UsedItem != null}");

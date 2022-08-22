@@ -10,7 +10,7 @@ public class PassiveLogic
 
     //Logics
     //Apply the passive according to the targetting type in script
-    public static void ApplyPassive(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.TargetType targetType, NBMonBattleDataSave originMonsterPass, NBMonBattleDataSave targetMonsterPass, SkillsDataBase.SkillInfoPlayFab skill, DocumentClient client = null)
+    public static void ApplyPassive(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.TargetType targetType, NBMonBattleDataSave originMonsterPass, NBMonBattleDataSave targetMonsterPass, SkillsDataBase.SkillInfoPlayFab skill)
     {
         //Get Battle Environment Value.
         var BattleEnvironment = AttackFunction.BattleEnvironment;
@@ -19,8 +19,6 @@ public class PassiveLogic
         originMonsterMemory = originMonsterPass; //Current Used Monster
         targetMonsterMemory = targetMonsterPass; //Target Monster
 
-        //To do, get Passive Data using CosmosDB by using the new variable PassiveDatabase.PassiveInfoPlayFab
-
         //Check all the passive from the original monster
         if (targetType == PassiveDatabase.TargetType.originalMonster || targetType == PassiveDatabase.TargetType.both)
         {
@@ -28,13 +26,13 @@ public class PassiveLogic
 
             foreach (var passive in originMonsterPass.passiveList)
             {
-                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(passive, client), skill, BattleEnvironment, client);
+                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(passive), skill, BattleEnvironment);
                 //To do, change the PassiveDatabase.FindPassiveSkill(passive) into the variable you created, applies to other as well.
             }
 
             foreach (var tempPassive in originMonsterPass.temporaryPassives)
             {
-                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(tempPassive, client), skill, BattleEnvironment, client);
+                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(tempPassive), skill, BattleEnvironment);
             }
         }
 
@@ -45,18 +43,18 @@ public class PassiveLogic
 
             foreach (var passive in targetMonsterPass.passiveList)
             {
-                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(passive, client), skill, BattleEnvironment, client);
+                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(passive), skill, BattleEnvironment);
             }
 
             foreach (var tempPassive in targetMonsterPass.temporaryPassives)
             {
-                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(tempPassive, client), skill, BattleEnvironment, client);
+                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(tempPassive), skill, BattleEnvironment);
             }
         }
     }
 
     //Apply the passive, this is the logic we'd like to call!
-    public static void PassiveExecutionLogic(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.PassiveInfoPlayFab passiveInfo, SkillsDataBase.SkillInfoPlayFab skill, string BattleEnvironment, DocumentClient client)
+    public static void PassiveExecutionLogic(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.PassiveInfoPlayFab passiveInfo, SkillsDataBase.SkillInfoPlayFab skill, string BattleEnvironment)
     {
         //Only Check The Passive When The Execution Position Is Correct
         if (executionPosition == passiveInfo.executionPosition && passiveInfo != null)
@@ -78,7 +76,7 @@ public class PassiveLogic
                     foreach (var passive in passiveDetail.effect)
                     {
                         //Do the passive
-                        DoPassive(passive, skill, client);
+                        DoPassive(passive, skill);
                     }
 
                 }
@@ -264,12 +262,12 @@ public class PassiveLogic
     }
 
     //Apply the passive effect and change the monster stats based on it
-    private static void DoPassive(PassiveDatabase.EffectInfo passiveEffect, SkillsDataBase.SkillInfoPlayFab skill, DocumentClient client)
+    private static void DoPassive(PassiveDatabase.EffectInfo passiveEffect, SkillsDataBase.SkillInfoPlayFab skill)
     {
         if (passiveEffect.effectType == PassiveDatabase.EffectType.StatusEffect)
         {
             //Add the Status Effect to the Monster.
-            UseItem.ApplyStatusEffect(useMonsterMemory, passiveEffect.statusEffectInfoList, null, true, client);
+            UseItem.ApplyStatusEffect(useMonsterMemory, passiveEffect.statusEffectInfoList, null, true);
             
             //Remove the Status Effect to the Monster.
             UseItem.RemoveStatusEffect(useMonsterMemory, passiveEffect.removeStatusEffectInfoList);
@@ -291,14 +289,14 @@ public class PassiveLogic
                 if (Monsters == originMonsterMemory)
                     continue;
 
-                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList, null, true, client);
+                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList, null, true);
                 UseItem.RemoveStatusEffect(Monsters, passiveEffect.removeEnemyTeamStatusEffectInfoList);
             }
 
             //Opposing Team
             foreach(var Monsters in EnemyTeam)
             {
-                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList, null, true, client);
+                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList, null, true);
                 UseItem.RemoveStatusEffect(Monsters, passiveEffect.removeEnemyTeamStatusEffectInfoList);
             }
             

@@ -137,7 +137,7 @@ public static class AttackFunction
         log.LogInformation($"Code A: 1st Step, Get Attacker Skill Data");
 
         //Let's get Attacker Data like Skill
-        SkillsDataBase.SkillInfoPlayFab AttackerSkillData = SkillsDataBase.FindSkill(AttackerMonster.skillList[SkillSlot], null);
+        SkillsDataBase.SkillInfoPlayFab AttackerSkillData = SkillsDataBase.FindSkill(AttackerMonster.skillList[SkillSlot]);
 
         //Deduct Attacker Monster Energy
         NBMonTeamData.StatsValueChange(AttackerMonster, NBMonProperties.StatsType.Energy, -AttackerSkillData.energyRequired);
@@ -155,7 +155,7 @@ public static class AttackFunction
             log.LogInformation($"{TargetMonster.nickName}, Apply Skill");
 
             //Apply Skill
-            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, null);
+            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient);
 
             log.LogInformation($"{TargetMonster.nickName}, Apply Status Effect Immediately");
 
@@ -244,7 +244,7 @@ public static class AttackFunction
     }
 
     //Apply Skill Function
-    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient, DocumentClient client)
+    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient)
     {
         //Declare New DamageData
         DamageData ThisMonsterDamageData = new DamageData();
@@ -258,7 +258,7 @@ public static class AttackFunction
         //When skill type is damage, calculate the damage based on element modifier
         if(Skill.actionType == SkillsDataBase.ActionType.Damage)
         {
-            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData, client);
+            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData);
         }
 
         //Apply passive effect related to after action to the original monster
@@ -275,7 +275,7 @@ public static class AttackFunction
             StatsRecoveryLogic(Skill, DefenderMonster, ThisMonsterDamageData);
 
         //Apply Status Effect to Target
-        UseItem.ApplyStatusEffect(DefenderMonster, Skill.statusEffectList, null, false, client);
+        UseItem.ApplyStatusEffect(DefenderMonster, Skill.statusEffectList, null, false);
 
         //Remove Status Effect to Target
         UseItem.RemoveStatusEffect(DefenderMonster, Skill.removeStatusEffectList);
@@ -308,7 +308,7 @@ public static class AttackFunction
 
     //Damage Function
     //Calculate and do the damage to the monster
-    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData, DocumentClient client)
+    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData)
     {
         //Declare Random Variable
         Random R = new Random();
