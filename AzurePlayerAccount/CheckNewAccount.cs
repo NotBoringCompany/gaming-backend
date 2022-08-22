@@ -55,10 +55,13 @@ public static class CheckNewAccount
         {
             //Data Not Found, Create new title data for team information and inventory
             var reqInternalTitleData = await serverApi.GetTitleInternalDataAsync(new GetTitleDataRequest());
+            var reqPrimaryTitleData = await serverApi.GetTitleDataAsync(new GetTitleDataRequest());
 
             //Declare new string variable
             string TeamInformation = reqInternalTitleData.Result.Data["NewPlayerTeam"];
             string JsonStringData = reqInternalTitleData.Result.Data["NewPlayerStarterItems"];
+            string defaultQuest = reqPrimaryTitleData.Result.Data["DefaultQuest"];
+            string defaultQuestVar = reqPrimaryTitleData.Result.Data["DefaultVariable"];
             List<string> ListOfItemIDs = new List<string>();
             ListOfItemIDs = JsonConvert.DeserializeObject<List<String>>(JsonStringData)!;
 
@@ -72,7 +75,10 @@ public static class CheckNewAccount
                 {
                     PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
                     Data = new Dictionary<string, string>{
-                        {"CurrentPlayerTeam", TeamInformation}
+                        {"CurrentPlayerTeam", TeamInformation},
+                        {"PlayerQuestData", defaultQuest},
+                        {"PlayerVariableData", defaultQuestVar},
+
                     }
                 }
             );
