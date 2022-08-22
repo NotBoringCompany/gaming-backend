@@ -16,6 +16,9 @@ using System.Net.Http;
 using System.Net;
 using System.Linq;
 using Microsoft.Azure.Documents.Client;
+using MongoDB.Driver;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 
 public static class UseItem
 {
@@ -46,17 +49,41 @@ public static class UseItem
     //Find Item Method
     public static ItemsPlayFab FindItem(string ItemName)
     {
+        //==========================================================
+        //MongoDB Code
+        //==========================================================
+        //Default Setting to call MongoDB.
+        MongoDBTest.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        var client = new MongoClient(MongoDBTest.settings);
+
+        //Setting to call Database
+        var database = client.GetDatabase("myFirstDatabase");
+
+        //Let's create a filter to query single data
+        var filter = Builders<BsonDocument>.Filter.Eq("Name", ItemName);
+        //Setting for Collection
+        var collection = database.GetCollection<BsonDocument>("itemData").Find(filter).FirstOrDefault().AsEnumerable();;
+
+        ItemsPlayFab newItem = new ItemsPlayFab();
+
+        //Convert the Result into desire Class
+        newItem = BsonSerializer.Deserialize<ItemsPlayFab>(collection.ToBsonDocument());
+        return newItem;
+
+        //==========================================================
+        //Original Code
+        //==========================================================
         //Get ItemDatabase
-        InventoryItemsPlayFabLists ItemDatabase = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(ItemDatabaseJson.ItemDataJson);
-        //Looping ItemDatabase
-        foreach (var Item in ItemDatabase.ItemDataBasePlayFab)
-        {
-            if(Item.Name == ItemName)
-            {
-                return Item;
-            }
-        }
-        return null;
+        // InventoryItemsPlayFabLists ItemDatabase = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(ItemDatabaseJson.ItemDataJson);
+        // //Looping ItemDatabase
+        // foreach (var Item in ItemDatabase.ItemDataBasePlayFab)
+        // {
+        //     if(Item.Name == ItemName)
+        //     {
+        //         return Item;
+        //     }
+        // }
+        // return null;
     }
 
     public static string FindPlayFabItemID(string ItemName)

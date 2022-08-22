@@ -13,13 +13,14 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using MongoDB.Driver;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 
 ///Please download MongoDB Nuget Package.
 
 public static class MongoDBTest
 {
     //setting for the MongoDB.
-    public static MongoClientSettings settings = MongoClientSettings.FromConnectionString("mongodb+srv://AzureFunctionUser:openkolor123@cluster0.vffoq.mongodb.net/?retryWrites=true&w=majority");
+    public static MongoClientSettings settings = MongoClientSettings.FromConnectionString(Environment.GetEnvironmentVariable("MONGO_DB_CONNECTION", EnvironmentVariableTarget.Process));
 
     [FunctionName("TestMongoDB")]
     public static async Task<dynamic> TestMongoDBFunction([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
@@ -59,9 +60,53 @@ public static class MongoDBTest
         //result[0], means the first data obtained.
         if(result.Count > 0)
         {
-            foundUser = result[0];;
+            foundUser = result[0];
         }
 
         return $"All Users = {dataObtained.ToJson()}, Single Requested User = {foundUser}";
+    }
+
+    [FunctionName("ItemMongoDB")]
+    public static dynamic ItemMongoDB([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
+        //Default Setting to call MongoDB.
+        settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        var client = new MongoClient(settings);
+
+        //Setting to call Database
+        var database = client.GetDatabase("myFirstDatabase");
+
+        //Let's create a filter to query single data
+        var filter = Builders<BsonDocument>.Filter.Eq("Name", "Small Healing Potion");
+        //Setting for Collection
+        var collection = database.GetCollection<BsonDocument>("itemData").Find(filter).FirstOrDefault().AsEnumerable();;
+
+        ItemsPlayFab newItem = new ItemsPlayFab();
+
+        //Convert the Result into desire Class
+        newItem = BsonSerializer.Deserialize<ItemsPlayFab>(collection.ToBsonDocument());
+
+        return JsonConvert.SerializeObject(newItem);
+    }
+
+    [FunctionName("PassiveMongoDB")]
+    public static dynamic PassiveMongoDB([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
+        //Default Setting to call MongoDB.
+        settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        var client = new MongoClient(settings);
+
+        //Setting to call Database
+        var database = client.GetDatabase("myFirstDatabase");
+
+        //Let's create a filter to query single data
+        var filter = Builders<BsonDocument>.Filter.Eq("name", "Overexertion");
+        //Setting for Collection
+        var collection = database.GetCollection<BsonDocument>("passiveData").Find(filter).FirstOrDefault().AsEnumerable();;
+
+        PassiveDatabase.PassiveInfoPlayFab newData = new PassiveDatabase.PassiveInfoPlayFab();
+
+        //Convert the Result into desire Class
+        newData = BsonSerializer.Deserialize<PassiveDatabase.PassiveInfoPlayFab>(collection.ToBsonDocument());
+
+        return JsonConvert.SerializeObject(newData);
     }
 }

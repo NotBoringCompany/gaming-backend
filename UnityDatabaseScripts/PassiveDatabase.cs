@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Azure.Documents.Client;
+using MongoDB.Bson;
 using Newtonsoft.Json;
 
 public class PassiveDatabase
@@ -15,6 +16,7 @@ public class PassiveDatabase
     [System.Serializable]
     public class PassiveInfoPlayFab
     {
+        public ObjectId _id { get; set; }
         public string name;
         public string description;
         public ExecutionPosition executionPosition;

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using MongoDB.Bson;
 
 public enum ItemCategory
 {
@@ -42,6 +43,7 @@ public enum ArtifactTier
 [System.Serializable]
 public class ItemsPlayFab
 {
+    public ObjectId _id { get; set; }
     public string Name;
     public ItemCategory Type;
     public string Information;
@@ -60,6 +62,7 @@ public class ItemsPlayFab
     public ArtifactType ArtifactType;
     public string ArtifactEffect;
 }
+
 public class InventoryItemsPlayFabLists
 {
     public List<ItemsPlayFab> ItemDataBasePlayFab;
