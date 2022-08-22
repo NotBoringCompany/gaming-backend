@@ -53,37 +53,37 @@ public static class UseItem
         //MongoDB Code
         //==========================================================
         //Default Setting to call MongoDB.
-        MongoDBTest.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-        var client = new MongoClient(MongoDBTest.settings);
+        // MongoDBTest.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        // var client = new MongoClient(MongoDBTest.settings);
 
-        //Setting to call Database
-        var database = client.GetDatabase("myFirstDatabase");
+        // //Setting to call Database
+        // var database = client.GetDatabase("myFirstDatabase");
 
-        //Let's create a filter to query single data
-        var filter = Builders<BsonDocument>.Filter.Eq("Name", ItemName);
-        //Setting for Collection
-        var collection = database.GetCollection<BsonDocument>("itemData").Find(filter).FirstOrDefault().AsEnumerable();;
+        // //Let's create a filter to query single data
+        // var filter = Builders<BsonDocument>.Filter.Eq("Name", ItemName);
+        // //Setting for Collection
+        // var collection = database.GetCollection<BsonDocument>("itemData").Find(filter).FirstOrDefault().AsEnumerable();;
 
-        ItemsPlayFab newItem = new ItemsPlayFab();
+        // ItemsPlayFab newItem = new ItemsPlayFab();
 
-        //Convert the Result into desire Class
-        newItem = BsonSerializer.Deserialize<ItemsPlayFab>(collection.ToBsonDocument());
-        return newItem;
+        // //Convert the Result into desire Class
+        // newItem = BsonSerializer.Deserialize<ItemsPlayFab>(collection.ToBsonDocument());
+        // return newItem;
 
         //==========================================================
         //Original Code
         //==========================================================
         //Get ItemDatabase
-        // InventoryItemsPlayFabLists ItemDatabase = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(ItemDatabaseJson.ItemDataJson);
-        // //Looping ItemDatabase
-        // foreach (var Item in ItemDatabase.ItemDataBasePlayFab)
-        // {
-        //     if(Item.Name == ItemName)
-        //     {
-        //         return Item;
-        //     }
-        // }
-        // return null;
+        InventoryItemsPlayFabLists ItemDatabase = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(ItemDatabaseJson.ItemDataJson);
+        //Looping ItemDatabase
+        foreach (var Item in ItemDatabase.ItemDataBasePlayFab)
+        {
+            if(Item.Name == ItemName)
+            {
+                return Item;
+            }
+        }
+        return null;
     }
 
     public static string FindPlayFabItemID(string ItemName)
@@ -422,128 +422,4 @@ public static class UseItem
             return "Item Data Not Found!";
         }
     }
-
-    //Cloud Function Method With Cosmos DB
-    /*
-    [FunctionName("UseItemCosmos")]
-    public static async Task<dynamic> UseItemAzureCosmos([HttpTrigger(AuthorizationLevel.Function, "get", "post",Route = null)]HttpRequest req,
-    [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log)
-    {
-        //Setup serverApi (Server API to PlayFab)
-        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
-        dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
-
-        //Request Team Information (Player and Enemy)
-        var requestTeamInformation = await serverApi.GetUserDataAsync(
-            new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "BattleEnvironment"}
-            }
-        );
-        
-        //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
-        List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
-        List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
-        NBMonBattleDataSave ThisMonster = new NBMonBattleDataSave();
-        UseItemDataInput ConvertedInputData = new UseItemDataInput();
-        ItemsPlayFab UsedItem = new ItemsPlayFab();
-        dynamic UseItemInputValue = null;
-        bool NonCombat = new bool();
-
-        //Declare Variable For Cosmos Usage
-        var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
-        Uri collectionUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "ItemsData");
-
-        //Check args["UseItemInput"] if it's null or not
-        if(args["UseItemInput"] != null)
-        {
-            //Let's extract the argument value to SwitchInputValue variable.
-            UseItemInputValue = args["UseItemInput"];
-
-            //Change from Dynamic to String
-            string UseItemInputValueString = UseItemInputValue;
-
-            //Convert that argument into Input variable.
-            ConvertedInputData = JsonConvert.DeserializeObject<UseItemDataInput>(UseItemInputValueString);
-        }
-
-        //Check it UseItem is called on Non Combat.
-        if(args["NonCombat"] != null)
-            NonCombat = true;
-        else
-            NonCombat = false;
-
-        //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
-        PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
-        EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
-        
-        //Insert Battle Environment Value into Static Variable from Attack Function.
-        AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
-
-        //Send Data to Static Team Data
-        NBMonTeamData.PlayerTeam = PlayerTeam;
-        NBMonTeamData.EnemyTeam = EnemyTeam;
-
-        //Find Item using Cosmos DB query API
-        UsedItem = client.CreateDocumentQuery<ItemsPlayFab>(collectionUri, $"SELECT * FROM db WHERE db.Name = '{ConvertedInputData.ItemName}'",option).AsEnumerable().FirstOrDefault();
-
-        log.LogInformation($"Is Item {ConvertedInputData.ItemName} Found? {UsedItem != null}");
-
-        //When UsedItem is not Null, Let's recover their stats.
-        if(UsedItem != null)
-        {
-            //Find This Monster
-            ThisMonster = FindMonster(ConvertedInputData.MonsterUniqueID, PlayerTeam);
-
-            //Setup HP's Tooltip
-            int TotalHPRecovery = UsedItem.HPRecovery + (int)Math.Floor((float)UsedItem.HPRecovery_Percentage/100f * (float)ThisMonster.maxHp);
-            int TotalEnergyRecovery = UsedItem.EnergyRecover + (int)Math.Floor((float)UsedItem.EnergyRecover_Percentage/100f * (float)ThisMonster.energy);
-
-            log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} found!");
-
-            //If This Monster is Not NULL
-            if(ThisMonster != null)
-            {
-                //Recover HP
-                ThisMonster.hp += TotalHPRecovery;
-                if(ThisMonster.hp > ThisMonster.maxHp)
-                    ThisMonster.hp = ThisMonster.maxHp;
-
-                log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} HP Recovered!");
-
-                //Energy Recovery
-                ThisMonster.energy += TotalEnergyRecovery;
-                if(ThisMonster.energy > ThisMonster.maxEnergy)
-                    ThisMonster.energy = ThisMonster.maxEnergy;
-
-                log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Energy Recovered!");
-
-                if(!NonCombat) //Apply Status Effect is only called during Combat.
-                {
-                    //Add Status Effect
-                    ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects, log, false, client);
-                }
-
-                //Remove Status Effect
-                RemoveStatusEffect(ThisMonster, UsedItem.RemovesStatusEffects, log);
-
-                //return JsonConvert.SerializeObject(PlayerTeam);
-                var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
-                        PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, 
-                        Data = new Dictionary<string, string>{ {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)}
-                    }
-                });
-
-                return "Item Usage Success";
-            }
-            else
-            {
-                return "Monster Not Found!";
-            }
-        }
-        else
-        {
-            return "Item Data Not Found!";
-        }
-    }*/
 }

@@ -38,8 +38,7 @@ public static class CapturedMonster{
 
     //Azure Function
     [FunctionName("CapturedWildMonster")]
-    public static async Task<dynamic> CapturedWildMonster([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, 
-    [CosmosDB(ConnectionStringSetting = "CosmosDBConnection")] DocumentClient client, ILogger log){
+    public static async Task<dynamic> CapturedWildMonster([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
         //Convert JsonString into a Class
         RandomBattleDatabase.GetData();
 
@@ -83,7 +82,7 @@ public static class CapturedMonster{
         }
 
         //Generate Wild NBMon Status and Add into Stella PC or Player's Current Equipped Team depending on situation (Player NBMon Slot).
-        CapturedWildNBMon(TeamInformation, StellaPC, DataID, ClientData, client, playerETHAdress);
+        CapturedWildNBMon(TeamInformation, StellaPC, DataID, ClientData, playerETHAdress);
         var updateStellaPC = await serverApi.UpdateUserDataAsync(
             new UpdateUserDataRequest{
                 PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
@@ -100,13 +99,8 @@ public static class CapturedMonster{
         return JsonString;
     }
 
-    public static void CapturedWildNBMon(List<NBMonBattleDataSave> TeamInformation, List<NBMonBattleDataSave> StellaPC, int DataID, DataToClient ClientData, DocumentClient client, string playerETHAdress)
+    public static void CapturedWildNBMon(List<NBMonBattleDataSave> TeamInformation, List<NBMonBattleDataSave> StellaPC, int DataID, DataToClient ClientData, string playerETHAdress)
     {
-        //Declare Variable For Cosmos Usage
-        var option = new FeedOptions(){ EnableCrossPartitionQuery = true };
-        Uri wildUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "WildBattle");
-        Uri monsterUri = UriFactory.CreateDocumentCollectionUri("RealmDb", "NBMonData");
-
         NBMonBattleDatabase UsedData = RandomBattleDatabase.RandomBattleData[DataID];
 
         foreach(var MonsterDataFromRandomBattle in UsedData.MonsterDatas)
@@ -127,11 +121,6 @@ public static class CapturedMonster{
 
             //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
             NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = NBMonDatabase.FindMonster(monsterData.monsterId);
-            
-            /*
-            NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = client.CreateDocumentQuery<NBMonDatabase.MonsterInfoPlayFab>(monsterUri, 
-            $"SELECT * FROM db WHERE db.monsterName = '{monsterData.monsterId}'", option).AsEnumerable().FirstOrDefault();
-            */
 
             //Let's Generate This Monster's Level
             NBMonStatsCalculation.GenerateRandomLevel(monsterData, UsedData.LevelRange);
