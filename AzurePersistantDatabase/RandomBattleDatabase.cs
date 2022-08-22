@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 public class NBMonBattleDatabase
 {
     public ObjectId _id { get; set; }
-    public int id;
+    public int dataId;
     //Monster Level Range
     public int LevelRange;
     //Information of The Monster

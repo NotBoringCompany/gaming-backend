@@ -7,11 +7,11 @@ using Newtonsoft.Json;
 public class FixedNBMonBattleDatabase
 {
     public ObjectId _id { get; set; }
-    public int id;
     //Owner Name Information
     public string OwnerName;
     //Monster Team Information
     public List<NBMonBattleDataSave> MonsterTeam;
+    public int dataId;
 }
 
 public class FixedBattleDatabase

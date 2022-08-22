@@ -101,20 +101,22 @@ public static class MongoDBTest
         MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
 
         //Let's create a filter to query single data
-        var filter = Builders<BsonDocument>.Filter.Eq("id", 0);
+        var filter = Builders<BsonDocument>.Filter.Eq("dataId", 2);
         //Setting for Collection
-        var collection = MongoHelper.db.GetCollection<BsonDocument>("wildData").Find(filter).FirstOrDefault().AsEnumerable();
+        var collection = MongoHelper.db.GetCollection<BsonDocument>("bossData").Find(filter).FirstOrDefault().AsEnumerable();
 
-        NBMonBattleDatabase newData = new NBMonBattleDatabase();
+        //Declare Variable
+        FixedNBMonBattleDatabase newData = new FixedNBMonBattleDatabase();
 
         //Convert the Result into desire Class
-        newData = BsonSerializer.Deserialize<NBMonBattleDatabase>(collection.ToBsonDocument());
+        newData = BsonSerializer.Deserialize<FixedNBMonBattleDatabase>(collection.ToBsonDocument());
 
         return JsonConvert.SerializeObject(newData);
     }
 }
 
-public static class MongoHelper{
+public static class MongoHelper
+{    
     public static MongoClientSettings settings = MongoClientSettings.FromConnectionString(Environment.GetEnvironmentVariable("MONGO_DB_CONNECTION", EnvironmentVariableTarget.Process)); 
     public static MongoClient client = new MongoClient(settings);
     public static IMongoDatabase db = client.GetDatabase("myFirstDatabase");
