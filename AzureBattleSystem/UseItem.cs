@@ -273,7 +273,8 @@ public static class UseItem
         bool Stackable = StatusEffectFromDatabase.stackable;
 
         //Add Duration to the Status Effect (up to it's original value)
-        thisMonsterStatusEffect.counter = count;
+        if(thisMonsterStatusEffect.counter < count)
+            thisMonsterStatusEffect.counter = count;
 
         //Check if the Status Effect can Stack
         if(Stackable)
