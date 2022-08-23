@@ -20,6 +20,7 @@ using System.Net.Http.Headers;
 using System.Drawing;
 using Microsoft.Azure.Documents.Client;
 using System.Linq;
+using MongoDB.Bson;
 
 public class SkillsDataBase
 {
@@ -54,6 +55,7 @@ public class SkillsDataBase
     [System.Serializable]
     public class SkillInfoPlayFab
     {
+        public ObjectId _id { get; set; }
         public string skillName;
         public string skillDescription;
 

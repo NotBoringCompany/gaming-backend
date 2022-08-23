@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using MongoDB.Bson;
 using Newtonsoft.Json;
 
 public class NBMonDatabase
@@ -43,6 +44,7 @@ public class NBMonDatabase
     [System.Serializable]
     public class MonsterInfoPlayFab
     {
+        public ObjectId _id { get; set; }
         public string monsterName;
         public string monsterDescription;
         public float baseEXP;
