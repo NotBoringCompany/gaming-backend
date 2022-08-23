@@ -36,7 +36,7 @@ public class RandomBattleDatabase
         //Let's create a filter to query single data
         var filter = Builders<BsonDocument>.Filter.Eq("dataId", dataId);
         //Setting for Collection
-        var collection = MongoHelper.db.GetCollection<BsonDocument>("monsterData").Find(filter).FirstOrDefault().AsEnumerable();
+        var collection = MongoHelper.db.GetCollection<BsonDocument>("wildData").Find(filter).FirstOrDefault().AsEnumerable();
         var wildBattleData = new NBMonBattleDatabase();
 
         //Convert the Result into desire Class
