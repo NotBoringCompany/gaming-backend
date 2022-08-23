@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Azure.Documents.Client;
+using MongoDB.Bson;
 using Newtonsoft.Json;
 
 public class StatusEffectIconDatabase
@@ -22,9 +23,11 @@ public class StatusEffectIconDatabase
     [System.Serializable]
     public class StatusConditionDataPlayFab
     {
+        public ObjectId _id { get; set; }
         public NBMonProperties.StatusEffect statusConditionName;
         public StatusEffectCategory statusEffectCategory;
         public string description;
+        public object icon;
         public bool spawnCancelIcon;
         public bool durationStack = false;
         public bool stackable = false;

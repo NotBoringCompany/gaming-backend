@@ -21,6 +21,8 @@ using System.Drawing;
 using Microsoft.Azure.Documents.Client;
 using System.Linq;
 using MongoDB.Bson;
+using MongoDB.Driver;
+using MongoDB.Bson.Serialization;
 
 public class SkillsDataBase
 {
@@ -95,19 +97,36 @@ public class SkillsDataBase
 
     public static SkillInfoPlayFab FindSkill(string skillName)
     {
-        var SkillDatabaseJsonString = SkillDatabaseJson.SkillDataJson;
-        SkillInfoPlayFabList SkillDatabase = JsonConvert.DeserializeObject<SkillInfoPlayFabList>(SkillDatabaseJsonString);
+        //============================================================
+        // COSMOS DB Logic
+        //============================================================
+        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        //Let's create a filter to query single data
+        var filter = Builders<BsonDocument>.Filter.Eq("skillName", skillName);
+        //Setting for Collection
+        var collection = MongoHelper.db.GetCollection<BsonDocument>("skillData").Find(filter).FirstOrDefault().AsEnumerable();
+        var newData = new SkillInfoPlayFab();
 
-        foreach (var skill in SkillDatabase.skillInfosPlayFab)
-        {
-            if(skillName == skill.skillName)
-            {
-                return skill;
-            }
-        }
+        //Convert the Result into desire Class
+        newData = BsonSerializer.Deserialize<SkillInfoPlayFab>(collection.ToBsonDocument());
+        return newData;
+
+        //============================================================
+        // ORIGINAL Logic
+        //============================================================
+        // var SkillDatabaseJsonString = SkillDatabaseJson.SkillDataJson;
+        // SkillInfoPlayFabList SkillDatabase = JsonConvert.DeserializeObject<SkillInfoPlayFabList>(SkillDatabaseJsonString);
+
+        // foreach (var skill in SkillDatabase.skillInfosPlayFab)
+        // {
+        //     if(skillName == skill.skillName)
+        //     {
+        //         return skill;
+        //     }
+        // }
     
-        //else return null
-        return null;
+        // //else return null
+        // return null;
     }
 
     public class SkillInfoPlayFabList
