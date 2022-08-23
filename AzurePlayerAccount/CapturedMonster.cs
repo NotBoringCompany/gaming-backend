@@ -38,9 +38,8 @@ public static class CapturedMonster{
 
     //Azure Function
     [FunctionName("CapturedWildMonster")]
-    public static async Task<dynamic> CapturedWildMonster([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
-        //Convert JsonString into a Class
-        RandomBattleDatabase.GetData();
+    public static async Task<dynamic> CapturedWildMonster([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+    {
 
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
@@ -99,9 +98,9 @@ public static class CapturedMonster{
         return JsonString;
     }
 
-    public static void CapturedWildNBMon(List<NBMonBattleDataSave> TeamInformation, List<NBMonBattleDataSave> StellaPC, int DataID, DataToClient ClientData, string playerETHAdress)
+    public static void CapturedWildNBMon(List<NBMonBattleDataSave> teamInformation, List<NBMonBattleDataSave> stellaPC, int dataId, DataToClient clientData, string playerETHAdress)
     {
-        NBMonBattleDatabase UsedData = RandomBattleDatabase.RandomBattleData[DataID];
+        NBMonBattleDatabase UsedData = RandomBattleDatabase.GetWildBattleData(dataId);
 
         foreach(var MonsterDataFromRandomBattle in UsedData.MonsterDatas)
         {
@@ -147,13 +146,13 @@ public static class CapturedMonster{
             monsterData.setSkillByHPBoundaries = new List<NBMonBattleDataSave.SkillByHP>();
 
             //Once Done Processing This Monster Data, Add This Monster Into Team Information if Slot is less than 4 or Stella PC
-            if(TeamInformation.Count < 4){
-                TeamInformation.Add(monsterData);
+            if(teamInformation.Count < 4){
+                teamInformation.Add(monsterData);
             }
             else{
-                StellaPC.Add(monsterData);
+                stellaPC.Add(monsterData);
             }
-            ClientData.WildMonsterData = monsterData;
+            clientData.WildMonsterData = monsterData;
 
             //Break The Function to Prevent Looping
             break;

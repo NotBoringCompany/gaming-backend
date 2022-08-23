@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 
 public class NBMonBattleDatabase
@@ -24,13 +27,21 @@ public class NBMonData
 
 public class RandomBattleDatabase
 {   
-    //Database Variable
-    public static List<NBMonBattleDatabase> RandomBattleData;
-
-    //A static function to Convert JsonString into a Class
-    public static void GetData()
+    public static NBMonBattleDatabase GetWildBattleData(int dataId)
     {
-        RandomBattleData = JsonConvert.DeserializeObject<List<NBMonBattleDatabase>>(RandomBattleDatabaseJsonString);
+        //============================================================
+        // MONGODB Logic
+        //============================================================
+        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        //Let's create a filter to query single data
+        var filter = Builders<BsonDocument>.Filter.Eq("dataId", dataId);
+        //Setting for Collection
+        var collection = MongoHelper.db.GetCollection<BsonDocument>("monsterData").Find(filter).FirstOrDefault().AsEnumerable();
+        var wildBattleData = new NBMonBattleDatabase();
+
+        //Convert the Result into desire Class
+        wildBattleData = BsonSerializer.Deserialize<NBMonBattleDatabase>(collection.ToBsonDocument());
+        return wildBattleData;
     }
 
     //Database JsonString

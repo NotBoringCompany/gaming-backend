@@ -41,10 +41,6 @@ public static class GenerateEnemyTeam
     public static async Task<dynamic> GenerateEnemyTeamData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, 
     ILogger log)
     {   
-        //Convert JsonString into a Class
-        RandomBattleDatabase.GetData();
-        FixedBattleDatabase.GetData();
-
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
@@ -91,7 +87,7 @@ public static class GenerateEnemyTeam
     //Generate Wild NBMon
     public static void GenerateWildNBMon(List<NBMonBattleDataSave> enemyTeam, int dataId)
     {
-        NBMonBattleDatabase usedData = RandomBattleDatabase.RandomBattleData[dataId];
+        NBMonBattleDatabase usedData = RandomBattleDatabase.GetWildBattleData(dataId);;
 
         foreach(var randomMonsterData in usedData.MonsterDatas)
         {
@@ -144,9 +140,9 @@ public static class GenerateEnemyTeam
     }
 
     //Generate NPC Team
-    public static void GenerateNPCTeam(List<NBMonBattleDataSave> enemyTeam, int dataID)
+    public static void GenerateNPCTeam(List<NBMonBattleDataSave> enemyTeam, int dataId)
     {
-        FixedNBMonBattleDatabase usedData = FixedBattleDatabase.NPCBattleData[dataID];
+        FixedNBMonBattleDatabase usedData = FixedBattleDatabase.GetBattleData("npcData", dataId);
        
         foreach(var monster in usedData.MonsterTeam)
         {
@@ -165,7 +161,7 @@ public static class GenerateEnemyTeam
     //Generate Boss Team
     public static void GenerateBossTeam(List<NBMonBattleDataSave> enemyTeam, int dataId)
     {   
-        FixedNBMonBattleDatabase usedData = FixedBattleDatabase.BossBattleData[dataId];
+        FixedNBMonBattleDatabase usedData = FixedBattleDatabase.GetBattleData("bossData", dataId);
 
         foreach(var monster in usedData.MonsterTeam)
         {

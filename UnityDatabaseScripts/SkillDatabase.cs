@@ -98,7 +98,7 @@ public class SkillsDataBase
     public static SkillInfoPlayFab FindSkill(string skillName)
     {
         //============================================================
-        // COSMOS DB Logic
+        // MONGODB Logic
         //============================================================
         MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
         //Let's create a filter to query single data

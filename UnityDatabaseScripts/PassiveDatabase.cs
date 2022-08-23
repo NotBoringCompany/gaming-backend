@@ -179,7 +179,7 @@ public class PassiveDatabase
     public static PassiveInfoPlayFab FindPassiveSkill(string passiveName)
     {
         //============================================================
-        // COSMOS DB Logic
+        // MONGODB Logic
         //============================================================
         MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
         //Let's create a filter to query single data

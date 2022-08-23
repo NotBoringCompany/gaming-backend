@@ -96,9 +96,11 @@ public static class InitialTeamSetup
             Monster.temporaryPassives.Clear();
         }
 
-        //Purge NBMon Level Up Bool
+        //Setup Enemy Team HP and Energy back to Full Health
         foreach(var Monster in EnemyTeam)
         {
+            Monster.hp = Monster.maxHp;
+            Monster.energy = Monster.maxEnergy;
             Monster.NBMonLevelUp = false;
             Monster.fainted = false;
             Monster.statusEffectList.Clear();

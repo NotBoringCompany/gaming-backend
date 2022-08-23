@@ -375,7 +375,7 @@ public static class UseItem
 
             //Setup HP's Tooltip
             int TotalHPRecovery = UsedItem.HPRecovery + (int)Math.Floor((float)UsedItem.HPRecovery_Percentage/100f * (float)ThisMonster.maxHp);
-            int TotalEnergyRecovery = UsedItem.EnergyRecover + (int)Math.Floor((float)UsedItem.EnergyRecover_Percentage/100f * (float)ThisMonster.energy);
+            int TotalEnergyRecovery = UsedItem.EnergyRecover + (int)Math.Floor((float)UsedItem.EnergyRecover_Percentage/100f * (float)ThisMonster.maxEnergy);
 
             log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} found!");
 

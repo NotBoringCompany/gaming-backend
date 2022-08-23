@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 
 [System.Serializable]
@@ -18,6 +21,24 @@ public class FixedBattleDatabase
 {
     public static List<FixedNBMonBattleDatabase> NPCBattleData;
     public static List<FixedNBMonBattleDatabase> BossBattleData;
+
+    public static FixedNBMonBattleDatabase GetBattleData(string battleData, int dataId)
+    {
+        //============================================================
+        // MONGODB Logic
+        // battleData can be npcData or bossData
+        //============================================================
+        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        //Let's create a filter to query single data
+        var filter = Builders<BsonDocument>.Filter.Eq("dataId", dataId);
+        //Setting for Collection
+        var collection = MongoHelper.db.GetCollection<BsonDocument>(battleData).Find(filter).FirstOrDefault().AsEnumerable();
+        var wildBattleData = new FixedNBMonBattleDatabase();
+
+        //Convert the Result into desire Class
+        wildBattleData = BsonSerializer.Deserialize<FixedNBMonBattleDatabase>(collection.ToBsonDocument());
+        return wildBattleData;
+    }
 
     //A static function to Convert JsonString into a Class
     public static void GetData()

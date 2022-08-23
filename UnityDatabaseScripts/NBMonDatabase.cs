@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 
 public class NBMonDatabase
@@ -114,23 +117,40 @@ public class NBMonDatabase
     //Returns a way to find the NBMons From The Database
     public static MonsterInfoPlayFab FindMonster(string monsterName)
     {
-        MonstersPlayFabList TempData = new MonstersPlayFabList();
+        //============================================================
+        // MONGODB Logic
+        //============================================================
+        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        //Let's create a filter to query single data
+        var filter = Builders<BsonDocument>.Filter.Eq("monsterName", monsterName);
+        //Setting for Collection
+        var collection = MongoHelper.db.GetCollection<BsonDocument>("monsterData").Find(filter).FirstOrDefault().AsEnumerable();
+        var monsterData = new MonsterInfoPlayFab();
 
-        //Convertion from Json to Class
-        var MonsterJsonData = NBMonDatabaseJson.MonsterDatabaseJson;
-        TempData = JsonConvert.DeserializeObject<MonstersPlayFabList>(MonsterJsonData);
+        //Convert the Result into desire Class
+        monsterData = BsonSerializer.Deserialize<MonsterInfoPlayFab>(collection.ToBsonDocument());
+        return monsterData;
 
-        //Make the original variable filled with the converted data.
-        var monsters = TempData.monstersPlayFab;
+        //============================================================
+        // ORIGINAL Logic
+        //============================================================    
+        // MonstersPlayFabList TempData = new MonstersPlayFabList();
 
-        foreach (var monster in monsters)
-        {
-            if (monsterName == monster.monsterName)
-            {
-                return monster;
-            }
-        }
+        // //Convertion from Json to Class
+        // var MonsterJsonData = NBMonDatabaseJson.MonsterDatabaseJson;
+        // TempData = JsonConvert.DeserializeObject<MonstersPlayFabList>(MonsterJsonData);
+
+        // //Make the original variable filled with the converted data.
+        // var monsters = TempData.monstersPlayFab;
+
+        // foreach (var monster in monsters)
+        // {
+        //     if (monsterName == monster.monsterName)
+        //     {
+        //         return monster;
+        //     }
+        // }
         
-        return null;
+        // return null;
     }
 }
