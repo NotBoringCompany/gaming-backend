@@ -34,7 +34,7 @@ public static class QuestReward
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
         //Get Player Read Only Data.
         var reqUserReadOnly = await serverApi.GetUserReadOnlyDataAsync(

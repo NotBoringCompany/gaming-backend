@@ -11,22 +11,7 @@ using PlayFab.ServerModels;
 using System.Collections.Generic;
 
 public static class ItemGathering{
-    //Helper Methods
-    public static PlayFabServerInstanceAPI SetupServerAPI(dynamic args, FunctionExecutionContext<dynamic> context)
-    {
-        var apiSettings = new PlayFabApiSettings
-        {
-            TitleId = context.TitleAuthenticationContext.Id,
-            DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
-        };
-
-        var authContext = new PlayFabAuthenticationContext
-        {
-            EntityId = context.TitleAuthenticationContext.EntityToken
-        };
-
-        return new PlayFabServerInstanceAPI(apiSettings, authContext);
-    }
+    
 
     //Azure Function
     [FunctionName("PickItem")]
@@ -34,7 +19,7 @@ public static class ItemGathering{
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
         //Declare Variable
         List<string> itemIdList = new List<string>();

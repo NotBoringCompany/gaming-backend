@@ -68,7 +68,7 @@ public static class MongoDBTest
         //Default Setting to call MongoDB.
         MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
 
-        List<String> items = new List<string>() {"Small Healing Potion", "Small Energy Potion", "Complete Recovery Kit", "Attack Tonic", "Defense Tonic"};
+        List<String> items = new List<string>() {"Small Healing Potion"};
 
         foreach(var item in items)
         {

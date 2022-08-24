@@ -59,22 +59,7 @@ public static class NBMonConvert
         public int specialDefenseEffort;
     }
 
-    //Helper Methods
-    public static PlayFabServerInstanceAPI SetupServerAPI(dynamic args, FunctionExecutionContext<dynamic> context)
-    {
-        var apiSettings = new PlayFabApiSettings
-        {
-            TitleId = context.TitleAuthenticationContext.Id,
-            DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
-        };
-
-        var authContext = new PlayFabAuthenticationContext
-        {
-            EntityId = context.TitleAuthenticationContext.EntityToken
-        };
-
-        return new PlayFabServerInstanceAPI(apiSettings, authContext);
-    }
+    
 
     [FunctionName("ConvertNBMonFromMoralis")]
     public static async Task<dynamic> NBMonMoralisConvertion([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
@@ -82,7 +67,7 @@ public static class NBMonConvert
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
         //Get User Title Data Information
         var reqTitleData = await serverApi.GetUserDataAsync(

@@ -42,7 +42,7 @@ public static class UpdateQuest
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
         //Get Player PlayerQuestData Data from PlayFab.
         var reqUserData = await serverApi.GetUserDataAsync(new GetUserDataRequest{

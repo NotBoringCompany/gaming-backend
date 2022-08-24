@@ -19,22 +19,7 @@ using Microsoft.Azure.Documents.Client;
 
 public static class GenerateEnemyTeam
 {
-    //Helper Methods
-    public static PlayFabServerInstanceAPI SetupServerAPI(dynamic args, FunctionExecutionContext<dynamic> context)
-    {
-        var apiSettings = new PlayFabApiSettings
-        {
-            TitleId = context.TitleAuthenticationContext.Id,
-            DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
-        };
-
-        var authContext = new PlayFabAuthenticationContext
-        {
-            EntityId = context.TitleAuthenticationContext.EntityToken
-        };
-
-        return new PlayFabServerInstanceAPI(apiSettings, authContext);
-    }
+    
 
     //Cloud Method
     [FunctionName("GenerateEnemyTeamData")]
@@ -44,7 +29,7 @@ public static class GenerateEnemyTeam
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
         List<NBMonBattleDataSave> enemyTeam = new List<NBMonBattleDataSave>();

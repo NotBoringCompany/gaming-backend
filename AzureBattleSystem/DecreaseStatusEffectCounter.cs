@@ -18,22 +18,7 @@ using System.Linq;
 
 public static class DecreaseStatusEffectCounter
 {
-    //Helper Methods
-    public static PlayFabServerInstanceAPI SetupServerAPI(dynamic args, FunctionExecutionContext<dynamic> context)
-    {
-        var apiSettings = new PlayFabApiSettings
-        {
-            TitleId = context.TitleAuthenticationContext.Id,
-            DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
-        };
-
-        var authContext = new PlayFabAuthenticationContext
-        {
-            EntityId = context.TitleAuthenticationContext.EntityToken
-        };
-
-        return new PlayFabServerInstanceAPI(apiSettings, authContext);
-    }
+    
 
     //Azure Cloud Function
     //Call this method after turn has ended.
@@ -42,7 +27,7 @@ public static class DecreaseStatusEffectCounter
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(

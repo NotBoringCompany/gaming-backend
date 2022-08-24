@@ -22,22 +22,7 @@ public static class PlayerMoralis{
         public string secretKey;
     }
 
-    //Helper Methods
-    public static PlayFabServerInstanceAPI SetupServerAPI(dynamic args, FunctionExecutionContext<dynamic> context)
-    {
-        var apiSettings = new PlayFabApiSettings
-        {
-            TitleId = context.TitleAuthenticationContext.Id,
-            DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
-        };
-
-        var authContext = new PlayFabAuthenticationContext
-        {
-            EntityId = context.TitleAuthenticationContext.EntityToken
-        };
-
-        return new PlayFabServerInstanceAPI(apiSettings, authContext);
-    }
+    
 
     public static void CopyCurrentTeamData(List<NBMonBattleDataSave> currTeam, List<NBMonBattleDataSave> stellaBC, List<NBMonConvert.NBMonMoralisData> monsterData){
         foreach(var monster in monsterData){
@@ -61,7 +46,7 @@ public static class PlayerMoralis{
         //Setup serverApi (Server API to PlayFab)
         FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
         dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
         //Request Read Only Title Data
         var reqTitleData = await serverApi.GetUserDataAsync(

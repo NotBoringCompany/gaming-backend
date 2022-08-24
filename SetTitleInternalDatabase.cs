@@ -23,21 +23,7 @@ namespace NBCompany.Setters
     public static class SetTitleInternalDatabase
     {
         //Helper Methods
-        public static PlayFabServerInstanceAPI SetupServerAPI(dynamic args, FunctionExecutionContext<dynamic> context)
-        {
-            var apiSettings = new PlayFabApiSettings
-            {
-                TitleId = context.TitleAuthenticationContext.Id,
-                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
-            };
-
-            var authContext = new PlayFabAuthenticationContext
-            {
-                EntityId = context.TitleAuthenticationContext.EntityToken
-            };
-
-            return new PlayFabServerInstanceAPI(apiSettings, authContext);
-        }
+        
 
         //Azure Cloud Function
         [FunctionName("SetSkillDatabase")]
@@ -335,7 +321,7 @@ namespace NBCompany.Setters
             //Setup serverApi (Server API to PlayFab)
             FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
             dynamic args = context.FunctionArgument;
-            PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+            PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
             string itemID = args["Data"];
             List<string> IDs = new List<string>();
@@ -511,7 +497,7 @@ namespace NBCompany.Setters
             //Setup serverApi (Server API to PlayFab)
             FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
             dynamic args = context.FunctionArgument;
-            PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+            PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
             //Get Player's Internal Title Data
             var getPlayerInternalDataRequest = await serverApi.GetUserInternalDataAsync(new GetUserDataRequest()
@@ -577,7 +563,7 @@ namespace NBCompany.Setters
             //Setup serverApi (Server API to PlayFab)
             FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
             dynamic args = context.FunctionArgument;
-            PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+            PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
             //Declare used Variables for Testing
             var MonsterIDWeWantToUse = 11; //Roggo's ID
@@ -639,7 +625,7 @@ namespace NBCompany.Setters
             //Setup serverApi (Server API to PlayFab)
             FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
             dynamic args = context.FunctionArgument;
-            PlayFabServerInstanceAPI serverApi = SetupServerAPI(args, context);
+            PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
             //Declare used Variables for Testing
             var MonsterIDWeWantToUse = 11; //Roggo's ID
