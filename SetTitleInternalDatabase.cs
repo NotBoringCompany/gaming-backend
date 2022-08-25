@@ -341,56 +341,59 @@ namespace NBCompany.Setters
         public static async Task<dynamic> HerokuAddGenesisNBMons([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
         {
             try{
-            FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+                FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
 
-            dynamic args = context.FunctionArgument;
+                dynamic args = context.FunctionArgument;
 
-            var apiSettings = new PlayFabApiSettings
-            {
-                TitleId = context.TitleAuthenticationContext.Id,
-                DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
-            };
+                var apiSettings = new PlayFabApiSettings
+                {
+                    TitleId = context.TitleAuthenticationContext.Id,
+                    DeveloperSecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY", EnvironmentVariableTarget.Process)
+                };
 
-            var authContext = new PlayFabAuthenticationContext
-            {
-                EntityId = context.TitleAuthenticationContext.EntityToken
-            };
+                var authContext = new PlayFabAuthenticationContext
+                {
+                    EntityId = context.TitleAuthenticationContext.EntityToken
+                };
 
-            var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
+                var serverApi = new PlayFabServerInstanceAPI(apiSettings, authContext);
 
-            var getUserReadOnlyDataRequest = await serverApi.GetUserInternalDataAsync(new GetUserDataRequest()
-            { PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId });
+                var getUserReadOnlyDataRequest = await serverApi.GetUserInternalDataAsync(new GetUserDataRequest()
+                { PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId });
 
-            string address = getUserReadOnlyDataRequest.Result.Data["ethAddress"].Value.ToString();
+                //get ETH Address
+                string address = getUserReadOnlyDataRequest.Result.Data["ethAddress"].Value;
 
-            string GenesisNBMons = "";
+                string GenesisNBMons = "";
 
-            // Original Function //HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://api-realmhunter.herokuapp.com/genesisNBMon/getOwnerGenesisNBMons/" + address);
-            
-            HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://api-realmhunter.herokuapp.com/genesisNBMon/getOwnerGenesisNBMonsAlt/" + address);
-            requestH.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+                // Original Function //HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://api-realmhunter.herokuapp.com/genesisNBMon/getOwnerGenesisNBMons/" + address);
+                
+                HttpWebRequest requestH = (HttpWebRequest)WebRequest.Create("https://api-realmhunter.herokuapp.com/genesisNBMon/getOwnerGenesisNBMonsAlt/" + address);
+                requestH.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
-            using (HttpWebResponse response = (HttpWebResponse)requestH.GetResponse())
-            using (Stream stream = response.GetResponseStream())
-            using (StreamReader reader = new StreamReader(stream))
-            {
-                GenesisNBMons = reader.ReadToEnd();
-            }
+                using (HttpWebResponse response = (HttpWebResponse)requestH.GetResponse())
+                using (Stream stream = response.GetResponseStream())
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    GenesisNBMons = reader.ReadToEnd();
+                }
 
-            var request = await serverApi.UpdateUserReadOnlyDataAsync(new UpdateUserDataRequest
-            {
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-                Data = new Dictionary<string, string>(){
-                    {"BlockChainPC", GenesisNBMons}
-                    },
-                Permission = UserDataPermission.Private
-            });
+                var request = await serverApi.UpdateUserReadOnlyDataAsync(new UpdateUserDataRequest
+                {
+                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                    Data = new Dictionary<string, string>(){
+                        {"BlockChainPC", GenesisNBMons}
+                        },
+                    Permission = UserDataPermission.Private
+                });
 
-            return request;
+                return request;
             }
             catch(Exception e){
                 return e;
             }
+
+            
         }
 
         public class UserInfo{
@@ -483,7 +486,7 @@ namespace NBCompany.Setters
                         }
                 });
 
-                return request;
+                return ethAddress;
 
             } catch(Exception e){
                 return e;
