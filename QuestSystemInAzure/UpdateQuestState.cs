@@ -84,18 +84,24 @@ public static class UpdateQuest
 
         if(questDataChange == null)
         {
-            return "Error: Player Quest Data not found, possibly trying to insert new quest data not exist in the Database!";
+            PlayFabQuestData newQuestData = new PlayFabQuestData();
+
+            newQuestData.QuestName = questNameReq;
+            newQuestData.QuestState = questStateReq;
+            newQuestData.QuestID = playerQuestData.Count;
+
+            playerQuestData.Add(newQuestData);
         }
         else
         {
             //change the Quest State
             questDataChange.QuestState = questStateReq;
-
-            var reqUpdateUserData = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest{
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-                Data = new Dictionary<string, string>() {{"PlayerQuestData",JsonConvert.SerializeObject(playerQuestData)}}
-            });
         }
+
+        var reqUpdateUserData = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest{
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+            Data = new Dictionary<string, string>() {{"PlayerQuestData",JsonConvert.SerializeObject(playerQuestData)}}
+            });
 
         //return Quest Data to Client for UI.
         return "Quest State Update Success!";
@@ -110,5 +116,82 @@ public static class UpdateQuest
         }
 
         return null;
+    }
+
+    [FunctionName("UpdatePlayerMultiQuestData")]
+    public static async Task<dynamic> UpdatePlayerMultiQuestData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+    {            
+        //Setup serverApi (Server API to PlayFab)
+        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+        dynamic args = context.FunctionArgument;
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
+
+        //Get Player PlayerQuestData Data from PlayFab.
+        var reqUserData = await serverApi.GetUserDataAsync(new GetUserDataRequest{
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId
+        });
+
+        //Declare Variables
+        List<string> questStatesReq = new List<string>();
+        List<string> questNamesReq = new List<string>();
+        List<PlayFabQuestData> playerQuestData = new List<PlayFabQuestData>();
+
+        log.LogInformation($"{playerQuestData}");
+
+        //Let's extract questStateReq and questNameReq from Function Argument
+        if(args["QuestNames"] != null)
+        {
+            var strObj = args["QuestNames"].ToString();
+            questStatesReq = JsonConvert.DeserializeObject<List<string>>(strObj);
+        }
+        else
+            return "Error: QuestName variable argument is not inserted!";
+
+        if(args["QuestStates"] != null)
+        {
+            var strObj = args["QuestStates"].ToString();
+            questNamesReq = JsonConvert.DeserializeObject<List<string>>(strObj);
+        }
+        else
+            return "Error: QuestState variable argument is not inserted!";
+
+        //check PlayerQuestData exist or not.
+        if(reqUserData.Result.Data.ContainsKey("PlayerQuestData"))
+        {
+            playerQuestData = JsonConvert.DeserializeObject<List<PlayFabQuestData>>(reqUserData.Result.Data["PlayerQuestData"].Value);
+        }
+        else
+            return "Error: Player Quest Data not found!";
+
+        //Looping through for each.
+        for (int i = 0; i < questStatesReq.Count; i++)
+        {
+            PlayFabQuestData questDataChange = FindQuestData(playerQuestData, questStatesReq[i]);
+
+            if(questDataChange == null)
+            {
+                PlayFabQuestData newQuestData = new PlayFabQuestData();
+
+                newQuestData.QuestName = questNamesReq[i];
+                newQuestData.QuestState = questStatesReq[i];
+                newQuestData.QuestID = playerQuestData.Count;
+
+                playerQuestData.Add(newQuestData);
+            }
+            else
+            {
+                //change the Quest State
+                questDataChange.QuestState = questStatesReq[i];
+            }
+        }
+
+        //Sent Quest Data
+        var reqUpdateUserData = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest{
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+            Data = new Dictionary<string, string>() {{"PlayerQuestData",JsonConvert.SerializeObject(playerQuestData)}}
+            });
+
+        //return Quest Data to Client for UI.
+        return "Multi Quests's State Update Success!";
     }
 }
