@@ -138,7 +138,7 @@ public static class AttackFunction
             log.LogInformation($"{TargetMonster.nickName}, Apply Skill");
 
             //Apply Skill
-            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient);
+            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, log);
 
             log.LogInformation($"{TargetMonster.nickName}, Apply Status Effect Immediately");
 
@@ -227,10 +227,12 @@ public static class AttackFunction
     }
 
     //Apply Skill Function
-    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient)
+    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient, ILogger log)
     {
         //Declare New DamageData
         DamageData ThisMonsterDamageData = new DamageData();
+
+        log.LogInformation("Apply Passive Logic: Action Receiving");
 
         //Apply passive related with receiving element input before get hit!
         PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionReceiving, PassiveDatabase.TargetType.targetedMonster, AttackerMonster, DefenderMonster, Skill);
@@ -241,8 +243,12 @@ public static class AttackFunction
         //When skill type is damage, calculate the damage based on element modifier
         if(Skill.actionType == SkillsDataBase.ActionType.Damage)
         {
+            log.LogInformation("Calculate and Do Damage");
+            
             CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData);
         }
+
+        log.LogInformation("Apply Passive Logic: Action After");
 
         //Apply passive effect related to after action to the original monster
         PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionAfter, PassiveDatabase.TargetType.originalMonster, AttackerMonster, DefenderMonster, Skill);
@@ -250,18 +256,27 @@ public static class AttackFunction
         //Apply passive effect that inflict status effect from this monster to attacker monster (aka original monster), make sure the attacker is not itself and the skill's type is damage
         if (AttackerMonster != DefenderMonster && Skill.actionType == SkillsDataBase.ActionType.Damage)
         {
+            log.LogInformation("Apply Passive Logic: Inflict Status Effect");
+
             PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.InflictStatusEffect, PassiveDatabase.TargetType.originalMonster, DefenderMonster, AttackerMonster, Skill);
         }
 
         //If the skill is Healing Skill, e.g HP and Energy Recovery
         if(Skill.actionType == SkillsDataBase.ActionType.StatsRecovery)
+        {
+            log.LogInformation("Status Recovery Logic");
             StatsRecoveryLogic(Skill, DefenderMonster, ThisMonsterDamageData);
+        }
+
+        log.LogInformation("Apply Status and Remove Status Effects");
 
         //Apply Status Effect to Target
         UseItem.ApplyStatusEffect(DefenderMonster, Skill.statusEffectList, null, false);
 
         //Remove Status Effect to Target
         UseItem.RemoveStatusEffect(DefenderMonster, Skill.removeStatusEffectList);
+
+        log.LogInformation("Modify ThisMonsterDamageData");
 
         //Add ThisMonsterDamageData to DataFromAzureToClient
         dataFromAzureToClient.DamageDatas.Add(ThisMonsterDamageData);

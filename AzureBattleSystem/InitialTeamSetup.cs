@@ -77,7 +77,7 @@ public static class InitialTeamSetup
         {
             Monster.NBMonLevelUp = false;
             Monster.fainted = false;
-            Monster.statusEffectList.Clear();
+            //Monster.statusEffectList.Clear();
             Monster.temporaryPassives.Clear();
         }
 
