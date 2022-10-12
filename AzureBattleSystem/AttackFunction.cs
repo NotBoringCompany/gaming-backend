@@ -135,6 +135,9 @@ public static class AttackFunction
         //After Applying passive, let's call Apply Skill for each Target Monster
         foreach(var TargetMonster in DefenderMonsters)
         {
+            if(TargetMonster.fainted || TargetMonster.hp <= 0)
+                continue;
+
             log.LogInformation($"{TargetMonster.nickName}, Apply Skill");
 
             //Apply Skill
