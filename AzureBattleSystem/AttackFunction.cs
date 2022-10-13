@@ -618,7 +618,8 @@ public static class AttackFunction
         ThisMonsterEXPData.MonsterGetEXP = EXPEquation;
 
         //Add ThisMonsterEXPData into dataFromAzureToClient.
-        dataFromAzureToClient.EXPDatas.Add(ThisMonsterEXPData);
+        if(dataFromAzureToClient != null)
+            dataFromAzureToClient.EXPDatas.Add(ThisMonsterEXPData);
     }
 
     //Related to EXPMultiplier variable in AddToEXPList function

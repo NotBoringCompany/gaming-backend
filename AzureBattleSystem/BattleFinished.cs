@@ -18,8 +18,6 @@ using System.Linq;
 
 public static class BattleFinished
 {
-    
-
     //Win Logic
     public static void DoWinLogic(List<NBMonBattleDataSave> PlayerTeam, List<NBMonBattleDataSave> EnemyTeam, List<string> DroppedItemCredential, List<int> AllMonsterEXPMemoryStorage)
     {
@@ -80,6 +78,14 @@ public static class BattleFinished
                 AllMonsterEXPMemoryStorage.Add(0);
                 Monster.expMemoryStorage = 0;
             }
+        }
+    }
+
+    public static void GetEXPLogicIndividual(NBMonBattleDataSave playerTeam)
+    {
+        if(!playerTeam.fainted)
+        {
+            InsertEXPToMonster(playerTeam);
         }
     }
 
