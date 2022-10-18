@@ -97,36 +97,36 @@ public class SkillsDataBase
 
     public static SkillInfoPlayFab FindSkill(string skillName)
     {
-        //============================================================
-        // MONGODB Logic
-        //============================================================
-        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-        //Let's create a filter to query single data
-        var filter = Builders<BsonDocument>.Filter.Eq("skillName", skillName);
-        //Setting for Collection
-        var collection = MongoHelper.db.GetCollection<BsonDocument>("skillData").Find(filter).FirstOrDefault().AsEnumerable();
-        var newData = new SkillInfoPlayFab();
+        // //============================================================
+        // // MONGODB Logic
+        // //============================================================
+        // MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        // //Let's create a filter to query single data
+        // var filter = Builders<BsonDocument>.Filter.Eq("skillName", skillName);
+        // //Setting for Collection
+        // var collection = MongoHelper.db.GetCollection<BsonDocument>("skillData").Find(filter).FirstOrDefault().AsEnumerable();
+        // var newData = new SkillInfoPlayFab();
 
-        //Convert the Result into desire Class
-        newData = BsonSerializer.Deserialize<SkillInfoPlayFab>(collection.ToBsonDocument());
-        return newData;
+        // //Convert the Result into desire Class
+        // newData = BsonSerializer.Deserialize<SkillInfoPlayFab>(collection.ToBsonDocument());
+        // return newData;
 
         //============================================================
         // ORIGINAL Logic
         //============================================================
-        // var SkillDatabaseJsonString = SkillDatabaseJson.SkillDataJson;
-        // SkillInfoPlayFabList SkillDatabase = JsonConvert.DeserializeObject<SkillInfoPlayFabList>(SkillDatabaseJsonString);
+        var SkillDatabaseJsonString = SkillDatabaseJson.SkillDataJson;
+        SkillInfoPlayFabList SkillDatabase = JsonConvert.DeserializeObject<SkillInfoPlayFabList>(SkillDatabaseJsonString);
 
-        // foreach (var skill in SkillDatabase.skillInfosPlayFab)
-        // {
-        //     if(skillName == skill.skillName)
-        //     {
-        //         return skill;
-        //     }
-        // }
+        foreach (var skill in SkillDatabase.skillInfosPlayFab)
+        {
+            if(skillName == skill.skillName)
+            {
+                return skill;
+            }
+        }
     
-        // //else return null
-        // return null;
+        //else return null
+        return null;
     }
 
     public class SkillInfoPlayFabList

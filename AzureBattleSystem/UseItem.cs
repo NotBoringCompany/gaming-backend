@@ -200,38 +200,38 @@ public static class UseItem
     //Find Status Effect from Database
     public static StatusEffectIconDatabase.StatusConditionDataPlayFab FindStatusEffectFromDatabase(int StatusEffectInt)
     {
-        //============================================================
-        // ORIGINAL Logic
-        //============================================================
-        //Default Setting to call MongoDB.
-        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-        //Let's create a filter to query single data
-        var filter = Builders<BsonDocument>.Filter.Eq("statusConditionName", StatusEffectInt);
-        //Setting for Collection
-        var collection = MongoHelper.db.GetCollection<BsonDocument>("statusEffectData").Find(filter).FirstOrDefault().AsEnumerable();
-        var newData = new StatusEffectIconDatabase.StatusConditionDataPlayFab();
-        //Convert the Result into desire Class
-        newData = BsonSerializer.Deserialize<StatusEffectIconDatabase.StatusConditionDataPlayFab>(collection.ToBsonDocument());
+        // //============================================================
+        // // MongoDB Logic
+        // //============================================================
+        // //Default Setting to call MongoDB.
+        // MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        // //Let's create a filter to query single data
+        // var filter = Builders<BsonDocument>.Filter.Eq("statusConditionName", StatusEffectInt);
+        // //Setting for Collection
+        // var collection = MongoHelper.db.GetCollection<BsonDocument>("statusEffectData").Find(filter).FirstOrDefault().AsEnumerable();
+        // var newData = new StatusEffectIconDatabase.StatusConditionDataPlayFab();
+        // //Convert the Result into desire Class
+        // newData = BsonSerializer.Deserialize<StatusEffectIconDatabase.StatusConditionDataPlayFab>(collection.ToBsonDocument());
 
-        return newData;
+        // return newData;
 
         //============================================================
         // ORIGINAL Logic
         //============================================================
         //Get Status Effect Database Database
-        // var StatusEffectJsonString = StatusEffectDatabaseJson.StatusEffectDataJson;
-        // var StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(StatusEffectJsonString);
+        var StatusEffectJsonString = StatusEffectDatabaseJson.StatusEffectDataJson;
+        var StatusEffectDatabase = JsonConvert.DeserializeObject<StatusEffectIconDatabase.StatusConditionDatabasePlayFabList>(StatusEffectJsonString);
 
-        // foreach (var StatusEffect in StatusEffectDatabase.statusConditionDatabasePlayFab)
-        // {
-        //     if((int)StatusEffect.statusConditionName == StatusEffectInt)
-        //     {
-        //         return StatusEffect;
-        //     }
-        // }
+        foreach (var StatusEffect in StatusEffectDatabase.statusConditionDatabasePlayFab)
+        {
+            if((int)StatusEffect.statusConditionName == StatusEffectInt)
+            {
+                return StatusEffect;
+            }
+        }
 
-        // //else return null.
-        // return null;
+        //else return null.
+        return null;
     }
 
     //Add New Status Effect to ThisMonster

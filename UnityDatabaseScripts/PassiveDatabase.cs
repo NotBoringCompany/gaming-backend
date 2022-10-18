@@ -178,37 +178,37 @@ public class PassiveDatabase
     //Find Skill
     public static PassiveInfoPlayFab FindPassiveSkill(string passiveName)
     {
-        //============================================================
-        // MONGODB Logic
-        //============================================================
-        MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-        //Let's create a filter to query single data
-        var filter = Builders<BsonDocument>.Filter.Eq("name", passiveName);
-        //Setting for Collection
-        var collection = MongoHelper.db.GetCollection<BsonDocument>("passiveData").Find(filter).FirstOrDefault().AsEnumerable();
-        var newData = new PassiveInfoPlayFab();
+        // //============================================================
+        // // MONGODB Logic
+        // //============================================================
+        // MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        // //Let's create a filter to query single data
+        // var filter = Builders<BsonDocument>.Filter.Eq("name", passiveName);
+        // //Setting for Collection
+        // var collection = MongoHelper.db.GetCollection<BsonDocument>("passiveData").Find(filter).FirstOrDefault().AsEnumerable();
+        // var newData = new PassiveInfoPlayFab();
 
-        //Convert the Result into desire Class
-        newData = BsonSerializer.Deserialize<PassiveInfoPlayFab>(collection.ToBsonDocument());
-        return newData;
+        // //Convert the Result into desire Class
+        // newData = BsonSerializer.Deserialize<PassiveInfoPlayFab>(collection.ToBsonDocument());
+        // return newData;
         
         //============================================================
         // ORIGINAL Logic
         //============================================================    
-        // string PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
-        // PassiveInfosPlayFabList ConvertedPassiveDatabase = JsonConvert.DeserializeObject<PassiveInfosPlayFabList>(PassiveDatabaseJsonString);
+        string PassiveDatabaseJsonString = PassiveDatabaseJson.PassiveDataJson;
+        PassiveInfosPlayFabList ConvertedPassiveDatabase = JsonConvert.DeserializeObject<PassiveInfosPlayFabList>(PassiveDatabaseJsonString);
 
-        // //Loop to find passive 1 by 1.
-        // foreach (var passive in ConvertedPassiveDatabase.passiveInfosPlayFab)
-        // {
-        //     if (passiveName == passive.name)
-        //     {
-        //         return passive;
-        //     }
-        // }
+        //Loop to find passive 1 by 1.
+        foreach (var passive in ConvertedPassiveDatabase.passiveInfosPlayFab)
+        {
+            if (passiveName == passive.name)
+            {
+                return passive;
+            }
+        }
 
-        // //If Passive is not found, return null
-        // return null;
+        //If Passive is not found, return null
+        return null;
     }
 
 }
