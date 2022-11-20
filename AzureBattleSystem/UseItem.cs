@@ -117,37 +117,21 @@ public static class UseItem
     }
 
     //Add Status Effect
-    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null, bool DoNotApplyPassive = false)
+    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null, bool DoNotApplyPassive = false, RNGSeedClass seedClass = null)
     {
-        if(log != null)
-            log.LogInformation($"First Step! Code A");
-        
         //If there is no existing opposite status start by adding new data
         foreach (var statusEffectInfo in statusEffectInfoList)
         {
-            if(log != null)
-                log.LogInformation($"First Loop Step! Code B: {statusEffectInfo.statusEffect}");
-
             //Make RNG Chances vary between Loop
-            Random Rand = new Random();
-            var RNG = Rand.Next(0, 100);
-
-            if(log != null)
-                log.LogInformation($"Second Loop Step! Code C: RNG Value {RNG}");
+            var RNG = EvaluateOrder.ConvertSeedToRNG(seedClass);
 
             // Store variables related with the status effect
             bool statusEffectExist = FindNBMonStatusEffect(ThisMonster, statusEffectInfo) != null;
             var ThisMonsterStatusEffect = FindNBMonStatusEffect(ThisMonster, statusEffectInfo);
 
-            if(log != null)
-                log.LogInformation($"Third Loop Step! Code D: Status Effect Exist? {statusEffectExist} / Status Effect {ThisMonsterStatusEffect}");
-
             bool ElementImmunity = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect).elementImmunity;
 
             NBMonDatabase.MonsterInfoPlayFab MonsterData = NBMonDatabase.FindMonster(ThisMonster.monsterId);
-
-            if(log != null)
-                log.LogInformation($"4th Loop Step! Code E: Element Immunity {ElementImmunity} / Monster Data {MonsterData}");
 
             bool MonsterImmune = MonsterData.elements.Contains(FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect).immuneAgainstElement);
 
@@ -175,9 +159,6 @@ public static class UseItem
             }
             else if (statusEffectExist) //If the Status Effect already inside This Monster
             {
-                if(log != null)
-                    log.LogInformation($"5th Loop Step! Code F: Modify Status Effect Value!");
-
                 //Check if the Status Effect is Stackable
                 ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster);
             }
@@ -185,16 +166,10 @@ public static class UseItem
             //Check if the function does not want to Apply Passive (used to avoid Infinite Loop Error).
             if(!DoNotApplyPassive)
             {
-                if(log != null)
-                    log.LogInformation($"6th Loop Step! Code G: Calling Apply Passive");
-
                 //Apply passives that works when received status effect.
-                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null);
+                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null, seedClass);
             }
         }
-
-        if(log != null)
-            log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Add Status Effect has been Called!");
     }
 
     //Find Status Effect from Database
@@ -305,7 +280,7 @@ public static class UseItem
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "BattleEnvironment"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "BattleEnvironment", "RNGSeeds"}
             }
         );
         
@@ -315,6 +290,7 @@ public static class UseItem
         NBMonBattleDataSave ThisMonster = new NBMonBattleDataSave();
         UseItemDataInput ConvertedInputData = new UseItemDataInput();
         ItemsPlayFab UsedItem = new ItemsPlayFab();
+        RNGSeedClass seedClass = new RNGSeedClass();
         dynamic UseItemInputValue = null;
         bool NonCombat = new bool();
 
@@ -340,6 +316,7 @@ public static class UseItem
         //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+        seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
         
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
@@ -385,7 +362,7 @@ public static class UseItem
                 if(!NonCombat) //Apply Status Effect is only called during Combat.
                 {
                     //Add Status Effect
-                    ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects, log, false);
+                    ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects, log, false, seedClass);
                 }
 
                 //Remove Status Effect

@@ -38,7 +38,7 @@ public static class AttackFunction
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "BattleEnvironment"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "BattleEnvironment", "RNGSeeds"}
             }
         );
 
@@ -50,11 +50,13 @@ public static class AttackFunction
         DataFromUnity UnityData = new DataFromUnity();
         DataSendToUnity DataFromAzureToClient = new DataSendToUnity();
         List<string> Team1UniqueID_BF = new List<string>();
+        RNGSeedClass seedClass = new RNGSeedClass();
 
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
+        seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
         
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
@@ -128,7 +130,7 @@ public static class AttackFunction
         log.LogInformation($"Code B: 2nd Step, Apply Passive for Attacker");
 
         //Let's Apply Passive to Attacker Monster before Attacking (ActionBefore)
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionBefore, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, AttackerSkillData);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionBefore, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, AttackerSkillData, seedClass);
 
         log.LogInformation($"Code C: 3rd Step, Looping for each Monster Target");
 
@@ -141,7 +143,7 @@ public static class AttackFunction
             log.LogInformation($"{TargetMonster.nickName}, Apply Skill");
 
             //Apply Skill
-            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, log);
+            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, seedClass);
 
             log.LogInformation($"{TargetMonster.nickName}, Apply Status Effect Immediately");
 
@@ -230,15 +232,13 @@ public static class AttackFunction
     }
 
     //Apply Skill Function
-    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient, ILogger log)
+    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient, RNGSeedClass seedClass)
     {
         //Declare New DamageData
         DamageData ThisMonsterDamageData = new DamageData();
 
-        log.LogInformation("Apply Passive Logic: Action Receiving");
-
         //Apply passive related with receiving element input before get hit!
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionReceiving, PassiveDatabase.TargetType.targetedMonster, AttackerMonster, DefenderMonster, Skill);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionReceiving, PassiveDatabase.TargetType.targetedMonster, AttackerMonster, DefenderMonster, Skill, seedClass);
 
         //Insert Defender Monster Unique ID.
         ThisMonsterDamageData.DefenderMonsterUniqueID = DefenderMonster.uniqueId;
@@ -246,40 +246,29 @@ public static class AttackFunction
         //When skill type is damage, calculate the damage based on element modifier
         if(Skill.actionType == SkillsDataBase.ActionType.Damage)
         {
-            log.LogInformation("Calculate and Do Damage");
-            
-            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData);
+            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData, seedClass);
         }
 
-        log.LogInformation("Apply Passive Logic: Action After");
-
         //Apply passive effect related to after action to the original monster
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionAfter, PassiveDatabase.TargetType.originalMonster, AttackerMonster, DefenderMonster, Skill);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionAfter, PassiveDatabase.TargetType.originalMonster, AttackerMonster, DefenderMonster, Skill, seedClass);
 
         //Apply passive effect that inflict status effect from this monster to attacker monster (aka original monster), make sure the attacker is not itself and the skill's type is damage
         if (AttackerMonster != DefenderMonster && Skill.actionType == SkillsDataBase.ActionType.Damage)
         {
-            log.LogInformation("Apply Passive Logic: Inflict Status Effect");
-
-            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.InflictStatusEffect, PassiveDatabase.TargetType.originalMonster, DefenderMonster, AttackerMonster, Skill);
+            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.InflictStatusEffect, PassiveDatabase.TargetType.originalMonster, DefenderMonster, AttackerMonster, Skill, seedClass);
         }
 
         //If the skill is Healing Skill, e.g HP and Energy Recovery
         if(Skill.actionType == SkillsDataBase.ActionType.StatsRecovery)
         {
-            log.LogInformation("Status Recovery Logic");
             StatsRecoveryLogic(Skill, DefenderMonster, ThisMonsterDamageData);
         }
 
-        log.LogInformation("Apply Status and Remove Status Effects");
-
         //Apply Status Effect to Target
-        UseItem.ApplyStatusEffect(DefenderMonster, Skill.statusEffectList, null, false);
+        UseItem.ApplyStatusEffect(DefenderMonster, Skill.statusEffectList, null, false, seedClass);
 
         //Remove Status Effect to Target
         UseItem.RemoveStatusEffect(DefenderMonster, Skill.removeStatusEffectList);
-
-        log.LogInformation("Modify ThisMonsterDamageData");
 
         //Add ThisMonsterDamageData to DataFromAzureToClient
         dataFromAzureToClient.DamageDatas.Add(ThisMonsterDamageData);
@@ -309,22 +298,22 @@ public static class AttackFunction
 
     //Damage Function
     //Calculate and do the damage to the monster
-    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData)
+    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData, RNGSeedClass seedClass)
     {
         //Declare Random Variable
         Random R = new Random();
 
         //Apply passives and artifact passives that only works during combat to Attacker
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, null);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, null, seedClass);
         //TO DO, Apply Artifact Passive to Attacker Monster.
 
         //Apply passives and artifact passives that only works during combat to This Monster
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, DefenderMonster, null, null);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, DefenderMonster, null, null, seedClass);
         //TO DO, Apply Artifact Passive to Defender Monster.
 
         //Calculate Critical Hit RNG
         int ThisNBMonCriticalHitRate = CriticalHitStatsCalculation(AttackerMonster, skill);
-        int CriticalRNG = R.Next(0, 100);
+        int CriticalRNG = EvaluateOrder.ConvertSeedToRNG(seedClass);
         float CriticalHitMultiplier = 1f;
         int MustCritical = AttackerMonster.mustCritical;
         
@@ -332,7 +321,7 @@ public static class AttackFunction
         int ImmuneToCritical = DefenderMonster.immuneCritical;
 
         if (CriticalRNG <= ThisNBMonCriticalHitRate || MustCritical >= 1)
-            CriticalHitMultiplier = (float)R.NextDouble() * (3f-1.5f) + 1.5f;
+            CriticalHitMultiplier = (float)EvaluateOrder.CriticalRNG(seedClass) * (3f-1.5f) + 1.5f;
         else if (ImmuneToCritical >= 1)
             CriticalHitMultiplier = 1f;
 

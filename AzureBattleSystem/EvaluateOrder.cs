@@ -17,9 +17,59 @@ using System.Net;
 using System.Linq;
 using Microsoft.Azure.Documents.Client;
 
+public class RNGSeedClass
+{
+    public List<int> RNGSeeds;
+    public int currentRNGSeed = 0;
+}
+
 public static class EvaluateOrder
 {
-    
+    public static void LoadSeeds(string rngSeedsValueFromPlayFab, RNGSeedClass seedClass)
+    {
+        seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(rngSeedsValueFromPlayFab);
+    }
+
+    private static List<int> GenerateNewSeeds()
+    {
+        Random r = new Random();
+        List<int> newSeeds = new List<int>();
+
+        for (int i = 0; i < 50; i++)
+        {
+            newSeeds.Add(r.Next(0, 10000));
+        }
+
+        return newSeeds;
+    }
+
+    private static void ChangeCurrentSeed(RNGSeedClass seedClass)
+    {
+        seedClass.currentRNGSeed++;
+
+        if(seedClass.currentRNGSeed > seedClass.RNGSeeds.Count - 1)
+            seedClass.currentRNGSeed = 0;
+    }
+
+    public static int ConvertSeedToRNG(RNGSeedClass seedClass)
+    {
+        Random r = new Random(seedClass.RNGSeeds[seedClass.currentRNGSeed]);
+        int rngValue = r.Next(0, 100);
+
+        ChangeCurrentSeed(seedClass);
+
+        return rngValue;
+    }
+
+    public static double CriticalRNG(RNGSeedClass seedClass)
+    {
+        Random r = new Random(seedClass.RNGSeeds[seedClass.currentRNGSeed]);
+        double rngValue = r.NextDouble();
+
+        ChangeCurrentSeed(seedClass);
+
+        return rngValue;
+    }
 
     //Status Effect Counter (Decrease Counter)
     private static void DecreaseCounter(NBMonBattleDataSave Monster)
@@ -107,6 +157,12 @@ public static class EvaluateOrder
             }
         );
 
+        //Generate Seed
+        var newSeedClass = new RNGSeedClass();
+
+        newSeedClass.RNGSeeds = GenerateNewSeeds();
+        newSeedClass.currentRNGSeed = 0;
+
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
@@ -166,7 +222,7 @@ public static class EvaluateOrder
                     if(CurrentTurn == 0) //when Enter Battle Field.
                     {
                         //Apply passives that works when received status effect.
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null, newSeedClass);
                     }
                     else //Second Turn and So On.
                     {
@@ -174,8 +230,8 @@ public static class EvaluateOrder
                         DecreaseCounter(PlayerNBMonData);
 
                         //Apply passives that works when received status effect. (Turn Start and Turn End combined).
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null);
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null, newSeedClass);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null, newSeedClass);
                     
                         //Add NBMon Energy
                         NBMonTeamData.StatsValueChange(PlayerNBMonData, NBMonProperties.StatsType.Energy, 25);
@@ -207,7 +263,7 @@ public static class EvaluateOrder
                     if(CurrentTurn == 0) //when Enter Battle Field.
                     {
                         //Apply passives that works when received status effect.
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null, newSeedClass);
                     }
                     else //Second Turn and So On.
                     {
@@ -215,8 +271,8 @@ public static class EvaluateOrder
                         DecreaseCounter(EnemyNBMonData);
 
                         //Apply passives that works when received status effect. (Turn Start and Turn End combined).
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null);
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null, newSeedClass);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null, newSeedClass);
 
                         //Add NBMon Energy
                         NBMonTeamData.StatsValueChange(EnemyNBMonData, NBMonProperties.StatsType.Energy, 25);
@@ -248,7 +304,8 @@ public static class EvaluateOrder
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
                  {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
-                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)}
+                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
+                 {"RNGSeeds", JsonConvert.SerializeObject(newSeedClass)}
                 }
             }
         );
