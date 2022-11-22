@@ -32,7 +32,7 @@ public static class WaitFunction
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "SortedOrder"}
             }
         );
 
@@ -40,6 +40,7 @@ public static class WaitFunction
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> CurrentNBMonOnBF = new List<NBMonBattleDataSave>();
+        List<String> SortedOrder = new List<string>();
         string ThisMonsterUniqueID = string.Empty;
 
         //Check args["ThisMonsterUniqueID"] if it's null or not
@@ -53,9 +54,22 @@ public static class WaitFunction
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
-        
+                SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+
         //Let's Recover this Monster's Energy by 50 points.
         var Monster = UseItem.FindMonster(ThisMonsterUniqueID, PlayerTeam);
+
+        //If monster found in the player team, let's check its turn order.
+        if(Monster != null)
+        {
+            //Check if monster can attack
+            var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, ThisMonsterUniqueID);
+
+            if(!monsterCanMove)
+            {
+                return $"No Monster in the turn order. Error Code: RH-0001";
+            }
+        }
 
         //If the Monster Variable still Null, let's find it using Enemy Team.
         if(Monster == null)
@@ -71,7 +85,8 @@ public static class WaitFunction
             new UpdateUserDataRequest {
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
-                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)}
+                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
+                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)}
                 }
             }
         );

@@ -16,6 +16,7 @@ using System.Net.Http;
 using System.Net;
 using System.Linq;
 using Microsoft.Azure.Documents.Client;
+using Azure;
 
 public static class AttackFunction
 {
@@ -38,7 +39,7 @@ public static class AttackFunction
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "BattleEnvironment", "RNGSeeds"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "BattleEnvironment", "RNGSeeds", "SortedOrder"}
             }
         );
 
@@ -50,12 +51,14 @@ public static class AttackFunction
         DataFromUnity UnityData = new DataFromUnity();
         DataSendToUnity DataFromAzureToClient = new DataSendToUnity();
         List<string> Team1UniqueID_BF = new List<string>();
+        List<String> SortedOrder = new List<string>();
         RNGSeedClass seedClass = new RNGSeedClass();
 
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
+        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
         seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
         
         //Insert Battle Environment Value into Static Variable from Attack Function.
@@ -83,6 +86,14 @@ public static class AttackFunction
         if(args["IsBossBattle"] != null)
         {
             VS_Boss = (bool)args["IsBossBattle"];
+        }
+
+        //Check if monster can attack
+        var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, UnityData.AttackerMonsterUniqueID);
+
+        if(!monsterCanMove)
+        {
+            return $"No Monster in the turn order. Error Code: RH-0001";
         }
 
         //Get Attacker Data from Unity Input
@@ -176,6 +187,7 @@ public static class AttackFunction
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
             new UpdateUserDataRequest {
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
                  {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)}
                 }

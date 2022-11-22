@@ -314,4 +314,16 @@ public static class EvaluateOrder
 
         return SortedOrderJsonString;
     }
+
+    public static bool CheckBattleOrder(List<string> sortedOrder, string selectedMonsterUniqueID)
+    {
+        //Let's check the selectedMonsterUniqueID. If exisst, removes the monster from the sorted Order.
+        if(sortedOrder.Contains(selectedMonsterUniqueID))
+        {
+            sortedOrder.Remove(selectedMonsterUniqueID);
+            return true;
+        }
+        else
+            return false;
+    }
 }

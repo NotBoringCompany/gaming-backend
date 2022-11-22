@@ -280,7 +280,7 @@ public static class UseItem
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "BattleEnvironment", "RNGSeeds"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "BattleEnvironment", "RNGSeeds", "SortedOrder"}
             }
         );
         
@@ -292,6 +292,7 @@ public static class UseItem
         ItemsPlayFab UsedItem = new ItemsPlayFab();
         RNGSeedClass seedClass = new RNGSeedClass();
         dynamic UseItemInputValue = null;
+        List<string> SortedOrder = new List<string>();
         bool NonCombat = new bool();
 
         //Check args["UseItemInput"] if it's null or not
@@ -317,6 +318,7 @@ public static class UseItem
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
+        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
         
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
@@ -329,6 +331,14 @@ public static class UseItem
         UsedItem = FindItem(ConvertedInputData.ItemName);
 
         log.LogInformation($"Is Item {ConvertedInputData.ItemName} Found? {UsedItem != null}");
+
+        //Check if monster can use item
+        var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, ConvertedInputData.MonsterUniqueID);
+
+        if(!monsterCanMove)
+        {
+            return $"No Monster in the turn order. Error Code: RH-0001";
+        }
 
         //When UsedItem is not Null, Let's recover their stats.
         if(UsedItem != null)
@@ -371,7 +381,9 @@ public static class UseItem
                 //return JsonConvert.SerializeObject(PlayerTeam);
                 var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
                         PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, 
-                        Data = new Dictionary<string, string>{ {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)}
+                        Data = new Dictionary<string, string>{ 
+                            {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
+                            {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)}
                     }
                 });
 

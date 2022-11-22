@@ -39,7 +39,7 @@ public static class NBMonSwitching
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"Team1UniqueID_BF", "Team2UniqueID_BF"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"Team1UniqueID_BF", "Team2UniqueID_BF", "SortedOrder"}
             }
         );
 
@@ -47,6 +47,7 @@ public static class NBMonSwitching
         List<string> AllMonsterUniqueID_BF = new List<string>();
         List<string> Team1UniqueID_BF = new List<string>();
         List<string> Team2UniqueID_BF = new List<string>();
+        List<String> SortedOrder = new List<string>();
         NBMonSwitchingInput Input = new NBMonSwitchingInput();
         dynamic SwitchInputValue = null;
 
@@ -66,10 +67,19 @@ public static class NBMonSwitching
         //Convert from json to List<String>
         Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
         Team2UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team2UniqueID_BF"].Value);
+        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
 
         //Let's check the Team Credential First.
         if(Input.TeamCredential == "Team 1") //Team 1 Logic
         {
+            //Check if monster can use item
+            var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, Input.MonsterUniqueID_TargetSwitched);
+
+            if(!monsterCanMove)
+            {
+                return $"No Monster in the turn order. Error Code: RH-0001";
+            }
+
             //Let's Delete the Existing NBMon in the Battle Field (for: Team Data and Global Data Variables)
             foreach(var MonsterID in Team1UniqueID_BF)
             {
@@ -110,7 +120,8 @@ public static class NBMonSwitching
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
                  {"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(AllMonsterUniqueID_BF)},
                  {"Team1UniqueID_BF", JsonConvert.SerializeObject(Team1UniqueID_BF)},
-                 {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)}
+                 {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)},
+                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
                 }
             }
         );
