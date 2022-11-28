@@ -31,11 +31,12 @@ public static class InitialTeamSetup
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "MoraleGaugeData"}
             }
         );
         
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
+        BattleMoraleGauge.MoraleData moraleData = new BattleMoraleGauge.MoraleData();
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
         List<string> AllMonsterUniqueID_BF = new List<string>();
@@ -45,6 +46,12 @@ public static class InitialTeamSetup
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+
+        //Check if the player has the MoraleGaugeData, if no. Create a new one
+        if(requestTeamInformation.Result.Data.ContainsKey("MoraleGaugeData"))
+        {
+            moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
+        }
 
         //Looping Team 1
         byte P1Count = 0;
@@ -92,6 +99,9 @@ public static class InitialTeamSetup
             Monster.temporaryPassives.Clear();
         }
 
+        //Resets Enemy Morale Gauge
+        moraleData.enemyMoraleGauge = 0;
+
         //Update AllMonsterUniqueID_BF to Player Title Data
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
             new UpdateUserDataRequest {
@@ -100,7 +110,8 @@ public static class InitialTeamSetup
                  {"Team1UniqueID_BF", JsonConvert.SerializeObject(Team1UniqueID_BF)},
                  {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)},
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
-                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)}
+                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
+                 {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)}
                 }
             }
         );
