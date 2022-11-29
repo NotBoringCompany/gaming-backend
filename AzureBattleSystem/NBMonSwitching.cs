@@ -74,12 +74,16 @@ public static class NBMonSwitching
         //Let's check the Team Credential First.
         if(Input.TeamCredential == "Team 1") //Team 1 Logic
         {
-            //Check if monster can use item
-            var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, Input.MonsterUniqueID_TargetSwitched);
-
-            if(!monsterCanMove && !hasMonsterDied)
+            if(!hasMonsterDied)
             {
-                return $"No Monster in the turn order. Error Code: RH-0001";
+                //Check if monster can switch (normally not ded)
+                var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, Input.MonsterUniqueID_TargetSwitched);
+
+                if(!monsterCanMove)
+                {
+                    return $"No Monster in the turn order. Error Code: RH-0001";
+                }
+    
             }
 
             //Let's Delete the Existing NBMon in the Battle Field (for: Team Data and Global Data Variables)
