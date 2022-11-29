@@ -46,18 +46,18 @@ public static class GambitFunction
         );
 
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
-        List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
-        List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
-        List<string> Team1UniqueID_BF = new List<string>();
-        List<string> Team2UniqueID_BF = new List<string>();
+        List<NBMonBattleDataSave> playerTeam = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> enemyTeam = new List<NBMonBattleDataSave>();
+        List<string> team1UniqueID_BF = new List<string>();
+        List<string> team2UniqueID_BF = new List<string>();
         BattleMoraleGauge.MoraleData moraleData = new BattleMoraleGauge.MoraleData();
         GambitInput gambitInput = new GambitInput();
 
         //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
-        PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
-        EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
-        Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
-        Team2UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team2UniqueID_BF"].Value);
+        playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
+        enemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+        team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
+        team2UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team2UniqueID_BF"].Value);
         moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
 
         //Insert Battle Environment Value into Static Variable from Attack Function.
@@ -101,15 +101,19 @@ public static class GambitFunction
         }
 
         //Let's do Gambit Function
-        if(gambitInput.gamebitFunction == "Dance Rupture")
-            DanceRuptureFunction(gambitInput.team, Team1UniqueID_BF, Team2UniqueID_BF, PlayerTeam, EnemyTeam);
+        switch(gambitInput.gamebitFunction){
+            case "Dance Rupture": DanceRuptureFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam); break;
+            case "Revitalize": RevitalizeFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam); break;
+            case "Guardian": GuardianFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam); break;
+        }
+
 
         //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
             new UpdateUserDataRequest {
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
-                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
-                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
+                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)},
+                 {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
                  {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)}
                 }
             }
@@ -163,6 +167,66 @@ public static class GambitFunction
 
             //Let's Check Target Monster if it's Fainted or not
             AttackFunction.CheckTargetDied(target, usedMonsters[0], null, playerTeam, enemyTeam, team1UniqueID_BF, null);
+        }
+    }
+
+    public static void RevitalizeFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam)
+    {
+        List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
+
+        if(team == "Team 1")
+        {
+            foreach(var monsterId in team1UniqueID_BF)
+            {
+                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam));
+            }
+        }
+        else
+        {
+            foreach(var monsterId in team2UniqueID_BF)
+            {
+                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam));
+            }
+        }
+
+        //Recover all active member party HP and Energy in the field.
+        foreach(var monster in usedMonsters)
+        {
+            NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Hp, 40);
+            NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Energy, 40);
+        }
+    }
+    
+    public static void GuardianFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam)
+    {
+        //Declared New Variable.
+        List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
+        List<NBMonProperties.StatusEffectInfo> statusEffectsInfoList = new List<NBMonProperties.StatusEffectInfo>();
+        var guardGambit = new NBMonProperties.StatusEffectInfo();
+        guardGambit.statusEffect = NBMonProperties.StatusEffect.Guard;
+        guardGambit.triggerChance = 100;
+        guardGambit.countAmmount = 3;
+        statusEffectsInfoList.Add(guardGambit);
+
+        if(team == "Team 1")
+        {
+            foreach(var monsterId in team1UniqueID_BF)
+            {
+                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam));
+            }
+        }
+        else
+        {
+            foreach(var monsterId in team2UniqueID_BF)
+            {
+                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam));
+            }
+        }
+
+        //Receive Guard Buff for all active member party in the field.
+        foreach(var monster in usedMonsters)
+        {
+            UseItem.ApplyStatusEffect(monster, statusEffectsInfoList, null, false);
         }
     }
 }
