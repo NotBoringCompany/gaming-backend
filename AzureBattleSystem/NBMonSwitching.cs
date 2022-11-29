@@ -50,12 +50,14 @@ public static class NBMonSwitching
         List<String> SortedOrder = new List<string>();
         NBMonSwitchingInput Input = new NBMonSwitchingInput();
         dynamic SwitchInputValue = null;
+        bool hasMonsterDied = false;
 
         //Check args["SwitchInput"] if it's null or not
-        if(args["SwitchInput"] != null)
+        if(args["SwitchInput"] != null && args["HasMonsterDied"] != null)
         {
             //Let's extract the argument value to SwitchInputValue variable.
             SwitchInputValue = args["SwitchInput"];
+            hasMonsterDied = args["HasMonsterDied"];
 
             //Change from Dynamic to String
             string SwitchInputValueString = SwitchInputValue;
@@ -75,7 +77,7 @@ public static class NBMonSwitching
             //Check if monster can use item
             var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, Input.MonsterUniqueID_TargetSwitched);
 
-            if(!monsterCanMove)
+            if(!monsterCanMove && !hasMonsterDied)
             {
                 return $"No Monster in the turn order. Error Code: RH-0001";
             }
