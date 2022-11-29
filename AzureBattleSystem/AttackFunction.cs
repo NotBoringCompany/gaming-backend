@@ -172,7 +172,7 @@ public static class AttackFunction
         log.LogInformation($"Code D: 4th Step, Apply and Remove Status Effect from Attacker Monster");
 
         //Apply Status Effect to Attacker Monster
-        UseItem.ApplyStatusEffect(AttackerMonster, AttackerSkillData.statusEffectListSelf, null, false);
+        UseItem.ApplyStatusEffect(AttackerMonster, AttackerSkillData.statusEffectListSelf, null, false, seedClass);
 
         //Remove Status Effect to Attacker Monster
         UseItem.RemoveStatusEffect(AttackerMonster, AttackerSkillData.removeStatusEffectListSelf);

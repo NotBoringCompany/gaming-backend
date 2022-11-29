@@ -41,7 +41,7 @@ public static class GambitFunction
             new GetUserDataRequest { 
                 PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{
                     "CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "Team2UniqueID_BF", 
-                    "BattleEnvironment", "MoraleGaugeData"}
+                    "BattleEnvironment", "MoraleGaugeData", "RNGSeeds"}
             }
         );
 
@@ -52,6 +52,7 @@ public static class GambitFunction
         List<string> team2UniqueID_BF = new List<string>();
         BattleMoraleGauge.MoraleData moraleData = new BattleMoraleGauge.MoraleData();
         GambitInput gambitInput = new GambitInput();
+        RNGSeedClass seedClass = new RNGSeedClass();
 
         //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
         playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
@@ -59,6 +60,7 @@ public static class GambitFunction
         team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
         team2UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team2UniqueID_BF"].Value);
         moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
+        seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
 
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
@@ -104,7 +106,7 @@ public static class GambitFunction
         switch(gambitInput.gamebitFunction){
             case "Dance Rupture": DanceRuptureFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam); break;
             case "Revitalize": RevitalizeFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam); break;
-            case "Guardian": GuardianFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam); break;
+            case "Guardian": GuardianFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam, seedClass); break;
         }
 
 
@@ -197,7 +199,7 @@ public static class GambitFunction
         }
     }
     
-    public static void GuardianFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam)
+    public static void GuardianFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, RNGSeedClass seedClass)
     {
         //Declared New Variable.
         List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
@@ -226,7 +228,7 @@ public static class GambitFunction
         //Receive Guard Buff for all active member party in the field.
         foreach(var monster in usedMonsters)
         {
-            UseItem.ApplyStatusEffect(monster, statusEffectsInfoList, null, false);
+            UseItem.ApplyStatusEffect(monster, statusEffectsInfoList, null, false, seedClass);
         }
     }
 }
