@@ -17,7 +17,30 @@ using System.Net;
 
 public static class InitialTeamSetup
 {
-    
+    public class HumanBattleData
+    {
+        public NBMonBattleDataSave playerHumanData;
+        public NBMonBattleDataSave enemyHumanData; 
+    }
+
+
+    public static void GenerateHumanData(HumanBattleData humanBattleData, int battleCategory, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, string playerDisplayName, string playerPlayFabId)
+    {
+        //Let's generate Player Human Data first.
+        humanBattleData.playerHumanData = HumanBattleBaseData.defaultHumanBattleData;
+        humanBattleData.playerHumanData.owner = playerDisplayName;
+        humanBattleData.playerHumanData.nickName = playerDisplayName;
+        humanBattleData.playerHumanData.uniqueId = playerPlayFabId + playerDisplayName;
+
+        //Let's generate NPC Human Data if the battle is an NPC Battle
+        if(battleCategory == 1) //Indicating NPC Battle
+        {
+            humanBattleData.enemyHumanData = HumanBattleBaseData.defaultHumanBattleData;
+            humanBattleData.enemyHumanData.owner = enemyTeam[0].owner;
+            humanBattleData.enemyHumanData.nickName = enemyTeam[0].owner;
+            humanBattleData.enemyHumanData.uniqueId = playerPlayFabId + enemyTeam[0].owner;
+        }
+    }
 
     //Cloud Methods
     [FunctionName("InitialTeamSetupAzure")]
@@ -31,10 +54,15 @@ public static class InitialTeamSetup
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "MoraleGaugeData"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "MoraleGaugeData", "BattleCategory"}
             }
         );
-        
+
+        var requestUserProfile = await serverApi.GetPlayerProfileAsync(
+            new GetPlayerProfileRequest {
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId }
+        );
+
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
         BattleMoraleGauge.MoraleData moraleData = new BattleMoraleGauge.MoraleData();
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
@@ -42,16 +70,27 @@ public static class InitialTeamSetup
         List<string> AllMonsterUniqueID_BF = new List<string>();
         List<string> Team1UniqueID_BF = new List<string>();
         List<string> Team2UniqueID_BF = new List<string>();
+        HumanBattleData humanBattleData = new HumanBattleData();
+        int battleCategory = 0;
 
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+
+        if(requestTeamInformation.Result.Data.ContainsKey("BattleCategory"))
+            battleCategory = int.Parse(requestTeamInformation.Result.Data["BattleCategory"].Value);
 
         //Check if the player has the MoraleGaugeData, if no. Create a new one
         if(requestTeamInformation.Result.Data.ContainsKey("MoraleGaugeData"))
         {
             moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
         }
+
+        string displayName = requestUserProfile.Result.PlayerProfile.DisplayName;
+        string PlayFabID = context.CallerEntityProfile.Lineage.MasterPlayerAccountId;
+
+        //Genrate Human Battle Data
+        GenerateHumanData(humanBattleData, battleCategory, PlayerTeam, EnemyTeam, displayName, PlayFabID);
 
         //Looping Team 1
         byte P1Count = 0;
@@ -111,7 +150,8 @@ public static class InitialTeamSetup
                  {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)},
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
                  {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
-                 {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)}
+                 {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)},
+                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
                 }
             }
         );

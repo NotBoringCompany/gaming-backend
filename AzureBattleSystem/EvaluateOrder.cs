@@ -161,7 +161,6 @@ public static class EvaluateOrder
         var newSeedClass = new RNGSeedClass();
 
         newSeedClass.RNGSeeds = GenerateNewSeeds();
-        newSeedClass.currentRNGSeed = 0;
 
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
@@ -297,6 +296,8 @@ public static class EvaluateOrder
         {
             SortedOrder.Add(SortedMonster.uniqueId);
         }
+
+        newSeedClass.currentRNGSeed = 0;
 
         //Once the Sorted Monster's ID has been added into SortedOrder. Let's convert it into Json String and Send it into PlayFab (Player Title Data).
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(

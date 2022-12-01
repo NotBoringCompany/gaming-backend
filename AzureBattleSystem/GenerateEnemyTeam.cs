@@ -60,7 +60,8 @@ public static class GenerateEnemyTeam
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
             new UpdateUserDataRequest {
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
-                 {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)}
+                 {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
+                 {"BattleCategory", battleCategory.ToString()}
                 }
             }
         );
