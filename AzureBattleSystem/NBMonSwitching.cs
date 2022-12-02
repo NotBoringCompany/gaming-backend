@@ -15,6 +15,7 @@ using PlayFab.ServerModels;
 using System.Net.Http;
 using System.Net;
 using System.Linq;
+using static InitialTeamSetup;
 
 public static class NBMonSwitching
 {
@@ -51,6 +52,7 @@ public static class NBMonSwitching
         NBMonSwitchingInput Input = new NBMonSwitchingInput();
         dynamic SwitchInputValue = null;
         bool hasMonsterDied = false;
+        HumanBattleData humanBattleData = new HumanBattleData();
 
         //Check args["SwitchInput"] if it's null or not
         if(args["SwitchInput"] != null && args["HasMonsterDied"] != null)
@@ -70,6 +72,7 @@ public static class NBMonSwitching
         Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
         Team2UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team2UniqueID_BF"].Value);
         SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
 
         //Let's check the Team Credential First.
         if(Input.TeamCredential == "Team 1") //Team 1 Logic
@@ -119,6 +122,12 @@ public static class NBMonSwitching
 
         //Let's add Both Teams again.
         AllMonsterUniqueID_BF = Team1UniqueID_BF.Concat<string>(Team2UniqueID_BF).ToList<string>();
+
+        //Let's add Humans Unique IDs.
+        AllMonsterUniqueID_BF.Add(humanBattleData.playerHumanData.uniqueId);
+
+        if(humanBattleData.enemyHumanData != null)
+            AllMonsterUniqueID_BF.Add(humanBattleData.enemyHumanData.uniqueId);
 
         //Update AllMonsterUniqueID_BF to Player Title Data
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
