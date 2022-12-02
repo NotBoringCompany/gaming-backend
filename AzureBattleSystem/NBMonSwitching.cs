@@ -40,7 +40,7 @@ public static class NBMonSwitching
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"Team1UniqueID_BF", "Team2UniqueID_BF", "SortedOrder"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"Team1UniqueID_BF", "Team2UniqueID_BF", "SortedOrder", "HumanBattleData"}
             }
         );
 
