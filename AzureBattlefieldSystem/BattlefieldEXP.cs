@@ -52,7 +52,7 @@ public static class BattlefieldEXP
         
         //Convert from json to NBmonBattleDataSave
         var playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
-        var currentMonsterData = UseItem.FindMonster(CurrentMonsterUniqueID, playerTeam);
+        var currentMonsterData = UseItem.FindMonster(CurrentMonsterUniqueID, playerTeam, null);
 
         if(currentMonsterData != null)
         {

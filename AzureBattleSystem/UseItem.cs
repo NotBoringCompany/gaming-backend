@@ -19,6 +19,7 @@ using Microsoft.Azure.Documents.Client;
 using MongoDB.Driver;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using static InitialTeamSetup;
 
 public static class UseItem
 {
@@ -88,7 +89,7 @@ public static class UseItem
     }
 
     //Find Corresponding NBMon
-    public static NBMonBattleDataSave FindMonster(string UniqueID, List<NBMonBattleDataSave> TeamList)
+    public static NBMonBattleDataSave FindMonster(string UniqueID, List<NBMonBattleDataSave> TeamList, InitialTeamSetup.HumanBattleData humanBattleData)
     {
         foreach(var Monster in TeamList)
         {
@@ -96,6 +97,16 @@ public static class UseItem
             {
                 return Monster;
             }
+        }
+
+        if(humanBattleData != null)
+        {
+            if(UniqueID == humanBattleData.playerHumanData.uniqueId)
+                return humanBattleData.playerHumanData;
+
+            if(humanBattleData.enemyHumanData != null) //Check if the enemyHumanData is null or not.
+                if(UniqueID == humanBattleData.enemyHumanData.uniqueId)
+                    return humanBattleData.enemyHumanData;
         }
 
         return null;
@@ -280,7 +291,7 @@ public static class UseItem
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "BattleEnvironment", "RNGSeeds", "SortedOrder"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "BattleEnvironment", "RNGSeeds", "SortedOrder", "HumanBattleData"}
             }
         );
         
@@ -294,6 +305,7 @@ public static class UseItem
         dynamic UseItemInputValue = null;
         List<string> SortedOrder = new List<string>();
         bool NonCombat = new bool();
+        HumanBattleData humanBattleData = new HumanBattleData();
 
         //Check args["UseItemInput"] if it's null or not
         if(args["UseItemInput"] != null)
@@ -319,6 +331,7 @@ public static class UseItem
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
         SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
         
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
@@ -344,7 +357,7 @@ public static class UseItem
         if(UsedItem != null)
         {
             //Find This Monster
-            ThisMonster = FindMonster(ConvertedInputData.MonsterUniqueID, PlayerTeam);
+            ThisMonster = FindMonster(ConvertedInputData.MonsterUniqueID, PlayerTeam, humanBattleData);
 
             //Setup HP's Tooltip
             int TotalHPRecovery = UsedItem.HPRecovery + (int)Math.Floor((float)UsedItem.HPRecovery_Percentage/100f * (float)ThisMonster.maxHp);
@@ -383,7 +396,8 @@ public static class UseItem
                         PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, 
                         Data = new Dictionary<string, string>{ 
                             {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
-                            {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)}
+                            {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
+                            {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
                     }
                 });
 

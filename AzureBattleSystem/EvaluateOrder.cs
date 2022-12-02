@@ -16,6 +16,7 @@ using System.Net.Http;
 using System.Net;
 using System.Linq;
 using Microsoft.Azure.Documents.Client;
+using static InitialTeamSetup;
 
 public class RNGSeedClass
 {
@@ -153,7 +154,7 @@ public static class EvaluateOrder
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "AllMonsterUniqueID_BF", "BattleEnvironment"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "AllMonsterUniqueID_BF", "BattleEnvironment", "HumanBattleData"}
             }
         );
 
@@ -170,6 +171,7 @@ public static class EvaluateOrder
         List<string> SortedOrder = new List<string>();
         int BattleCondition = new int();
         int CurrentTurn = new int();
+        HumanBattleData humanBattleData = new HumanBattleData();
 
         //Check args["BattleAdvantage"] if it's null or not
         if(args["BattleAdvantage"] != null)
@@ -187,6 +189,7 @@ public static class EvaluateOrder
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         AllMonsterUniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["AllMonsterUniqueID_BF"].Value);
+        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
         
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
@@ -195,8 +198,8 @@ public static class EvaluateOrder
         NBMonTeamData.PlayerTeam = PlayerTeam;
         NBMonTeamData.EnemyTeam = EnemyTeam;
 
-        //Let's find NBMon in BF using AllMonsterUniqueID_BF, TO DO: Artifact Passives
-        foreach(var MonsterID in AllMonsterUniqueID_BF)
+        //Let's find NBMon in BF using AllMonsterUniqueID_BF
+        foreach(var monsterUniqueID in AllMonsterUniqueID_BF)
         {
             ///BattleCondition = 0, Normal Battle
             ///BattleCondition = 1, Player Advantage
@@ -207,8 +210,10 @@ public static class EvaluateOrder
 
             if(BattleCondition == 0 || BattleCondition == 1)
             {
-                var PlayerNBMonData = NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(MonsterID, PlayerTeam);
-                int MonsterIndex = NBMonDatabase_Azure.FindNBMonTeamPositionUsingUniqueID(MonsterID, PlayerTeam);
+                var PlayerNBMonData = NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, PlayerTeam);
+
+                if(PlayerNBMonData == null && monsterUniqueID == humanBattleData.playerHumanData.uniqueId)
+                    PlayerNBMonData = humanBattleData.playerHumanData;
 
                 if(PlayerNBMonData != null)
                 {
@@ -238,18 +243,17 @@ public static class EvaluateOrder
 
                     //Status Effect Logic during Start Turn.
                     StatusEffectLogicDuringStartTurn(PlayerNBMonData);
-
-                    //Update PlayerTeam Information
-                    PlayerTeam[MonsterIndex] = PlayerNBMonData;
-
                     continue;
                 }
             }
 
             if(BattleCondition == 0 || BattleCondition == -1)
             {
-                var EnemyNBMonData =  NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(MonsterID, EnemyTeam);
-                int MonsterIndex = NBMonDatabase_Azure.FindNBMonTeamPositionUsingUniqueID(MonsterID, EnemyTeam);
+                var EnemyNBMonData =  NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, EnemyTeam);
+
+                if(humanBattleData.enemyHumanData != null) //Check if the enemyHumanData is null or not.
+                    if(EnemyNBMonData == null && monsterUniqueID == humanBattleData.enemyHumanData.uniqueId)
+                        EnemyNBMonData = humanBattleData.enemyHumanData;
 
                 if(EnemyNBMonData != null)
                 {
@@ -279,10 +283,6 @@ public static class EvaluateOrder
 
                     //Status Effect Logic during Start Turn.
                     StatusEffectLogicDuringStartTurn(EnemyNBMonData);
-
-                    //Update Enemy Team Information
-                    EnemyTeam[MonsterIndex] = EnemyNBMonData;
-
                     continue;
                 }
             }
@@ -306,6 +306,7 @@ public static class EvaluateOrder
                  {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
                  {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
+                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)},
                  {"RNGSeeds", JsonConvert.SerializeObject(newSeedClass)}
                 }
             }

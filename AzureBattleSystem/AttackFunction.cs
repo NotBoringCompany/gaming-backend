@@ -17,6 +17,7 @@ using System.Net;
 using System.Linq;
 using Microsoft.Azure.Documents.Client;
 using Azure;
+using static InitialTeamSetup;
 
 public static class AttackFunction
 {
@@ -39,11 +40,12 @@ public static class AttackFunction
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "BattleEnvironment", "RNGSeeds", "SortedOrder", "MoraleGaugeData"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "BattleEnvironment", "RNGSeeds", "SortedOrder", "MoraleGaugeData", "HumanBattleData"}
             }
         );
 
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
+        HumanBattleData humanBattleData = new HumanBattleData();
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
         NBMonBattleDataSave AttackerMonster = new NBMonBattleDataSave();
@@ -62,6 +64,7 @@ public static class AttackFunction
         SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
         seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
         moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
+        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
         
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
@@ -99,11 +102,11 @@ public static class AttackFunction
         }
 
         //Get Attacker Data from Unity Input
-        AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, PlayerTeam);
+        AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, PlayerTeam, humanBattleData);
         
         //If Attacker not found in Player Team, Find Attacker on Enemy Team
         if(AttackerMonster == null)
-            AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam);
+            AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam, humanBattleData);
 
         //Insert Attacker Monster Unique ID.
         DataFromAzureToClient.AttackerMonsterUniqueID = AttackerMonster.uniqueId;
@@ -120,12 +123,12 @@ public static class AttackFunction
 
         //Get all Defender Data from Unity Input
         foreach(string TargetID in UnityData.TargetUniqueIDs){
-            var Monster = UseItem.FindMonster(TargetID, PlayerTeam);
+            var Monster = UseItem.FindMonster(TargetID, PlayerTeam, humanBattleData);
 
             if(Monster == null)
             {
                 //If Target Monster not found, find this from Enemy Team 
-                Monster = UseItem.FindMonster(TargetID, EnemyTeam);
+                Monster = UseItem.FindMonster(TargetID, EnemyTeam, humanBattleData);
             }
 
             //Add Monster into DefenderMonster List
@@ -192,6 +195,7 @@ public static class AttackFunction
                  {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
                  {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
+                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)},
                  {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)}
                 }
             }

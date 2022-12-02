@@ -17,6 +17,7 @@ using System.Net;
 using System.Linq;
 using Microsoft.Azure.Documents.Client;
 using Azure;
+using static InitialTeamSetup;
 
 public static class GambitFunction
 {
@@ -41,7 +42,7 @@ public static class GambitFunction
             new GetUserDataRequest { 
                 PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{
                     "CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "Team2UniqueID_BF", 
-                    "BattleEnvironment", "MoraleGaugeData", "RNGSeeds"}
+                    "BattleEnvironment", "MoraleGaugeData", "RNGSeeds", "HumanBattleData"}
             }
         );
 
@@ -53,6 +54,7 @@ public static class GambitFunction
         BattleMoraleGauge.MoraleData moraleData = new BattleMoraleGauge.MoraleData();
         GambitInput gambitInput = new GambitInput();
         RNGSeedClass seedClass = new RNGSeedClass();
+        HumanBattleData humanBattleData = new HumanBattleData();
 
         //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
         playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
@@ -61,6 +63,7 @@ public static class GambitFunction
         team2UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team2UniqueID_BF"].Value);
         moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
         seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
+        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
 
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
@@ -104,9 +107,9 @@ public static class GambitFunction
 
         //Let's do Gambit Function
         switch(gambitInput.gamebitFunction){
-            case "Dance Rupture": DanceRuptureFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam); break;
-            case "Revitalize": RevitalizeFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam); break;
-            case "Guardian": GuardianFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam, seedClass); break;
+            case "Dance Rupture": DanceRuptureFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam, humanBattleData); break;
+            case "Revitalize": RevitalizeFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam, humanBattleData); break;
+            case "Guardian": GuardianFunction(gambitInput.team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam, seedClass, humanBattleData); break;
         }
 
 
@@ -116,7 +119,8 @@ public static class GambitFunction
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)},
                  {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
-                 {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)}
+                 {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)},
+                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
                 }
             }
         );
@@ -124,7 +128,7 @@ public static class GambitFunction
         return null;
     }
 
-    public static void DanceRuptureFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam)
+    public static void DanceRuptureFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
         List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> targetMonsters = new List<NBMonBattleDataSave>(); 
@@ -134,24 +138,24 @@ public static class GambitFunction
         {
             foreach(var monsterId in team1UniqueID_BF)
             {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam));
+                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam, humanBattleData));
             }
 
             foreach(var monsterId in team2UniqueID_BF)
             {
-                targetMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam));
+                targetMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam, humanBattleData));
             }
         }
         else
         {
             foreach(var monsterId in team2UniqueID_BF)
             {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam));
+                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam, humanBattleData));
             }
 
             foreach(var monsterId in team1UniqueID_BF)
             {
-                targetMonsters.Add(UseItem.FindMonster(monsterId, playerTeam));
+                targetMonsters.Add(UseItem.FindMonster(monsterId, playerTeam, humanBattleData));
             }
         }
 
@@ -172,7 +176,7 @@ public static class GambitFunction
         }
     }
 
-    public static void RevitalizeFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam)
+    public static void RevitalizeFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
         List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
 
@@ -180,14 +184,14 @@ public static class GambitFunction
         {
             foreach(var monsterId in team1UniqueID_BF)
             {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam));
+                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam, humanBattleData));
             }
         }
         else
         {
             foreach(var monsterId in team2UniqueID_BF)
             {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam));
+                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam, humanBattleData));
             }
         }
 
@@ -199,7 +203,7 @@ public static class GambitFunction
         }
     }
     
-    public static void GuardianFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, RNGSeedClass seedClass)
+    public static void GuardianFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, RNGSeedClass seedClass, HumanBattleData humanBattleData)
     {
         //Declared New Variable.
         List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
@@ -214,14 +218,14 @@ public static class GambitFunction
         {
             foreach(var monsterId in team1UniqueID_BF)
             {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam));
+                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam, humanBattleData));
             }
         }
         else
         {
             foreach(var monsterId in team2UniqueID_BF)
             {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam));
+                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam, humanBattleData));
             }
         }
 

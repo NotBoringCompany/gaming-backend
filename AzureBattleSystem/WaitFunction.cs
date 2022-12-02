@@ -15,6 +15,7 @@ using PlayFab.ServerModels;
 using System.Net.Http;
 using System.Net;
 using System.Linq;
+using static InitialTeamSetup;
 
 public static class WaitFunction
 {
@@ -32,7 +33,7 @@ public static class WaitFunction
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "SortedOrder"}
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "SortedOrder", "HumanBattleData"}
             }
         );
 
@@ -42,6 +43,7 @@ public static class WaitFunction
         List<NBMonBattleDataSave> CurrentNBMonOnBF = new List<NBMonBattleDataSave>();
         List<String> SortedOrder = new List<string>();
         string ThisMonsterUniqueID = string.Empty;
+        HumanBattleData humanBattleData = new HumanBattleData();
 
         //Check args["ThisMonsterUniqueID"] if it's null or not
         if(args["ThisMonsterUniqueID"] != null)
@@ -54,10 +56,11 @@ public static class WaitFunction
         //Convert from json to NBmonBattleDataSave
         PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
-                SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
 
         //Let's Recover this Monster's Energy by 50 points.
-        var Monster = UseItem.FindMonster(ThisMonsterUniqueID, PlayerTeam);
+        var Monster = UseItem.FindMonster(ThisMonsterUniqueID, PlayerTeam, humanBattleData);
 
         //If monster found in the player team, let's check its turn order.
         if(Monster != null)
@@ -74,7 +77,7 @@ public static class WaitFunction
         //If the Monster Variable still Null, let's find it using Enemy Team.
         if(Monster == null)
         {
-            Monster = UseItem.FindMonster(ThisMonsterUniqueID, EnemyTeam);
+            Monster = UseItem.FindMonster(ThisMonsterUniqueID, EnemyTeam, humanBattleData);
         }
 
         //Recover Energy by 50 points.
@@ -86,7 +89,8 @@ public static class WaitFunction
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
                  {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
-                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)}
+                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
+                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
                 }
             }
         );

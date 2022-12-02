@@ -81,23 +81,23 @@ public class NBMonDatabase_Azure
         return null;
     }
 
-    public static int FindNBMonTeamPositionUsingUniqueID(string UniqueID, List<NBMonBattleDataSave> Team)
-    {   
-        int Count = new int();
+        // public static int FindNBMonTeamPositionUsingUniqueID(string UniqueID, List<NBMonBattleDataSave> Team)
+        // {   
+        //     int Count = new int();
 
-        foreach(var Monster in Team)
-        {
-            if(Monster.uniqueId == UniqueID)
-            {
-                return Count;
-            }
+        //     foreach(var Monster in Team)
+        //     {
+        //         if(Monster.uniqueId == UniqueID)
+        //         {
+        //             return Count;
+        //         }
 
-            Count++;
-        }
+        //         Count++;
+        //     }
 
-        //Indicate this is Not Found
-        return -1;
-    }
+        //     //Indicate this is Not Found
+        //     return -1;
+        // }
 }
 
 public class StatusEffectList

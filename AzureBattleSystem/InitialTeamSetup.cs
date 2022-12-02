@@ -105,6 +105,9 @@ public static class InitialTeamSetup
             P1Count++;
         }
 
+        //Let's add Player Unique ID
+        AllMonsterUniqueID_BF.Add(humanBattleData.playerHumanData.uniqueId);
+
         //Looping Team 2
         byte P2Count = 0;
         foreach(var Monster in EnemyTeam)
@@ -117,6 +120,10 @@ public static class InitialTeamSetup
 
             P2Count++;
         }
+
+        //Let's add Enemy Unique ID (Indicating NPC)
+        if(battleCategory == 1)
+            AllMonsterUniqueID_BF.Add(humanBattleData.enemyHumanData.uniqueId);
 
         //Purge NBMon Level Up Bool, Status Effect List, and Temporary Stats;
         foreach(var Monster in PlayerTeam)
