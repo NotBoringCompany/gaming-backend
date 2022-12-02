@@ -129,6 +129,10 @@ public static class InitialTeamSetup
         foreach(var Monster in PlayerTeam)
         {
             Monster.NBMonLevelUp = false;
+
+            if(Monster.fainted)
+                Monster.hp = 1;
+
             Monster.fainted = false;
             //Monster.statusEffectList.Clear();
             Monster.temporaryPassives.Clear();
