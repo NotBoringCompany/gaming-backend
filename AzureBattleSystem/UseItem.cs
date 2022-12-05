@@ -28,7 +28,8 @@ public static class UseItem
     //UseItem Input
     public class UseItemDataInput
     {
-        public string MonsterUniqueID;
+        public string InputMonsterUniqueID;
+        public string UsedMonsterUniqueID;
         public string ItemName;
     }
 
@@ -346,7 +347,7 @@ public static class UseItem
         log.LogInformation($"Is Item {ConvertedInputData.ItemName} Found? {UsedItem != null}");
 
         //Check if monster can use item
-        var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, ConvertedInputData.MonsterUniqueID);
+        var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, ConvertedInputData.InputMonsterUniqueID);
 
         if(!monsterCanMove)
         {
@@ -357,7 +358,7 @@ public static class UseItem
         if(UsedItem != null)
         {
             //Find This Monster
-            ThisMonster = FindMonster(ConvertedInputData.MonsterUniqueID, PlayerTeam, humanBattleData);
+            ThisMonster = FindMonster(ConvertedInputData.UsedMonsterUniqueID, PlayerTeam, humanBattleData);
 
             //Setup HP's Tooltip
             int TotalHPRecovery = UsedItem.HPRecovery + (int)Math.Floor((float)UsedItem.HPRecovery_Percentage/100f * (float)ThisMonster.maxHp);

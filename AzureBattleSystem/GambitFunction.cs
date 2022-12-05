@@ -28,8 +28,79 @@ public static class GambitFunction
     }
 
     //Cloud Function
+    [FunctionName("MoraleBoost")]
+    public static async Task<dynamic> MoraleBoost([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+    ILogger log)
+    {
+        //Setup serverApi (Server API to PlayFab)
+        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+        dynamic args = context.FunctionArgument;
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
+
+                //Request Team Information (Player and Enemy)
+        var requestTeamInformation = await serverApi.GetUserDataAsync(
+            new GetUserDataRequest { 
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId}
+        );
+
+        //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
+        BattleMoraleGauge.MoraleData moraleData = new BattleMoraleGauge.MoraleData();
+        HumanBattleData humanBattleData = new HumanBattleData();
+        List<string> SortedOrder = new List<string>();
+        string uniqueId = string.Empty;
+
+        //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
+        moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
+        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
+        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+
+        //Get Input from Client
+        if(args["InputFromClient"] != null)
+        {
+            uniqueId = args["InputFromClient"];
+        }
+        else
+        {
+            return $"Error: RH-0005, no such Unique ID of {uniqueId} exist in the game";
+        }
+
+        //Check if monster can move
+        var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, uniqueId);
+
+        //Gives Error if can't move
+        if(!monsterCanMove)
+            return $"Error: RH-0006, no such Unique ID of {uniqueId} exist in the SortedOrder";
+
+        //Let's get which team the uniqueId was.
+        //Check Team One
+        if(uniqueId == humanBattleData.playerHumanData.uniqueId)
+        {
+            BattleMoraleGauge.IncreasePlayerMorale(moraleData, 20);
+        }
+        
+        if(humanBattleData.enemyHumanData != null)
+        {
+            if(uniqueId == humanBattleData.enemyHumanData.uniqueId)
+                BattleMoraleGauge.IncreaseEnemyMorale(moraleData, 20);
+        }
+
+        //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
+            new UpdateUserDataRequest {
+             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
+                 {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)},
+                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
+                }
+            }
+        );
+
+        return string.Empty;
+    }
+
+    //Cloud Function
     [FunctionName("GambitLogic")]
-    public static async Task<dynamic> AttackLogic([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+    public static async Task<dynamic> GambitLogic([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
     ILogger log)
     {
         //Setup serverApi (Server API to PlayFab)
