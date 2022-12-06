@@ -327,7 +327,7 @@ public class PassiveLogic
                 useMonsterMemory.criticalBuff += (float)passiveEffect.criticalBuff;
                 useMonsterMemory.ignoreDefenses += (float)passiveEffect.ignoreDefenses;
                 useMonsterMemory.damageReduction += (float)passiveEffect.damageReduction;
-                useMonsterMemory.energyShieldValue += passiveEffect.energyShieldValue;
+                useMonsterMemory.energyShieldValue += (float)passiveEffect.energyShieldValue;
 
                 //Bool Section but using Integer
                 useMonsterMemory.energyShield += passiveEffect.energyShield;

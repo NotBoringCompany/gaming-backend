@@ -349,9 +349,9 @@ public static class AttackFunction
         float SP_Attack_StatusEffect_Modifier = StatusEffectIconDatabase.SPAttackStatusEffectLogic(AttackerMonster);
 
         //Find Attacker's Attack Buffs from Passives
-        float Attack_Passive_Modifier = AttackerMonster.attackBuff/100;
-        float SP_Attack_Passive_Modifier = AttackerMonster.specialAttackBuff/100;
-        float IgnoreDefenses = AttackerMonster.ignoreDefenses/100;
+        float Attack_Passive_Modifier = AttackerMonster.attackBuff/100f;
+        float SP_Attack_Passive_Modifier = AttackerMonster.specialAttackBuff/100f;
+        float IgnoreDefenses = AttackerMonster.ignoreDefenses/100f;
         int TotalIngoreDefense = AttackerMonster.totalIgnoreDefense;
 
         //Normalizations
@@ -363,16 +363,16 @@ public static class AttackFunction
         float This_NBMon_SP_Def_Modifier = StatusEffectIconDatabase.SPDefenseStatusEffectLogic(DefenderMonster);
 
         //Find This Monster's Defense Buffs Modifier from Passives
-        float This_NBMon_Def_Passive_Modifier = DefenderMonster.defenseBuff/100;
-        float This_NBMon_SP_Def_Passive_Modifier = DefenderMonster.specialDefenseBuff/100;
-        float This_NBMon_Damage_Reduction_Modifier = DefenderMonster.damageReduction/100;
-        float This_NBMon_Damage_Reduction_From_Energy_Shield = DefenderMonster.energyShieldValue/100;
+        float This_NBMon_Def_Passive_Modifier = DefenderMonster.defenseBuff/100f;
+        float This_NBMon_SP_Def_Passive_Modifier = DefenderMonster.specialDefenseBuff/100f;
+        float This_NBMon_Damage_Reduction_Modifier = DefenderMonster.damageReduction/100f;
+        float This_NBMon_Damage_Reduction_From_Energy_Shield = DefenderMonster.energyShieldValue/100f;
         int This_NBMon_EnergyShield_IsActive = DefenderMonster.energyShield;
         int This_NBMon_Must_Survive_Lethal_Blow = DefenderMonster.surviveLethalBlow;
-        float ElementalDamageReduction = 1f - ((float)DefenderMonster.elementDamageReduction) / 100;
+        float ElementalDamageReduction = 1f - ((float)DefenderMonster.elementDamageReduction) / 100f;
 
         //Normalizations Damage Reduction
-        if (This_NBMon_Damage_Reduction_Modifier > 1f)
+        if (This_NBMon_Damage_Reduction_Modifier >= 1f)
             This_NBMon_Damage_Reduction_Modifier = 1f;
 
         //Normalizations Damage Reduction from Energy Shield
