@@ -53,6 +53,7 @@ public class ItemsPlayFab
     public int HPRecovery_Percentage;
     public int EnergyRecover;
     public int EnergyRecover_Percentage;
+    public string AddStatusEffectDescription;
     public List<NBMonProperties.StatusEffectInfo> AddStatusEffects;
     public List<NBMonProperties.StatusEffectInfo> RemovesStatusEffects;
 
