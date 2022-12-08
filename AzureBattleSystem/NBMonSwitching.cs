@@ -49,6 +49,7 @@ public static class NBMonSwitching
         List<string> Team1UniqueID_BF = new List<string>();
         List<string> Team2UniqueID_BF = new List<string>();
         List<String> SortedOrder = new List<string>();
+        string inputUniqueID = string.Empty;
         NBMonSwitchingInput Input = new NBMonSwitchingInput();
         dynamic SwitchInputValue = null;
         bool hasMonsterDied = false;
@@ -68,6 +69,11 @@ public static class NBMonSwitching
             Input = JsonConvert.DeserializeObject<NBMonSwitchingInput>(SwitchInputValueString);
         }
 
+        if(args["InputUniqueID"] != null)
+        {
+            inputUniqueID = args["InputUniqueID"];
+        }
+
         //Convert from json to List<String>
         Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
         Team2UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team2UniqueID_BF"].Value);
@@ -80,7 +86,8 @@ public static class NBMonSwitching
             if(!hasMonsterDied)
             {
                 //Check if monster can switch (normally not ded)
-                var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, Input.MonsterUniqueID_TargetSwitched);
+                var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, inputUniqueID);
+                var monsterSwitched = EvaluateOrder.CheckBattleOrder(SortedOrder, Input.MonsterUniqueID_TargetSwitched);
 
                 if(!monsterCanMove)
                 {
