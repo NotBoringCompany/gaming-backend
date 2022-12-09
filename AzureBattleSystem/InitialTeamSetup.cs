@@ -38,6 +38,8 @@ public static class InitialTeamSetup
         if(battleCategory == 1) //Indicating NPC Battle
         {
             humanBattleData.enemyHumanData = HumanBattleBaseData.defaultHumanBattleData;
+            humanBattleData.enemyHumanData.maxHp = GenerateHumanHP(enemyTeam);
+            humanBattleData.enemyHumanData.hp = GenerateHumanHP(enemyTeam);
             humanBattleData.enemyHumanData.owner = enemyTeam[0].owner;
             humanBattleData.enemyHumanData.nickName = enemyTeam[0].owner;
             humanBattleData.enemyHumanData.uniqueId = playerPlayFabId + enemyTeam[0].owner;
