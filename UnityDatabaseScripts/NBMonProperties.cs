@@ -50,7 +50,8 @@ public class NBMonProperties
         AntiParalyze,
         AntiBurn,
         Guard,
-        Paralyzed
+        Paralyzed,
+        Panic
     }
 
 

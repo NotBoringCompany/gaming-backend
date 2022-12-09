@@ -217,6 +217,9 @@ public static class EvaluateOrder
 
                 if(PlayerNBMonData != null)
                 {
+                    if(PlayerNBMonData.fainted || PlayerNBMonData.hp <= 0)
+                        continue;
+
                     CurrentNBMonOnBF.Add(PlayerNBMonData);
 
                     //Reset Temporary Passive
@@ -257,6 +260,9 @@ public static class EvaluateOrder
 
                 if(EnemyNBMonData != null)
                 {
+                    if(EnemyNBMonData.fainted || EnemyNBMonData.hp <= 0)
+                        continue;
+
                     CurrentNBMonOnBF.Add(EnemyNBMonData);
 
                     //Reset Temporary Passive

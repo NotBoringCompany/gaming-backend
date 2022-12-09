@@ -28,6 +28,8 @@ public static class InitialTeamSetup
     {
         //Let's generate Player Human Data first.
         humanBattleData.playerHumanData = HumanBattleBaseData.defaultHumanBattleData;
+        humanBattleData.playerHumanData.maxHp = GenerateHumanHP(playerTeam);
+        humanBattleData.playerHumanData.hp = GenerateHumanHP(playerTeam);
         humanBattleData.playerHumanData.owner = playerDisplayName;
         humanBattleData.playerHumanData.nickName = playerDisplayName;
         humanBattleData.playerHumanData.uniqueId = playerPlayFabId + playerDisplayName;
@@ -40,6 +42,19 @@ public static class InitialTeamSetup
             humanBattleData.enemyHumanData.nickName = enemyTeam[0].owner;
             humanBattleData.enemyHumanData.uniqueId = playerPlayFabId + enemyTeam[0].owner;
         }
+    }
+
+    public static int GenerateHumanHP(List<NBMonBattleDataSave> team)
+    {
+        int maxAvgHP = 0;
+
+        foreach(var monster in team)
+        {
+            maxAvgHP += monster.maxHp;
+        }
+
+        var newHp = maxAvgHP/team.Count;
+        return newHp;
     }
 
     //Cloud Methods
