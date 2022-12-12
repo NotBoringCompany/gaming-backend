@@ -209,6 +209,42 @@ public static class AttackFunction
         return DataFromAzureToClient;
     }
 
+    [FunctionName("SkipTurnLogic")]
+    public static async Task<dynamic> SkipTurnLogic([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log){
+        //Setup serverApi (Server API to PlayFab)
+        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+        dynamic args = context.FunctionArgument;
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
+
+        //Request Team Information (Player and Enemy)
+        var requestTeamInformation = await serverApi.GetUserDataAsync(
+            new GetUserDataRequest { 
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"SortedOrder"}
+            }
+        );
+
+        //Declare Variable
+        List<String> SortedOrder = new List<string>();
+        string currMonsterUid = string.Empty;
+        //Insert declared data
+        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+        if(args["currMonsterUid"] != null)
+            currMonsterUid = args["currMonsterUid"];
+
+        var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, currMonsterUid);
+        //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
+            new UpdateUserDataRequest {
+             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)}
+                }
+            }
+        );
+
+        return null;
+    }
+
+
     //Data Send to Client
     public class DamageData
     {
