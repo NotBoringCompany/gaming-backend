@@ -159,7 +159,7 @@ public static class AttackFunction
             log.LogInformation($"{TargetMonster.nickName}, Apply Skill");
 
             //Apply Skill
-            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, seedClass, moraleData, PlayerTeam, EnemyTeam);
+            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, seedClass, moraleData, PlayerTeam, EnemyTeam, humanBattleData);
 
             log.LogInformation($"{TargetMonster.nickName}, Apply Status Effect Immediately");
 
@@ -287,7 +287,7 @@ public static class AttackFunction
     }
 
     //Apply Skill Function
-    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient, RNGSeedClass seedClass, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam)
+    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient, RNGSeedClass seedClass, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
         //Declare New DamageData
         DamageData ThisMonsterDamageData = new DamageData();
@@ -301,7 +301,7 @@ public static class AttackFunction
         //When skill type is damage, calculate the damage based on element modifier
         if(Skill.actionType == SkillsDataBase.ActionType.Damage)
         {
-            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData, seedClass, moraleData, playerTeam, enemyTeam);
+            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData, seedClass, moraleData, playerTeam, enemyTeam, humanBattleData);
         }
 
         //Apply passive effect related to after action to the original monster
@@ -353,7 +353,7 @@ public static class AttackFunction
 
     //Damage Function
     //Calculate and do the damage to the monster
-    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData, RNGSeedClass seedClass, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam)
+    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData, RNGSeedClass seedClass, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
         //Declare Random Variable
         Random R = new Random();
@@ -465,7 +465,7 @@ public static class AttackFunction
         }
 
         //Changes morale Data for attacker (increase gauge by 5)
-        ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, AttackerMonster, 5);
+        ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, AttackerMonster, 5, humanBattleData);
 
         // Reduce target NBMon's HP
         if (skill.techniqueType == SkillsDataBase.TechniqueType.Attack)
@@ -482,7 +482,7 @@ public static class AttackFunction
 
                 //Normal Damage
                 NBMonTeamData.StatsValueChange(DefenderMonster ,NBMonProperties.StatsType.Hp, damageAttack * -1);
-                ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, DefenderMonster, damageAttack);
+                ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, DefenderMonster, damageAttack, humanBattleData);
 
                 //Energy Damage
                 if (This_NBMon_EnergyShield_IsActive >= 1)
@@ -511,7 +511,7 @@ public static class AttackFunction
 
             //Normal SP Damage
             NBMonTeamData.StatsValueChange(DefenderMonster, NBMonProperties.StatsType.Hp, damageSpAttack * -1);
-            ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, DefenderMonster, damageSpAttack);
+            ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, DefenderMonster, damageSpAttack, humanBattleData);
 
             if (This_NBMon_EnergyShield_IsActive >= 1)
             {
@@ -589,17 +589,32 @@ public static class AttackFunction
         thisMonsterDamageData.EnergyDrained = EnergyDrained;
     }
 
-    public static void ChangeMoraleGauge(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, int damageTaken)
+    public static void ChangeMoraleGauge(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, int damageTaken, HumanBattleData humanBattleData)
     {
+        //Player Logic
         if(playerTeam.Contains(monster))
         {
             BattleMoraleGauge.IncreasePlayerMorale(moraleData, damageTaken);
         }
 
+        if(humanBattleData.playerHumanData != null)
+            if(monster == humanBattleData.playerHumanData)
+            {
+                BattleMoraleGauge.IncreasePlayerMorale(moraleData, damageTaken);
+            }
+
+        //Enemy Logic
         if(enemyTeam.Contains(monster))
         {
             BattleMoraleGauge.IncreaseEnemyMorale(moraleData, damageTaken);
         }
+
+        if(humanBattleData.enemyHumanData != null)
+            if(monster == humanBattleData.enemyHumanData)
+            {
+                BattleMoraleGauge.IncreaseEnemyMorale(moraleData, damageTaken);
+            }
+
     }
 
     //Monster Target Defeated
