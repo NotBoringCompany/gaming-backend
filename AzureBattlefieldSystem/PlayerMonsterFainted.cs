@@ -43,7 +43,7 @@ public static class PlayerMonsterFainted{
             {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)}
             }});
 
-        return $"Player {currentMonsterData.nickName} fainted, applying penalty!!";
+        return $"Player {currentMonsterData.nickName}//{currentMonsterData.uniqueId} fainted, applying penalty!!";
     }
 
     private static void FaintedPenalty(NBMonBattleDataSave faintMonster){

@@ -641,7 +641,7 @@ public static class AttackFunction
     }
 
     //Add EXP Function
-    public static void AddEXP(NBMonBattleDataSave TargetMonster, NBMonBattleDataSave AttackerMonster, DataSendToUnity dataFromAzureToClient)
+    public static void AddEXP(NBMonBattleDataSave TargetMonster, NBMonBattleDataSave AttackerMonster, DataSendToUnity dataFromAzureToClient, int expDivider = 1)
     {
         MonsterObtainedEXP ThisMonsterEXPData = new MonsterObtainedEXP();
 
@@ -688,11 +688,11 @@ public static class AttackFunction
             EXPEquation = 0;
 
         //Add EXP to Monster (EXP Memory Storage)
-        AttackerMonster.expMemoryStorage += EXPEquation;
+        AttackerMonster.expMemoryStorage += EXPEquation/expDivider;
 
         //Insert Necessary Data into ThisMonsterEXPData
         ThisMonsterEXPData.MonsterUniqueID = AttackerMonster.uniqueId;
-        ThisMonsterEXPData.MonsterGetEXP = EXPEquation;
+        ThisMonsterEXPData.MonsterGetEXP = EXPEquation/expDivider;
 
         //Add ThisMonsterEXPData into dataFromAzureToClient.
         if(dataFromAzureToClient != null)

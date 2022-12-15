@@ -36,45 +36,54 @@ public static class BattlefieldEXP
 
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
         List<NBMonBattleDataSave> enemyTeam = new List<NBMonBattleDataSave>();
-        string CurrentMonsterUniqueID = string.Empty;
+        List<string> activeMonsterUid = new List<string>();
+        string allMonsterUid = string.Empty;
         int wildBattleIndex = new int();
 
         //Check args["ThisMonsterUniqueID"] if it's null or not
-        if(args["CurrentMonsterUniqueID"] != null)
-            CurrentMonsterUniqueID = (string) args["CurrentMonsterUniqueID"];
+        if(args["allMonsterUid"] != null)
+            allMonsterUid = (string) args["allMonsterUid"];
 
         if(args["WildBattleIndex"] != null)
             wildBattleIndex = (int)args["WildBattleIndex"];
         else
             return $"Error: WildBattleIndex variable not registered!";
 
+        activeMonsterUid = JsonConvert.DeserializeObject<List<string>>(allMonsterUid);
         GenerateEnemyTeam.GenerateWildNBMon(enemyTeam, wildBattleIndex);
+
+        //Declare new Variable for looping
+        List<NBMonBattleDataSave> playerTeam = new List<NBMonBattleDataSave>();
+        NBMonBattleDataSave currentMonsterData = new NBMonBattleDataSave();
+        //Get Value
+        playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         
-        //Convert from json to NBmonBattleDataSave
-        var playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
-        var currentMonsterData = UseItem.FindMonster(CurrentMonsterUniqueID, playerTeam, null);
+        foreach(var monsterUid in activeMonsterUid){
+            //Convert from json to NBmonBattleDataSave
+            currentMonsterData = UseItem.FindMonster(monsterUid, playerTeam, null);
 
-        if(currentMonsterData != null)
-        {
-            var enemyData = enemyTeam[0];
+            if(currentMonsterData != null)
+            {
+                var enemyData = enemyTeam[0];
 
-            //Add EXP, but the dataFromAzureToClient is null because we don't need it to appear in UI
-            AttackFunction.AddEXP(enemyData, currentMonsterData, null);
+                //Add EXP, but the dataFromAzureToClient is null because we don't need it to appear in UI
+                AttackFunction.AddEXP(enemyData, currentMonsterData, null, activeMonsterUid.Count);
 
-            //Put the EXP into Monster and level up it if the requirement meet.
-            BattleFinished.GetEXPLogicIndividual(currentMonsterData);
-
-            //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
-            var updateReq = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
-                {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)}
-                }});
-
-            return $"{currentMonsterData.nickName} got EXP and updated to PlayFab!";
+                //Put the EXP into Monster and level up it if the requirement meet.
+                BattleFinished.GetEXPLogicIndividual(currentMonsterData);
+            }
+            else
+            {
+                return $"Error: Unique ID of {allMonsterUid} not found!";
+            }
         }
-        else
-        {
-            return $"Error: Unique ID of {CurrentMonsterUniqueID} not found!";
-        }
+
+        //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
+        var updateReq = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+            {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)}
+            }});
+
+        return $"{allMonsterUid.Count()} of an active player Monster received EXP and updated to PlayFab!";
     }
 }
