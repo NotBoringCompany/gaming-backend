@@ -26,24 +26,24 @@ public static class InitialTeamSetup
 
     public static void GenerateHumanData(HumanBattleData humanBattleData, int battleCategory, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, string playerDisplayName, string playerPlayFabId)
     {
-        //Let's generate Player Human Data first.
-        humanBattleData.playerHumanData = HumanBattleBaseData.defaultHumanBattleData;
-        humanBattleData.playerHumanData.maxHp = GenerateHumanHP(playerTeam);
-        humanBattleData.playerHumanData.hp = GenerateHumanHP(playerTeam);
-        humanBattleData.playerHumanData.owner = playerDisplayName;
-        humanBattleData.playerHumanData.nickName = playerDisplayName;
-        humanBattleData.playerHumanData.uniqueId = playerPlayFabId + playerDisplayName;
-
         //Let's generate NPC Human Data if the battle is an NPC Battle
         if(battleCategory == 1) //Indicating NPC Battle
         {
-            humanBattleData.enemyHumanData = HumanBattleBaseData.defaultHumanBattleData;
+            humanBattleData.enemyHumanData = HumanBattleBaseData.defaultHumanBattleData();
             humanBattleData.enemyHumanData.maxHp = GenerateHumanHP(enemyTeam);
             humanBattleData.enemyHumanData.hp = GenerateHumanHP(enemyTeam);
             humanBattleData.enemyHumanData.owner = enemyTeam[0].owner;
             humanBattleData.enemyHumanData.nickName = enemyTeam[0].owner;
             humanBattleData.enemyHumanData.uniqueId = playerPlayFabId + enemyTeam[0].owner;
         }
+
+        //Let's generate Player Human Data first.
+        humanBattleData.playerHumanData = HumanBattleBaseData.defaultHumanBattleData();
+        humanBattleData.playerHumanData.maxHp = GenerateHumanHP(playerTeam);
+        humanBattleData.playerHumanData.hp = GenerateHumanHP(playerTeam);
+        humanBattleData.playerHumanData.owner = playerDisplayName;
+        humanBattleData.playerHumanData.nickName = playerDisplayName;
+        humanBattleData.playerHumanData.uniqueId = playerPlayFabId + playerDisplayName;
     }
 
     public static int GenerateHumanHP(List<NBMonBattleDataSave> team)

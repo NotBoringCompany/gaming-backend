@@ -626,14 +626,14 @@ public static class AttackFunction
             //TargetMonster becomes Fainted
             TargetMonster.fainted = true;
 
-            //Apply EXP to Every Single Monster (For Player Team Only), Check if the Attacker Monster is from Player 1 and the Killed Monster is not from Player 1
-            if(Team1UniqueID_BF.Contains(AttackerMonster.uniqueId) && !Team1UniqueID_BF.Contains(TargetMonster.uniqueId))
+            //Apply EXP to Every Single Monster (For Player Team Only), Check if the Attacker Monster is from Player 1 (or human) and the Killed Monster is not from Player 1
+            if((Team1UniqueID_BF.Contains(AttackerMonster.uniqueId) || AttackerMonster.monsterId == "Human") && !Team1UniqueID_BF.Contains(TargetMonster.uniqueId))
             {
                 foreach(var Player1Monster in PlayerTeam)
                 {
                     if(Team1UniqueID_BF.Contains(Player1Monster.uniqueId))
                     {
-                        AddEXP(TargetMonster, Player1Monster, dataFromAzureToClient);
+                        AddEXP(TargetMonster, Player1Monster, dataFromAzureToClient, 1);
                     }
                 }
             }
@@ -641,7 +641,7 @@ public static class AttackFunction
     }
 
     //Add EXP Function
-    public static void AddEXP(NBMonBattleDataSave TargetMonster, NBMonBattleDataSave AttackerMonster, DataSendToUnity dataFromAzureToClient, int expDivider = 1)
+    public static void AddEXP(NBMonBattleDataSave TargetMonster, NBMonBattleDataSave AttackerMonster, DataSendToUnity dataFromAzureToClient, int expDivider)
     {
         MonsterObtainedEXP ThisMonsterEXPData = new MonsterObtainedEXP();
 

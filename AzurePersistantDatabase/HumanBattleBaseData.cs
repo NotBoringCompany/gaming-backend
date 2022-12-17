@@ -2,8 +2,10 @@ using System.Collections.Generic;
 
 public static class HumanBattleBaseData
 {
-    public static NBMonBattleDataSave defaultHumanBattleData = new NBMonBattleDataSave()
+
+    public static NBMonBattleDataSave defaultHumanBattleData()
     {
+        NBMonBattleDataSave baseHumanData = new NBMonBattleDataSave() {
         owner = string.Empty,
         nickName = string.Empty,
         monsterId = "Human",
@@ -61,4 +63,7 @@ public static class HumanBattleBaseData
         specialAttackEffort = 0,
         specialDefenseEffort = 0
     };
+
+        return baseHumanData;
+    }
 }
