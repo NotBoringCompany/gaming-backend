@@ -357,8 +357,12 @@ public static class UseItem
         //When UsedItem is not Null, Let's recover their stats.
         if(UsedItem != null)
         {
-            //Find This Monster
+            //Find This Monster on player team 1
             ThisMonster = FindMonster(ConvertedInputData.UsedMonsterUniqueID, PlayerTeam, humanBattleData);
+
+            //if this monster still null, check team 2
+            if(ThisMonster == null)
+                ThisMonster = FindMonster(ConvertedInputData.UsedMonsterUniqueID, EnemyTeam, humanBattleData);
 
             //Setup HP's Tooltip
             int TotalHPRecovery = UsedItem.HPRecovery + (int)Math.Floor((float)UsedItem.HPRecovery_Percentage/100f * (float)ThisMonster.maxHp);
@@ -398,6 +402,7 @@ public static class UseItem
                         Data = new Dictionary<string, string>{ 
                             {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
                             {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
+                            {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
                             {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
                     }
                 });
