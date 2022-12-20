@@ -84,6 +84,6 @@ public static class BattlefieldEXP
             {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)}
             }});
 
-        return $"{allMonsterUid.Count()} of an active player Monster received EXP and updated to PlayFab!";
+        return $"{activeMonsterUid.Count()} of an active player Monster received EXP and updated to PlayFab!";
     }
 }
