@@ -476,6 +476,12 @@ namespace NBCompany.Setters
             string ethAddress = userInfo.ethAddress;
             string email = userInfo.email;
 
+            //Sent Player Data
+            var data = new AccountData();
+            data.email = email;
+            data.ethAddress = ethAddress;
+            data.sessionToken = sessionToken;
+
             var request = await serverApi.UpdateUserInternalDataAsync(new UpdateUserInternalDataRequest
                 {
                     PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
@@ -486,11 +492,18 @@ namespace NBCompany.Setters
                         }
                 });
 
-                return ethAddress;
+                return JsonConvert.SerializeObject(data);
 
             } catch(Exception e){
                 return e;
             }
+        }
+
+        public class AccountData
+        {
+            public string ethAddress;
+            public string email;
+            public string sessionToken;
         }
 
 
