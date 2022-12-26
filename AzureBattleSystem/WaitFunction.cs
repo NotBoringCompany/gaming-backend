@@ -62,6 +62,12 @@ public static class WaitFunction
         //Let's Recover this Monster's Energy by 50 points.
         var Monster = UseItem.FindMonster(ThisMonsterUniqueID, PlayerTeam, humanBattleData);
 
+        //If the Monster Variable still Null, let's find it using Enemy Team.
+        if(Monster == null)
+        {
+            Monster = UseItem.FindMonster(ThisMonsterUniqueID, EnemyTeam, humanBattleData);
+        }
+
         //If monster found in the player team, let's check its turn order.
         if(Monster != null)
         {
@@ -72,12 +78,6 @@ public static class WaitFunction
             {
                 return $"No Monster in the turn order. Error Code: RH-0001";
             }
-        }
-
-        //If the Monster Variable still Null, let's find it using Enemy Team.
-        if(Monster == null)
-        {
-            Monster = UseItem.FindMonster(ThisMonsterUniqueID, EnemyTeam, humanBattleData);
         }
 
         //Recover Energy by 50 points.
