@@ -118,9 +118,9 @@ public class PassiveLogic
                 {
                     //Check if the used skills are inside the Skill List from the passive
                     if (requirements.skillLists.Contains(skill.skillName))
-                    {
                         returnValue = true;
-                    }
+                    else
+                        returnValue = false;
                 }
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionReceivingTechnique)
