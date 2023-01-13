@@ -641,62 +641,80 @@ public static class AttackFunction
     }
 
     //Add EXP Function
-    public static void AddEXP(NBMonBattleDataSave TargetMonster, NBMonBattleDataSave AttackerMonster, DataSendToUnity dataFromAzureToClient, int expDivider)
+    public static void AddEXP(NBMonBattleDataSave targetMonster, NBMonBattleDataSave attackerMonster, DataSendToUnity dataFromAzureToClient, int expDivider)
     {
-        MonsterObtainedEXP ThisMonsterEXPData = new MonsterObtainedEXP();
+        MonsterObtainedEXP thisMonsterEXPData = new MonsterObtainedEXP();
 
         //Level of Human Player's NBMon
-        var ThisMonsterLevel = AttackerMonster.level;
+        var thisMonsterLevel = attackerMonster.level;
 
         //Level of Defeated NBMon
-        var DefeatedMonsterLevel = TargetMonster.level;
+        var defeatedMonsterLevel = targetMonster.level;
 
         //Get Target Monster's Base EXP from Monster Database
-        float DefeatedMonsterBaseEXP = NBMonDatabase.FindMonster(TargetMonster.monsterId).baseEXP;
+        float defeatedMonsterBaseEXP = NBMonDatabase.FindMonster(targetMonster.monsterId).baseEXP;
 
-        //EXP Multiplier Depending On Team's Type (Wild, NPC, or Boss)
-        var Variable_A = 1f;
+        Random r = new Random();
 
-        if(VS_Boss)
-        {
-            Variable_A = 5f;
-        }
-
-        if(VS_NPC)
-        {
-            Variable_A = 1.5f;
-        }
-
-        //EXPMultiplier Logic Based on Level
-        var EXPMultiplierByLevelDifferences = EXPMultiplierEquation(ThisMonsterLevel, DefeatedMonsterLevel);
-
-        //Step by Step Calculation
-        float Func_1 = (4f * (float)Math.Pow((float)DefeatedMonsterLevel, 3f) / 8f);
-        float Func_2 = (2f * (float)DefeatedMonsterLevel + 10f);
-        float Func_3 = (float)DefeatedMonsterLevel + (float)ThisMonsterLevel + 10f;
-        float Function = (float)(Math.Pow(Func_2/Func_3, 2.5f) / 2.3f);
-
-        //EXP Equation
-        int EXPEquation = (int)Math.Floor(
-            EXPMultiplierByLevelDifferences *
-            Func_1 *
-            Variable_A *
-            DefeatedMonsterBaseEXP * Function);
-
-        //Do Not Get Any EXP if defeating same team or Reached Max Level.
-        if (ThisMonsterLevel >= MaxLevel)
-            EXPEquation = 0;
+        var demoEXP = r.Next(100,250);
 
         //Add EXP to Monster (EXP Memory Storage)
-        AttackerMonster.expMemoryStorage += EXPEquation/expDivider;
+        attackerMonster.expMemoryStorage += demoEXP;
 
         //Insert Necessary Data into ThisMonsterEXPData
-        ThisMonsterEXPData.MonsterUniqueID = AttackerMonster.uniqueId;
-        ThisMonsterEXPData.MonsterGetEXP = EXPEquation/expDivider;
+        thisMonsterEXPData.MonsterUniqueID = attackerMonster.uniqueId;
+        thisMonsterEXPData.MonsterGetEXP = demoEXP;
 
         //Add ThisMonsterEXPData into dataFromAzureToClient.
         if(dataFromAzureToClient != null)
-            dataFromAzureToClient.EXPDatas.Add(ThisMonsterEXPData);
+            dataFromAzureToClient.EXPDatas.Add(thisMonsterEXPData);
+        return; //For Demo Purpose
+
+        //EXP Multiplier Depending On Team's Type (Wild, NPC, or Boss)
+        // var var_A = 1f;
+
+        // if(VS_Boss)
+        // {
+        //     var_A = 5f;
+        // }
+
+        // if(VS_NPC)
+        // {
+        //     var_A = 1.5f;
+        // }
+
+        // //EXPMultiplier Logic Based on Level
+        // var xp_MultiplierByLevelDifferences = EXPMultiplierEquation(thisMonsterLevel, defeatedMonsterLevel);
+
+        // //Step by Step Calculation
+        // float func_1 = (4f * (float)Math.Pow((float)defeatedMonsterLevel, 3f) / 8f);
+        // float func_2 = (2f * (float)defeatedMonsterLevel + 10f);
+        // float func_3 = (float)defeatedMonsterLevel + (float)thisMonsterLevel + 10f;
+        // float overall_Function = (float)(Math.Pow(func_2/func_3, 2.5f) / 2.3f);
+
+        // //EXP Equation
+        // int xp_Equation = (int)Math.Floor(
+        //     xp_MultiplierByLevelDifferences *
+        //     func_1 *
+        //     var_A *
+        //     defeatedMonsterBaseEXP * overall_Function);
+
+        // //Do Not Get Any EXP if defeating same team or Reached Max Level.
+        // if (thisMonsterLevel >= MaxLevel)
+        //     xp_Equation = 0;
+
+        // var expGained = xp_Equation/expDivider;
+
+        // //Add EXP to Monster (EXP Memory Storage)
+        // attackerMonster.expMemoryStorage += expGained;
+
+        // //Insert Necessary Data into ThisMonsterEXPData
+        // thisMonsterEXPData.MonsterUniqueID = attackerMonster.uniqueId;
+        // thisMonsterEXPData.MonsterGetEXP = expGained;
+
+        // //Add ThisMonsterEXPData into dataFromAzureToClient.
+        // if(dataFromAzureToClient != null)
+        //     dataFromAzureToClient.EXPDatas.Add(thisMonsterEXPData);
     }
 
     //Related to EXPMultiplier variable in AddToEXPList function
