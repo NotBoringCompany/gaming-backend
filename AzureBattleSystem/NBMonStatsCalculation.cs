@@ -18,28 +18,28 @@ using System.Linq;
 
 public static class NBMonStatsCalculation
 {
-    public static void CalculateNBMonStatsAfterLevelUp(NBMonBattleDataSave Monster)
+    public static void CalculateNBMonStatsAfterLevelUp(NBMonBattleDataSave monster)
     {
         //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
-        NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase = NBMonDatabase.FindMonster(Monster.monsterId);
+        NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = NBMonDatabase.FindMonster(monster.monsterId);
 
         //Make this Monster Level Up = true for UI.
-        Monster.NBMonLevelUp = true;
+        monster.NBMonLevelUp = true;
 
-        if(MonsterFromDatabase != null)
+        if(monsterFromDatabase != null)
         {
             //Stats Calculation
-            StatsCalculation(Monster, MonsterFromDatabase);
+            StatsCalculation(monster, monsterFromDatabase);
         }
     }   
     
     //Generate NBMon Level
-    public static void GenerateRandomLevel(NBMonBattleDataSave ThisMonsterInfo, int LevelAsked)
+    public static void GenerateRandomLevel(NBMonBattleDataSave monsterInfo, int levelAsked)
     {
         //Random Variable
         Random R = new Random();
-        int LowerBase = LevelAsked - 2;
-        int UpperBase = LevelAsked + 2;
+        int LowerBase = levelAsked - 2;
+        int UpperBase = levelAsked + 2;
 
         //Normalized Lower Base
         if(LowerBase <= 0)
@@ -49,19 +49,19 @@ public static class NBMonStatsCalculation
         if(UpperBase >= AttackFunction.MaxLevel)
             UpperBase = AttackFunction.MaxLevel;
 
-        ThisMonsterInfo.level = R.Next(LowerBase, UpperBase);
+        monsterInfo.level = R.Next(LowerBase, UpperBase);
     }
 
     //Generate Wild NBmon Unique ID
-    public static void GenerateWildMonsterCredential(NBMonBattleDataSave ThisMonsterInfo)
+    public static void GenerateWildMonsterCredential(NBMonBattleDataSave monsterInfo)
     {
         //Random Variable
         Random R = new Random();
 
-        ThisMonsterInfo.uniqueId = R.Next(0, 999999999).ToString();
+        monsterInfo.uniqueId = R.Next(0, 999999999).ToString();
     }
 
-    public static void GenerateThisMonsterQuality(NBMonBattleDataSave ThisMonsterInfo)
+    public static void GenerateThisMonsterQuality(NBMonBattleDataSave monsterInfo)
     {
         //Random Variable
         Random R = new Random();
@@ -70,143 +70,143 @@ public static class NBMonStatsCalculation
 
         //45% Chance to be Common
         if(RNG >= 0 && RNG < 45000)
-            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Common;
+            monsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Common;
         
         //30% Chance to be Uncommon
         if(RNG >= 45000 && RNG < 75000)
-            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Uncommon;
+            monsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Uncommon;
 
         //15% Chance to be Rare
         if(RNG >= 75000 && RNG < 90000)
-            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Rare;
+            monsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Rare;
 
         //9% Chance to be Elite
         if(RNG >= 90000 && RNG < 99000)
-            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Elite;
+            monsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Elite;
 
         //1% Chance to be Elite
         if(RNG >= 99000 && RNG <= 100000)
-            ThisMonsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Legend;        
+            monsterInfo.Quality = (int)NBMonDataSave.MonsterQuality.Legend;        
     }
 
     //Generate Random Potential Value
-    public static void GenerateRandomPotentialValue(NBMonBattleDataSave ThisMonsterInfo, NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase)
+    public static void GenerateRandomPotentialValue(NBMonBattleDataSave mosterInfo, NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase)
     {
         //Random Variable
         Random R = new Random();
 
         //Let's Generate Max Possible Potential Value
-        var MaxEffortValue = 0;
+        var maxPotentialValue = 0;
 
-        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Common)
-            MaxEffortValue = 20;
+        if(mosterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Common)
+            maxPotentialValue = 20;
 
-        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Uncommon)
-            MaxEffortValue = 30;
+        if(mosterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Uncommon)
+            maxPotentialValue = 30;
 
-        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Rare)
-            MaxEffortValue = 40;
+        if(mosterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Rare)
+            maxPotentialValue = 40;
 
-        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Elite)
-            MaxEffortValue = 50;
+        if(mosterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Elite)
+            maxPotentialValue = 50;
         
-        if(ThisMonsterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Legend)
-            MaxEffortValue = 65;
+        if(mosterInfo.Quality == (int) NBMonDataSave.MonsterQuality.Legend)
+            maxPotentialValue = 65;
 
-        if(MonsterFromDatabase.Tier == NBMonDatabase.NBMonTierType.Wild || MonsterFromDatabase.Tier == NBMonDatabase.NBMonTierType.Hybrid)
+        if(monsterFromDatabase.Tier == NBMonDatabase.NBMonTierType.Wild || monsterFromDatabase.Tier == NBMonDatabase.NBMonTierType.Hybrid)
         {
-            if(MaxEffortValue > 50)
-                MaxEffortValue = 50;
+            if(maxPotentialValue > 50)
+                maxPotentialValue = 50;
         }
 
         //After Defining This Monster's Max Possible Effort Value
-        ThisMonsterInfo.maxHpPotential = R.Next(0, MaxEffortValue);
-        ThisMonsterInfo.maxEnergyPotential = R.Next(0, MaxEffortValue);
-        ThisMonsterInfo.speedPotential = R.Next(0, MaxEffortValue);
-        ThisMonsterInfo.attackPotential = R.Next(0, MaxEffortValue);
-        ThisMonsterInfo.specialAttackPotential = R.Next(0, MaxEffortValue);
-        ThisMonsterInfo.defensePotential = R.Next(0, MaxEffortValue);
-        ThisMonsterInfo.specialDefensePotential = R.Next(0, MaxEffortValue);
+        mosterInfo.maxHpPotential = R.Next(0, maxPotentialValue);
+        mosterInfo.maxEnergyPotential = R.Next(0, maxPotentialValue);
+        mosterInfo.speedPotential = R.Next(0, maxPotentialValue);
+        mosterInfo.attackPotential = R.Next(0, maxPotentialValue);
+        mosterInfo.specialAttackPotential = R.Next(0, maxPotentialValue);
+        mosterInfo.defensePotential = R.Next(0, maxPotentialValue);
+        mosterInfo.specialDefensePotential = R.Next(0, maxPotentialValue);
 
     }
 
     //Calculate Base Stats (Used for Read Data from Database, during Level Up)).
-    public static void StatsCalculation(NBMonBattleDataSave ThisMonsterInfo, NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase, bool ResetMonsterStats = false)
+    public static void StatsCalculation(NBMonBattleDataSave monsterInfo, NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase, bool resetMonsterStats = false)
     {
-        ThisMonsterInfo.maxHp =
+        monsterInfo.maxHp =
             EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.maxHpBase,
             NBMonDatabase.MaxHP,
             NBMonDatabase.Norm_MaxHP,
-            ThisMonsterInfo.level,
-            ThisMonsterInfo.maxHpPotential,
-            ThisMonsterInfo.maxHpEffort);
+            monsterInfo.level,
+            monsterInfo.maxHpPotential,
+            monsterInfo.maxHpEffort);
 
-        ThisMonsterInfo.maxEnergy =
+        monsterInfo.maxEnergy =
             EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.maxEnergyBase,
             NBMonDatabase.MaxEnergy,
             NBMonDatabase.Norm_MaxEnergy,
-            ThisMonsterInfo.level,
-            ThisMonsterInfo.maxEnergyPotential,
-            ThisMonsterInfo.maxEnergyEffort);
+            monsterInfo.level,
+            monsterInfo.maxEnergyPotential,
+            monsterInfo.maxEnergyEffort);
 
-        ThisMonsterInfo.speed =
+        monsterInfo.speed =
             EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.speedBase,
             NBMonDatabase.Speed,
             NBMonDatabase.Norm_Speed,
-            ThisMonsterInfo.level,
-           ThisMonsterInfo.speedPotential,
-            ThisMonsterInfo.speedEffort);
+            monsterInfo.level,
+           monsterInfo.speedPotential,
+            monsterInfo.speedEffort);
 
-        ThisMonsterInfo.attack =
+        monsterInfo.attack =
             EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.attackBase,
             NBMonDatabase.Attack,
             NBMonDatabase.Norm_Attack,
-            ThisMonsterInfo.level,
-            ThisMonsterInfo.attackPotential,
-            ThisMonsterInfo.attackEffort);
+            monsterInfo.level,
+            monsterInfo.attackPotential,
+            monsterInfo.attackEffort);
 
-        ThisMonsterInfo.specialAttack =
+        monsterInfo.specialAttack =
             EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.specialAttackBase,
             NBMonDatabase.SPAttack,
             NBMonDatabase.Norm_SPAttack,
-            ThisMonsterInfo.level,
-            ThisMonsterInfo.specialAttackPotential,
-            ThisMonsterInfo.specialAttackEffort);
+            monsterInfo.level,
+            monsterInfo.specialAttackPotential,
+            monsterInfo.specialAttackEffort);
 
-        ThisMonsterInfo.defense =
+        monsterInfo.defense =
             EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.defenseBase,
             NBMonDatabase.Defense,
             NBMonDatabase.Norm_Defense,
-            ThisMonsterInfo.level,
-            ThisMonsterInfo.defensePotential,
-            ThisMonsterInfo.defenseEffort);
+            monsterInfo.level,
+            monsterInfo.defensePotential,
+            monsterInfo.defenseEffort);
 
-        ThisMonsterInfo.specialDefense =
+        monsterInfo.specialDefense =
             EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.specialDefenseBase,
             NBMonDatabase.SPDefense,
             NBMonDatabase.Norm_SPDefense,
-            ThisMonsterInfo.level,
-            ThisMonsterInfo.specialDefensePotential,
-            ThisMonsterInfo.specialDefenseEffort);
+            monsterInfo.level,
+            monsterInfo.specialDefensePotential,
+            monsterInfo.specialDefenseEffort);
 
         //Recovery HP and Energy if ResetMonsterStats Bool is True
-        if(ResetMonsterStats)
+        if(resetMonsterStats)
         {
-            ThisMonsterInfo.hp = ThisMonsterInfo.maxHp;
-            ThisMonsterInfo.energy = ThisMonsterInfo.maxEnergy;
+            monsterInfo.hp = monsterInfo.maxHp;
+            monsterInfo.energy = monsterInfo.maxEnergy;
         }
 
         //Next EXP Required Calculation
-        ThisMonsterInfo.nextLevelExpRequired = IncreaseExpRequirementFormula(ThisMonsterInfo.level);
+        monsterInfo.nextLevelExpRequired = IncreaseExpRequirementFormula(monsterInfo.level);
     }
 
     //Calculation Method
-    private static int EachStatsCalculationMethod(int BaseStats, int BaseMultiplier, float LevelMultiplier, int ThisMonsterLevel, int Potential, int Effort)
+    private static int EachStatsCalculationMethod(int baseStats, int baseMultiplier, float levelMultiplier, int thisMonsterLevel, int potential, int effort)
     {
-        var BaseValue = (int) Math.Floor((float)BaseStats * (float)BaseMultiplier);
-        var LevelValue = (int) Math.Floor(((float)ThisMonsterLevel - 1f) * (float)BaseStats * (float)LevelMultiplier);
-        var PotentialValue = (int) Math.Floor(((float)BaseValue + (float)LevelValue) * (float)Potential * NBMonDatabase.Potentialmodifier);
-        var EffortValue = (int) Math.Floor(((float)BaseValue + (float)LevelValue) * (float)Effort * NBMonDatabase.EffortModifier);
+        var BaseValue = (int) Math.Floor((float)baseStats * (float)baseMultiplier);
+        var LevelValue = (int) Math.Floor(((float)thisMonsterLevel - 1f) * (float)baseStats * (float)levelMultiplier);
+        var PotentialValue = (int) Math.Floor(((float)BaseValue + (float)LevelValue) * (float)potential * NBMonDatabase.Potentialmodifier);
+        var EffortValue = (int) Math.Floor(((float)BaseValue + (float)LevelValue) * (float)effort * NBMonDatabase.EffortModifier);
 
         var TotalValue = BaseValue + LevelValue + PotentialValue + EffortValue;
 
