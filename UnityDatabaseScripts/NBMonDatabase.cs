@@ -15,27 +15,6 @@ public class NBMonDatabase
         Hybrid
     }
 
-    //Generic Base Stats Modifier
-    public static int MaxHP = 8;
-    public static int MaxEnergy = 20;
-    public static int Speed = 3;
-    public static int Attack = 3;
-    public static int SPAttack = 3;
-    public static int Defense = 3;
-    public static int SPDefense = 3;
-
-    //Normalized Stats
-    public static float Norm_MaxHP = 0.7f;
-    public static float Norm_MaxEnergy = 2.5f;
-    public static float Norm_Speed = 0.15f;
-    public static float Norm_Attack = 0.15f;
-    public static float Norm_SPAttack = 0.15f;
-    public static float Norm_Defense = 0.15f;
-    public static float Norm_SPDefense = 0.15f;
-
-    public static float Potentialmodifier = 0.002f;
-    public static float EffortModifier = 0.0015f;
-
     //Stores relevant information related to the monster Database
     public ElementDatabase elementDatabase;
     public PassiveDatabase passiveDatabase;
@@ -134,14 +113,14 @@ public class NBMonDatabase
         //============================================================
         // ORIGINAL Logic
         //============================================================    
-        MonstersPlayFabList TempData = new MonstersPlayFabList();
+        MonstersPlayFabList tempData = new MonstersPlayFabList();
 
         //Convertion from Json to Class
-        var MonsterJsonData = NBMonDatabaseJson.MonsterDatabaseJson;
-        TempData = JsonConvert.DeserializeObject<MonstersPlayFabList>(MonsterJsonData);
+        var monsterDatabaseJson = NBMonDatabaseJson.MonsterDatabaseJson;
+        tempData = JsonConvert.DeserializeObject<MonstersPlayFabList>(monsterDatabaseJson);
 
         //Make the original variable filled with the converted data.
-        var monsters = TempData.monstersPlayFab;
+        var monsters = tempData.monstersPlayFab;
 
         foreach (var monster in monsters)
         {
@@ -152,5 +131,20 @@ public class NBMonDatabase
         }
         
         return null;
+    }
+
+
+    //EXP Table Related for Demo Purpose
+    public class EXPTable
+    {
+        public int level;
+        public int expRequired;
+    }
+
+    public static string demoEXPTable = "[{\"level\":1,\"expRequired\":200},{\"level\":2,\"expRequired\":400},{\"level\":3,\"expRequired\":600},{\"level\":4,\"expRequired\":800},{\"level\":5,\"expRequired\":1150},{\"level\":6,\"expRequired\":1500},{\"level\":7,\"expRequired\":1850},{\"level\":8,\"expRequired\":2200},{\"level\":9,\"expRequired\":2550},{\"level\":10,\"expRequired\":2900},{\"level\":11,\"expRequired\":3250},{\"level\":12,\"expRequired\":3600},{\"level\":13,\"expRequired\":3950},{\"level\":14,\"expRequired\":4300},{\"level\":15,\"expRequired\":4800},{\"level\":16,\"expRequired\":5300},{\"level\":17,\"expRequired\":5800},{\"level\":18,\"expRequired\":6300},{\"level\":19,\"expRequired\":6800},{\"level\":20,\"expRequired\":7300},{\"level\":21,\"expRequired\":7800},{\"level\":22,\"expRequired\":8300},{\"level\":23,\"expRequired\":8800},{\"level\":24,\"expRequired\":9300},{\"level\":25,\"expRequired\":10000}]";
+
+    public static List<EXPTable> DemoEXPTableData()
+    {
+        return JsonConvert.DeserializeObject<List<EXPTable>>(demoEXPTable);
     }
 }

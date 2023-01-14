@@ -52,10 +52,10 @@ public static class EvaluateOrder
             seedClass.currentRNGSeed = 0;
     }
 
-    public static int ConvertSeedToRNG(RNGSeedClass seedClass)
+    public static int ConvertSeedToRNG(RNGSeedClass seedClass, int min = 0, int max = 100)
     {
         Random r = new Random(seedClass.RNGSeeds[seedClass.currentRNGSeed]);
-        int rngValue = r.Next(0, 100);
+        int rngValue = r.Next(min, max);
 
         ChangeCurrentSeed(seedClass);
 

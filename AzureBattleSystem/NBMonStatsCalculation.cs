@@ -131,91 +131,116 @@ public static class NBMonStatsCalculation
     }
 
     //Calculate Base Stats (Used for Read Data from Database, during Level Up)).
-    public static void StatsCalculation(NBMonBattleDataSave monsterInfo, NBMonDatabase.MonsterInfoPlayFab MonsterFromDatabase, bool resetMonsterStats = false)
+    public static void StatsCalculation(NBMonBattleDataSave monsterInfo, NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase, bool resetMonsterStats = false)
     {
+        int level = monsterInfo.level;
+
         monsterInfo.maxHp =
-            EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.maxHpBase,
-            NBMonDatabase.MaxHP,
-            NBMonDatabase.Norm_MaxHP,
-            monsterInfo.level,
-            monsterInfo.maxHpPotential,
+            HPStatCalculation(monsterFromDatabase.monsterBaseStat.maxHpBase, 
+            level, 
+            monsterInfo.maxHpPotential, 
             monsterInfo.maxHpEffort);
 
         monsterInfo.maxEnergy =
-            EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.maxEnergyBase,
-            NBMonDatabase.MaxEnergy,
-            NBMonDatabase.Norm_MaxEnergy,
-            monsterInfo.level,
-            monsterInfo.maxEnergyPotential,
+            EnergyStatCalculation(monsterFromDatabase.monsterBaseStat.maxEnergyBase, 
+            level, 
+            monsterInfo.maxEnergyPotential, 
             monsterInfo.maxEnergyEffort);
 
         monsterInfo.speed =
-            EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.speedBase,
-            NBMonDatabase.Speed,
-            NBMonDatabase.Norm_Speed,
-            monsterInfo.level,
-           monsterInfo.speedPotential,
+            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.speedBase, 
+            level, 
+            monsterInfo.speedPotential, 
             monsterInfo.speedEffort);
 
         monsterInfo.attack =
-            EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.attackBase,
-            NBMonDatabase.Attack,
-            NBMonDatabase.Norm_Attack,
-            monsterInfo.level,
-            monsterInfo.attackPotential,
+            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.attackBase, 
+            level, 
+            monsterInfo.attackPotential, 
             monsterInfo.attackEffort);
 
         monsterInfo.specialAttack =
-            EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.specialAttackBase,
-            NBMonDatabase.SPAttack,
-            NBMonDatabase.Norm_SPAttack,
-            monsterInfo.level,
-            monsterInfo.specialAttackPotential,
+            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.specialAttackBase, 
+            level, 
+            monsterInfo.specialAttackPotential, 
             monsterInfo.specialAttackEffort);
 
+
         monsterInfo.defense =
-            EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.defenseBase,
-            NBMonDatabase.Defense,
-            NBMonDatabase.Norm_Defense,
-            monsterInfo.level,
-            monsterInfo.defensePotential,
+            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.defenseBase, 
+            level, 
+            monsterInfo.defensePotential, 
             monsterInfo.defenseEffort);
 
         monsterInfo.specialDefense =
-            EachStatsCalculationMethod(MonsterFromDatabase.monsterBaseStat.specialDefenseBase,
-            NBMonDatabase.SPDefense,
-            NBMonDatabase.Norm_SPDefense,
-            monsterInfo.level,
-            monsterInfo.specialDefensePotential,
+            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.specialDefenseBase, 
+            level, 
+            monsterInfo.specialDefensePotential, 
             monsterInfo.specialDefenseEffort);
 
         //Recovery HP and Energy if ResetMonsterStats Bool is True
         if(resetMonsterStats)
         {
+            //Recover HP and Energy
             monsterInfo.hp = monsterInfo.maxHp;
             monsterInfo.energy = monsterInfo.maxEnergy;
+
+            //Reset Battle Speed
+            monsterInfo.battleSpeed = monsterInfo.speed;
         }
 
         //Next EXP Required Calculation
         monsterInfo.nextLevelExpRequired = IncreaseExpRequirementFormula(monsterInfo.level);
     }
 
-    //Calculation Method
-    private static int EachStatsCalculationMethod(int baseStats, int baseMultiplier, float levelMultiplier, int thisMonsterLevel, int potential, int effort)
+    private static int HPStatCalculation(int baseStat, int level, int potentialValue, int growthValue)
     {
-        var BaseValue = (int) Math.Floor((float)baseStats * (float)baseMultiplier);
-        var LevelValue = (int) Math.Floor(((float)thisMonsterLevel - 1f) * (float)baseStats * (float)levelMultiplier);
-        var PotentialValue = (int) Math.Floor(((float)BaseValue + (float)LevelValue) * (float)potential * NBMonDatabase.Potentialmodifier);
-        var EffortValue = (int) Math.Floor(((float)BaseValue + (float)LevelValue) * (float)effort * NBMonDatabase.EffortModifier);
+        float func_A = (2 * baseStat) / 3;
+        float func_B = (potentialValue * potentialValue / 34);
+        float func_C = (growthValue / 17);
+        float func_ABC = ((func_A + func_B + func_C) * level) / 95;
+        float func_2 = (7 * level / 4) + 90;
 
-        var TotalValue = BaseValue + LevelValue + PotentialValue + EffortValue;
+        int sumUpValue = (int)(func_ABC + func_2);
+        return sumUpValue;
+    }
 
-        return TotalValue;
-    } 
+    private static int EnergyStatCalculation(int baseStat, int level, int potentialValue, int growthValue)
+    {
+        float func_A = (2 * baseStat) / 7;
+        float func_B = 10 * (float)System.Math.Sqrt(level);
+        float func_C = (float)System.Math.Sqrt(potentialValue * baseStat * level / 125);
+        float func_D = (float)System.Math.Sqrt(growthValue * baseStat * level / 175);
+
+        int sumUpValue = (int)(func_A + func_B + func_C + func_D);
+        return sumUpValue;
+    }
+
+    private static int OtherStatsCalculation(int baseStat, int level, int potentialValue, int growthValue)
+    {
+        float func_A = (2 * baseStat) / 3;
+        float func_B = (potentialValue * potentialValue / 35);
+        float func_C = (growthValue / 19);
+        float func_ABC = ((func_A + func_B + func_C) * level) / 100;
+
+        int sumUpValue = (int)(func_ABC + 75);
+        return sumUpValue;
+    }
 
     //Formulas related to Next Level's EXP
     public static int IncreaseExpRequirementFormula(int level)
     {
+        var demoEXPTable = NBMonDatabase.DemoEXPTableData();
+
+        foreach(var expTable in demoEXPTable)
+        {
+                if (expTable.level == level)
+                return expTable.expRequired;
+        }
+
+                //If there's no level requred left, then do this instead.
+        return demoEXPTable[demoEXPTable.Count - 1].expRequired;
+
         var ThisNBMon_Level = level;
         var BaseConstant = 4;
         var ConstantDivider = 8;

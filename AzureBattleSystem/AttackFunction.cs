@@ -353,240 +353,272 @@ public static class AttackFunction
 
     //Damage Function
     //Calculate and do the damage to the monster
-    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DamageData thisMonsterDamageData, RNGSeedClass seedClass, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
+    public static void CalculateAndDoDamage(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave attackerMonster, NBMonBattleDataSave targetMonster, DamageData thisMonsterDamageData, RNGSeedClass seedClass, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
         //Declare Random Variable
         Random R = new Random();
 
         //Apply passives and artifact passives that only works during combat to Attacker
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, null, seedClass);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, attackerMonster, null, null, seedClass);
         //TO DO, Apply Artifact Passive to Attacker Monster.
 
         //Apply passives and artifact passives that only works during combat to This Monster
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, DefenderMonster, null, null, seedClass);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.DuringCombat, PassiveDatabase.TargetType.originalMonster, targetMonster, null, null, seedClass);
         //TO DO, Apply Artifact Passive to Defender Monster.
 
         //Calculate Critical Hit RNG
-        int ThisNBMonCriticalHitRate = CriticalHitStatsCalculation(AttackerMonster, skill);
-        int CriticalRNG = EvaluateOrder.ConvertSeedToRNG(seedClass);
-        float CriticalHitMultiplier = 1f;
-        int MustCritical = AttackerMonster.mustCritical;
-        
-        //Check Target's Immune to Critical or Not
-        int ImmuneToCritical = DefenderMonster.immuneCritical;
+        int attackerCriticalHitRate = CriticalHitStatsCalculation(attackerMonster, skill);
+        int criticalRNG = EvaluateOrder.ConvertSeedToRNG(seedClass);
+        float criticalHitMultiplier = 1f;
+        int mustCritical = attackerMonster.mustCritical;
 
-        if (CriticalRNG <= ThisNBMonCriticalHitRate || MustCritical >= 1)
-            CriticalHitMultiplier = (float)EvaluateOrder.CriticalRNG(seedClass) * (3f-1.5f) + 1.5f;
-        else if (ImmuneToCritical >= 1)
-            CriticalHitMultiplier = 1f;
+        //Check Target's Immune to Critical or Not
+        int immuneToCritical = targetMonster.immuneCritical;
+
+        if (criticalRNG <= attackerCriticalHitRate || mustCritical >= 1)
+            criticalHitMultiplier = (float)EvaluateOrder.CriticalRNG(seedClass) * (3f - 1.5f) + 1.5f;
+        else if (immuneToCritical >= 1)
+            criticalHitMultiplier = 1f;
 
         //Calculate Attacker's Attack Buffs Modifier from Status Effects
-        float Attack_StatusEffect_Modifier = StatusEffectIconDatabase.AttackStatusEffectLogic(AttackerMonster);
-        float SP_Attack_StatusEffect_Modifier = StatusEffectIconDatabase.SPAttackStatusEffectLogic(AttackerMonster);
+        float attack_StatusEffect_Modifier = StatusEffectIconDatabase.AttackStatusEffectLogic(attackerMonster);
+        float sp_Attack_StatusEffect_Modifier = StatusEffectIconDatabase.SPAttackStatusEffectLogic(attackerMonster);
 
         //Find Attacker's Attack Buffs from Passives
-        float Attack_Passive_Modifier = AttackerMonster.attackBuff/100f;
-        float SP_Attack_Passive_Modifier = AttackerMonster.specialAttackBuff/100f;
-        float IgnoreDefenses = AttackerMonster.ignoreDefenses/100f;
-        int TotalIngoreDefense = AttackerMonster.totalIgnoreDefense;
+        float attack_Passive_Modifier = attackerMonster.attackBuff / 100f;
+        float sp_Attack_Passive_Modifier = attackerMonster.specialAttackBuff / 100f;
+        float ignoreDefenses = attackerMonster.ignoreDefenses / 100f;
+        int totalIngoreDefense = attackerMonster.totalIgnoreDefense;
 
         //Normalizations
-        if (IgnoreDefenses > 1)
-            IgnoreDefenses = 1f;
+        if (ignoreDefenses > 1)
+            ignoreDefenses = 1f;
 
         //Calculate This Monster's Defense Buffs Modifier from Status Effects
-        float This_NBMon_Def_Modifier = StatusEffectIconDatabase.DefenseStatusEffectLogic(DefenderMonster);
-        float This_NBMon_SP_Def_Modifier = StatusEffectIconDatabase.SPDefenseStatusEffectLogic(DefenderMonster);
+        float target_NBMon_Def_Modifier = StatusEffectIconDatabase.DefenseStatusEffectLogic(targetMonster);
+        float target_NBMon_SP_Def_Modifier = StatusEffectIconDatabase.SPDefenseStatusEffectLogic(targetMonster);
 
         //Find This Monster's Defense Buffs Modifier from Passives
-        float This_NBMon_Def_Passive_Modifier = DefenderMonster.defenseBuff/100f;
-        float This_NBMon_SP_Def_Passive_Modifier = DefenderMonster.specialDefenseBuff/100f;
-        float This_NBMon_Damage_Reduction_Modifier = DefenderMonster.damageReduction/100f;
-        float This_NBMon_Damage_Reduction_From_Energy_Shield = DefenderMonster.energyShieldValue/100f;
-        int This_NBMon_EnergyShield_IsActive = DefenderMonster.energyShield;
-        int This_NBMon_Must_Survive_Lethal_Blow = DefenderMonster.surviveLethalBlow;
-        float ElementalDamageReduction = 1f - ((float)DefenderMonster.elementDamageReduction) / 100f;
+        float target_NBMon_Def_Passive_Modifier = targetMonster.defenseBuff / 100f;
+        float target_NBMon_SP_Def_Passive_Modifier = targetMonster.specialDefenseBuff / 100f;
+        float target_NBMon_Damage_Reduction_Modifier = targetMonster.damageReduction / 100f;
+        float target_NBMon_Damage_Reduction_From_Energy_Shield = targetMonster.energyShieldValue / 100f;
+        int target_NBMon_EnergyShield_IsActive = targetMonster.energyShield;
+        int target_NBMon_Must_Survive_Lethal_Blow = targetMonster.surviveLethalBlow;
+        float elementalDamageReduction = 1f - ((float)targetMonster.elementDamageReduction) / 100f;
 
         //Normalizations Damage Reduction
-        if (This_NBMon_Damage_Reduction_Modifier >= 1f)
-            This_NBMon_Damage_Reduction_Modifier = 1f;
+        if (target_NBMon_Damage_Reduction_Modifier >= 1f)
+            target_NBMon_Damage_Reduction_Modifier = 1f;
 
         //Normalizations Damage Reduction from Energy Shield
-        if (This_NBMon_Damage_Reduction_From_Energy_Shield > 1f)
-            This_NBMon_Damage_Reduction_From_Energy_Shield = 1f;
+        if (target_NBMon_Damage_Reduction_From_Energy_Shield > 1f)
+            target_NBMon_Damage_Reduction_From_Energy_Shield = 1f;
 
         //Check if the attacker's Total Ignore Defense value is 1 or more (this integer act as Bool)
-        if (TotalIngoreDefense >= 1)
+        if (totalIngoreDefense >= 1)
         {
             //This NBMon's Damage Reduction set to 0f.
-            This_NBMon_Damage_Reduction_Modifier = 0f;
+            target_NBMon_Damage_Reduction_Modifier = 0f;
 
             //Attacker's Ignore Defenses set to 1f (aka 100%).
-            IgnoreDefenses = 1f;
+            ignoreDefenses = 1f;
         }
 
         //Check if this NBMon's energy shield is active or not (indicator: more than or same as 1 = true, less than 1 = false)
-        if (This_NBMon_EnergyShield_IsActive < 1)
-            This_NBMon_Damage_Reduction_From_Energy_Shield = 0f;
-
-        //Calculate the base attack value
-        int BaseAttack = (int)Math.Floor(Attack_StatusEffect_Modifier * (1f + Attack_Passive_Modifier) * ((float)skill.attack + (float)AttackerMonster.attack)/1.5f);
-        int BaseSPAttack = (int)Math.Floor(SP_Attack_StatusEffect_Modifier * (1f + SP_Attack_Passive_Modifier) * ((float)skill.specialAttack + (float)AttackerMonster.specialAttack)/1.5f);
+        if (target_NBMon_EnergyShield_IsActive < 1)
+            target_NBMon_Damage_Reduction_From_Energy_Shield = 0f;
 
         //Calculate this NBMon's Def
-        float ThisMonsterDef = (float)DefenderMonster.defense * This_NBMon_Def_Modifier * (1f + This_NBMon_Def_Passive_Modifier) * (1f - IgnoreDefenses) * ElementalDamageReduction;
-        float ThisMonsterSPDef = (float)DefenderMonster.specialDefense * This_NBMon_SP_Def_Modifier * (1f + This_NBMon_SP_Def_Passive_Modifier) * (1f - IgnoreDefenses) * ElementalDamageReduction;
+        float targetMonsterDef = (float)targetMonster.defense * target_NBMon_Def_Modifier * (1f + target_NBMon_Def_Passive_Modifier) * (1f - ignoreDefenses) * elementalDamageReduction;
+        float targetMonsterSPDef = (float)targetMonster.specialDefense * target_NBMon_SP_Def_Modifier * (1f + target_NBMon_SP_Def_Passive_Modifier) * (1f - ignoreDefenses) * elementalDamageReduction;
 
-        //Skill output passive on offense + skill input passive on defense
-        int BaseDamageAttack = BaseAttack - (int)Math.Floor(ThisMonsterDef);
-        int BaseDamageSPAttack = BaseSPAttack - (int)Math.Floor(ThisMonsterSPDef);
+        //Normalization for Defense
+        if (targetMonsterDef == 0)
+            targetMonsterDef = 1;
+
+        if (targetMonsterSPDef == 0)
+            targetMonsterSPDef = 1;
 
         //Calculate the modifier value
-        float ElementModifier = CalculateElementModifierForSkill_Prototype(skill, DefenderMonster);
+        float elementModifier = CalculateElementModifier(skill, targetMonster);
+        float sameTypeAttackBoost = SameTypeAttackBonusCalculation(skill, attackerMonster);
+        float randomDamage = (float)EvaluateOrder.ConvertSeedToRNG(seedClass, 850, 1000) / 1000f;
 
-        //Finishing Touch
-        int damageAttack = (int)Math.Floor((float)BaseDamageAttack * (float)ElementModifier * CriticalHitMultiplier * (1f - This_NBMon_Damage_Reduction_Modifier) * (1f - This_NBMon_Damage_Reduction_From_Energy_Shield));
-        int damageSpAttack = (int)Math.Floor((float)BaseDamageSPAttack * (float)ElementModifier * CriticalHitMultiplier * (1f - This_NBMon_Damage_Reduction_Modifier) * (1f - This_NBMon_Damage_Reduction_From_Energy_Shield));
+        //Attack Logic
+        int attackDamage = DamageCalculation(skill.attack, attackerMonster.level, attackerMonster.attack, targetMonsterDef, sameTypeAttackBoost, elementModifier, (1f + attack_Passive_Modifier), criticalHitMultiplier, attack_StatusEffect_Modifier, randomDamage);
+        int damageAttack = (int)Math.Floor(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
+        int energyDamageAttack = (int)Math.Floor(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
-        //Energy Damage from Energy Shield
-        int energyDamageAttack = (int)Math.Floor((float)BaseDamageAttack * (float)ElementModifier * CriticalHitMultiplier * (1f - This_NBMon_Damage_Reduction_Modifier) * (This_NBMon_Damage_Reduction_From_Energy_Shield));
-        int energyDamageSPAttack = (int)Math.Floor((float)BaseDamageSPAttack * (float)ElementModifier * CriticalHitMultiplier * (1f - This_NBMon_Damage_Reduction_Modifier) * (This_NBMon_Damage_Reduction_From_Energy_Shield));
+        //Special Attakc Logic
+        int spAttackDamage = DamageCalculation(skill.specialAttack, attackerMonster.level, attackerMonster.specialAttack, targetMonsterSPDef, sameTypeAttackBoost, elementModifier, (1f + sp_Attack_Passive_Modifier), criticalHitMultiplier, sp_Attack_StatusEffect_Modifier, randomDamage);
+        int damageSpAttack = (int)Math.Floor(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
+        int energyDamageSPAttack = (int)Math.Floor(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
         //Survive Lethal Blow Logic
-        if(This_NBMon_Must_Survive_Lethal_Blow >= 1)
+        if (target_NBMon_Must_Survive_Lethal_Blow >= 1)
         {
-            int This_Monster_HP = DefenderMonster.hp;
+            int targetMonsterHP = targetMonster.hp;
 
-            if (This_Monster_HP > 1 && damageAttack > This_Monster_HP)
-                damageAttack = This_Monster_HP - 1;
+            if (targetMonsterHP > 1 && damageAttack > targetMonsterHP)
+                damageAttack = targetMonsterHP - 1;
 
-            if(This_Monster_HP > 1 && damageSpAttack > This_Monster_HP)
-                damageSpAttack = This_Monster_HP - 1;
+            if (targetMonsterHP > 1 && damageSpAttack > targetMonsterHP)
+                damageSpAttack = targetMonsterHP - 1;
         }
 
         //Changes morale Data for attacker (increase gauge by 5)
-        ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, AttackerMonster, 5, humanBattleData);
+        ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, attackerMonster, 5, humanBattleData);
 
         // Reduce target NBMon's HP
+        DamageLogic(skill, attackerMonster, targetMonster, thisMonsterDamageData, moraleData, playerTeam, enemyTeam, humanBattleData, criticalHitMultiplier, target_NBMon_Damage_Reduction_Modifier, target_NBMon_Damage_Reduction_From_Energy_Shield, target_NBMon_EnergyShield_IsActive, elementModifier, ref damageAttack, energyDamageAttack, ref damageSpAttack, energyDamageSPAttack);
+    }
+
+    private static void DamageLogic(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave attackerMonster, NBMonBattleDataSave targetMonster, DamageData thisMonsterDamageData, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData, float criticalHitMultiplier, float target_NBMon_Damage_Reduction_Modifier, float target_NBMon_Damage_Reduction_From_Energy_Shield, int target_NBMon_EnergyShield_IsActive, float elementModifier, ref int damageAttack, int energyDamageAttack, ref int damageSpAttack, int energyDamageSPAttack)
+    {
         if (skill.techniqueType == SkillsDataBase.TechniqueType.Attack)
         {
-            if(ElementModifier != 0)
+            if (elementModifier != 0)
             {
                 // If Damage is less than 0, make sure to return 1 damage
-                if (damageAttack <= 0 && (This_NBMon_Damage_Reduction_Modifier != 1 || This_NBMon_Damage_Reduction_From_Energy_Shield != 1))
+                if (damageAttack <= 0 && (target_NBMon_Damage_Reduction_Modifier != 1 || target_NBMon_Damage_Reduction_From_Energy_Shield != 1))
                     damageAttack = 1;
 
                 //Damage becomes 0 if This_NBMon_Damage_Reduction_Modifier = 1
-                if(This_NBMon_Damage_Reduction_Modifier == 1)
+                if (target_NBMon_Damage_Reduction_Modifier == 1)
                     damageAttack = 0;
 
                 //Normal Damage
-                NBMonTeamData.StatsValueChange(DefenderMonster ,NBMonProperties.StatsType.Hp, damageAttack * -1);
-                ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, DefenderMonster, damageAttack, humanBattleData);
+                NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Hp, damageAttack * -1);
+                ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, targetMonster, damageAttack, humanBattleData);
 
                 //Energy Damage
-                if (This_NBMon_EnergyShield_IsActive >= 1)
+                if (target_NBMon_EnergyShield_IsActive >= 1)
                 {
-                    NBMonTeamData.StatsValueChange(DefenderMonster ,NBMonProperties.StatsType.Energy, energyDamageAttack * -1);
+                    NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Energy, energyDamageAttack * -1);
                 }
 
                 //HP and Energy Drain Logic -> Only for Skill with TechniqueType of Attack
-                HP_EN_DrainFunction(skill, damageAttack, AttackerMonster, thisMonsterDamageData);
+                HP_EN_DrainFunction(skill, damageAttack, attackerMonster, thisMonsterDamageData);
             }
             else
             {
                 //By Default, damageAttack value is 0.
             }
         }
-        
-        if(skill.techniqueType == SkillsDataBase.TechniqueType.SpecialAttack)
+
+        if (skill.techniqueType == SkillsDataBase.TechniqueType.SpecialAttack)
         {
             // If Damage is less than 0, make sure to return 1 damage
-            if (damageSpAttack <= 0 && This_NBMon_Damage_Reduction_Modifier != 1)
+            if (damageSpAttack <= 0 && target_NBMon_Damage_Reduction_Modifier != 1)
                 damageSpAttack = 1;
 
             //Damage becomes 0 if This_NBMon_Damage_Reduction_Modifier = 1
-            if(This_NBMon_Damage_Reduction_Modifier == 1)
+            if (target_NBMon_Damage_Reduction_Modifier == 1)
                 damageSpAttack = 0;
 
             //Normal SP Damage
-            NBMonTeamData.StatsValueChange(DefenderMonster, NBMonProperties.StatsType.Hp, damageSpAttack * -1);
-            ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, DefenderMonster, damageSpAttack, humanBattleData);
+            NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Hp, damageSpAttack * -1);
+            ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, targetMonster, damageSpAttack, humanBattleData);
 
-            if (This_NBMon_EnergyShield_IsActive >= 1)
+            if (target_NBMon_EnergyShield_IsActive >= 1)
             {
                 //Energy Damage
-                NBMonTeamData.StatsValueChange(DefenderMonster, NBMonProperties.StatsType.Energy, energyDamageSPAttack * -1);
+                NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Energy, energyDamageSPAttack * -1);
             }
         }
 
         //Let's get all necessary data from Calculate And Do Damage into This Monster Damage Data.
+        RecordDamageData(thisMonsterDamageData, criticalHitMultiplier, elementModifier, damageAttack, energyDamageAttack, damageSpAttack, energyDamageSPAttack);
+    }
+
+    private static void RecordDamageData(DamageData thisMonsterDamageData, float criticalHitMultiplier, float elementModifier, int damageAttack, int energyDamageAttack, int damageSpAttack, int energyDamageSPAttack)
+    {
         thisMonsterDamageData.Damage = damageAttack;
         thisMonsterDamageData.SPDamage = damageSpAttack;
         thisMonsterDamageData.EnergyDamage = energyDamageAttack;
         thisMonsterDamageData.EnergySPDamage = energyDamageSPAttack;
-        thisMonsterDamageData.IsCritical = (CriticalHitMultiplier > 1); //If Critical Hit Multiplier is higher than 1, it's Critical Hit.
-        thisMonsterDamageData.DamageImmune = (ElementModifier == 0); //This Monster will deal 0 Damage if Element Modifier = 0.
-        thisMonsterDamageData.ElementalVariable = ElementModifier;
+        thisMonsterDamageData.IsCritical = (criticalHitMultiplier > 1); //If Critical Hit Multiplier is higher than 1, it's Critical Hit.
+        thisMonsterDamageData.DamageImmune = (elementModifier == 0); //This Monster will deal 0 Damage if Element Modifier = 0.
+        thisMonsterDamageData.ElementalVariable = elementModifier;
+    }
+
+    //Damage Calculation Method
+    private static int DamageCalculation(int skillPower, int attackerLevel, int attackerPower, float targetDef, float STAB, float typeEffects, float passiveDamageBoost, float criticalDamageMultiplier, float statusEffectModifier, float randomValue)
+    {
+        float func_A = (attackerLevel * skillPower * attackerPower / 10 / targetDef) + 15;
+        int overallFunc = (int)(func_A * STAB * typeEffects * passiveDamageBoost * criticalDamageMultiplier * statusEffectModifier * randomValue);
+        return overallFunc;
+    }
+
+    // Calculate and return the element modifier value
+    private static float SameTypeAttackBonusCalculation(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave attackerMonster)
+    {
+        var monsterData = NBMonDatabase.FindMonster(attackerMonster.monsterId);
+        
+        if(monsterData.elements.Contains(skill.skillElement))
+            return 1.5f;
+        else
+            return 1f;
     }
 
     private static int CriticalHitStatsCalculation(NBMonBattleDataSave originalMonster, SkillsDataBase.SkillInfoPlayFab skill)
     {
-        int CriticalHit_Skill = skill.criticalRate;
-        int CriticalHit_Passive = (int)Math.Floor(originalMonster.criticalBuff);
-        int CriticalHit_NBMon = originalMonster.criticalHit;
-        int CriticalHit_NBMon_From_StatusEffect = StatusEffectIconDatabase.CriticalStatusEffectLogic(originalMonster);
+        int criticalHit_Skill = skill.criticalRate;
+        int criticalHit_Passive = (int)Math.Floor(originalMonster.criticalBuff);
+        int criticalHit_NBMon = originalMonster.criticalHit;
+        int criticalHit_NBMon_From_StatusEffect = StatusEffectIconDatabase.CriticalStatusEffectLogic(originalMonster);
 
-        return CriticalHit_NBMon + CriticalHit_NBMon_From_StatusEffect + CriticalHit_Skill + CriticalHit_Passive;
+        return criticalHit_NBMon + criticalHit_NBMon_From_StatusEffect + criticalHit_Skill + criticalHit_Passive;
 
     }
 
     // Calculate and return the element modifier value
-    private static float CalculateElementModifierForSkill_Prototype(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave DefenderMonster)
+    private static float CalculateElementModifier(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave targetMonster)
     {
-        var MonsterInfoFromDatabase = NBMonDatabase.FindMonster(DefenderMonster.monsterId);
+        var monsterInfoFromDatabase = NBMonDatabase.FindMonster(targetMonster.monsterId);
 
-        float modifier_element_1 = ElementDatabase.FindElementValueModifier_Prototype(MonsterInfoFromDatabase.elements[0], skill.skillElement);
-        float modifier_element_2 = ElementDatabase.FindElementValueModifier_Prototype(MonsterInfoFromDatabase.elements[1], skill.skillElement);
+        float modifier_element_1 = ElementDatabase.FindElementValueModifier_Prototype(monsterInfoFromDatabase.elements[0], skill.skillElement);
+        float modifier_element_2 = ElementDatabase.FindElementValueModifier_Prototype(monsterInfoFromDatabase.elements[1], skill.skillElement);
 
         return modifier_element_1 * modifier_element_2;
     }
 
     private static void HP_EN_DrainFunction(SkillsDataBase.SkillInfoPlayFab skill, int damageDone, NBMonBattleDataSave AttackerMonster, DamageData thisMonsterDamageData)
     {
-        int HPDrained = (int)Math.Floor((float)damageDone * skill.HPDrainInPercent / 100);
-        int EnergyDrained = (int)Math.Floor((float)damageDone * skill.EnergyDrainInPercent / 100);
+        int hp_Drained = (int)Math.Floor((float)damageDone * skill.HPDrainInPercent / 100);
+        int energyDrained = (int)Math.Floor((float)damageDone * skill.EnergyDrainInPercent / 100);
 
         if (skill.HPDrainInPercent != 0 && skill.EnergyDrainInPercent == 0)
         {
-            if (HPDrained == 0)
-                HPDrained = 1;
+            if (hp_Drained == 0)
+                hp_Drained = 1;
         }
 
         if (skill.HPDrainInPercent == 0 && skill.EnergyDrainInPercent != 0)
         {
-            if (EnergyDrained == 0)
-                EnergyDrained = 1;
+            if (energyDrained == 0)
+                energyDrained = 1;
         }
 
         if (skill.HPDrainInPercent != 0 && skill.EnergyDrainInPercent != 0)
         {
-            if (HPDrained == 0)
-                HPDrained = 1;
+            if (hp_Drained == 0)
+                hp_Drained = 1;
 
-            if (EnergyDrained == 0)
-                EnergyDrained = 1;
+            if (energyDrained == 0)
+                energyDrained = 1;
 
             //HP Drain
-            NBMonTeamData.StatsValueChange(AttackerMonster ,NBMonProperties.StatsType.Hp, HPDrained);
+            NBMonTeamData.StatsValueChange(AttackerMonster ,NBMonProperties.StatsType.Hp, hp_Drained);
 
             //Energy Drain
-            NBMonTeamData.StatsValueChange(AttackerMonster ,NBMonProperties.StatsType.Energy, EnergyDrained);
+            NBMonTeamData.StatsValueChange(AttackerMonster ,NBMonProperties.StatsType.Energy, energyDrained);
         }
 
         //Insert HP and Energy Drain into This Monster Damage Data
-        thisMonsterDamageData.HPDrained = HPDrained;
-        thisMonsterDamageData.EnergyDrained = EnergyDrained;
+        thisMonsterDamageData.HPDrained = hp_Drained;
+        thisMonsterDamageData.EnergyDrained = energyDrained;
     }
 
     public static void ChangeMoraleGauge(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, int damageTaken, HumanBattleData humanBattleData)
@@ -618,22 +650,22 @@ public static class AttackFunction
     }
 
     //Monster Target Defeated
-    public static void CheckTargetDied(NBMonBattleDataSave TargetMonster, NBMonBattleDataSave AttackerMonster, SkillsDataBase.SkillInfoPlayFab AttackerSkillData, List<NBMonBattleDataSave> PlayerTeam, List<NBMonBattleDataSave> EnemyTeam, List<string> Team1UniqueID_BF, DataSendToUnity dataFromAzureToClient)
+    public static void CheckTargetDied(NBMonBattleDataSave targetMonster, NBMonBattleDataSave attackerMonster, SkillsDataBase.SkillInfoPlayFab attackerSkillData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, List<string> team1UniqueID_BF, DataSendToUnity dataFromAzureToClient)
     {
         //Let's Check if the TargetMonster's HP reached 0.
-        if(TargetMonster.hp <= 0)
+        if(targetMonster.hp <= 0)
         {
             //TargetMonster becomes Fainted
-            TargetMonster.fainted = true;
+            targetMonster.fainted = true;
 
             //Apply EXP to Every Single Monster (For Player Team Only), Check if the Attacker Monster is from Player 1 (or human) and the Killed Monster is not from Player 1
-            if((Team1UniqueID_BF.Contains(AttackerMonster.uniqueId) || AttackerMonster.monsterId == "Human") && !Team1UniqueID_BF.Contains(TargetMonster.uniqueId))
+            if((team1UniqueID_BF.Contains(attackerMonster.uniqueId) || attackerMonster.monsterId == "Human") && !team1UniqueID_BF.Contains(targetMonster.uniqueId))
             {
-                foreach(var Player1Monster in PlayerTeam)
+                foreach(var Player1Monster in playerTeam)
                 {
-                    if(Team1UniqueID_BF.Contains(Player1Monster.uniqueId))
+                    if(team1UniqueID_BF.Contains(Player1Monster.uniqueId))
                     {
-                        AddEXP(TargetMonster, Player1Monster, dataFromAzureToClient, 1);
+                        AddEXP(targetMonster, Player1Monster, dataFromAzureToClient, 1);
                     }
                 }
             }
@@ -718,33 +750,33 @@ public static class AttackFunction
     }
 
     //Related to EXPMultiplier variable in AddToEXPList function
-    private static float EXPMultiplierEquation(int ThisMonsterLevel, int monsterDiedLevel)
+    private static float EXPMultiplierEquation(int monsterLevel, int monsterDiedLevel)
     {
-        if (ThisMonsterLevel <= monsterDiedLevel + 10 && ThisMonsterLevel >= monsterDiedLevel - 10)
+        if (monsterLevel <= monsterDiedLevel + 10 && monsterLevel >= monsterDiedLevel - 10)
             return 1f;
 
         return 1f;
     }
 
     //Function to Resets Temporary Stats
-    public static void ResetTemporaryStatsAfterAttacking(NBMonBattleDataSave Monster)
+    public static void ResetTemporaryStatsAfterAttacking(NBMonBattleDataSave monster)
     {
         //TemporaryStats
-        Monster.attackBuff = 0;
-        Monster.specialAttackBuff = 0;
-        Monster.defenseBuff = 0;
-        Monster.specialDefenseBuff = 0;
-        Monster.criticalBuff = 0;
-        Monster.ignoreDefenses = 0;
-        Monster.damageReduction = 0;
-        Monster.energyShieldValue = 0;
+        monster.attackBuff = 0;
+        monster.specialAttackBuff = 0;
+        monster.defenseBuff = 0;
+        monster.specialDefenseBuff = 0;
+        monster.criticalBuff = 0;
+        monster.ignoreDefenses = 0;
+        monster.damageReduction = 0;
+        monster.energyShieldValue = 0;
 
         //Other Parameters
-        Monster.energyShield = 0;
-        Monster.mustCritical = 0;
-        Monster.surviveLethalBlow = 0;
-        Monster.totalIgnoreDefense = 0;
-        Monster.immuneCritical = 0;
-        Monster.elementDamageReduction = 0;
+        monster.energyShield = 0;
+        monster.mustCritical = 0;
+        monster.surviveLethalBlow = 0;
+        monster.totalIgnoreDefense = 0;
+        monster.immuneCritical = 0;
+        monster.elementDamageReduction = 0;
     }
 }
