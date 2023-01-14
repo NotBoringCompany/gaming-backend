@@ -482,10 +482,6 @@ public static class AttackFunction
         {
             if (elementModifier != 0)
             {
-                // If Damage is less than 0, make sure to return 1 damage
-                if (damageAttack <= 0 && (target_NBMon_Damage_Reduction_Modifier != 1 || target_NBMon_Damage_Reduction_From_Energy_Shield != 1))
-                    damageAttack = 1;
-
                 //Damage becomes 0 if This_NBMon_Damage_Reduction_Modifier = 1
                 if (target_NBMon_Damage_Reduction_Modifier == 1)
                     damageAttack = 0;
@@ -511,10 +507,6 @@ public static class AttackFunction
 
         if (skill.techniqueType == SkillsDataBase.TechniqueType.SpecialAttack)
         {
-            // If Damage is less than 0, make sure to return 1 damage
-            if (damageSpAttack <= 0 && target_NBMon_Damage_Reduction_Modifier != 1)
-                damageSpAttack = 1;
-
             //Damage becomes 0 if This_NBMon_Damage_Reduction_Modifier = 1
             if (target_NBMon_Damage_Reduction_Modifier == 1)
                 damageSpAttack = 0;

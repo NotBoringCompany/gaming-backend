@@ -23,11 +23,11 @@ public class NBMonProperties
     public enum StatusEffect
     {
         None,
-        Asleep,
+        Sleeping,
         Burned,
         Cold,
         Exhausted,
-        Poisoned,
+        Toxic,
         Regen,
         HpUp,
         AttackUp,
@@ -51,7 +51,10 @@ public class NBMonProperties
         AntiBurn,
         Guard,
         Paralyzed,
-        Panic
+        Panic,
+        Double_Down_Attack,
+        Double_Down_Special,
+        Bleeding
     }
 
 
