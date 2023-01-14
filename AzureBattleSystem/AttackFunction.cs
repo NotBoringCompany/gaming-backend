@@ -446,12 +446,14 @@ public static class AttackFunction
         float randomDamage = (float)EvaluateOrder.ConvertSeedToRNG(seedClass, 850, 1000) / 1000f;
 
         //Attack Logic
-        int attackDamage = DamageCalculation(skill.attack, attackerMonster.level, attackerMonster.attack, targetMonsterDef, sameTypeAttackBoost, elementModifier, (1f + attack_Passive_Modifier), criticalHitMultiplier, attack_StatusEffect_Modifier, randomDamage);
+        float attackerAttackStats = attackerMonster.attack * (1f + attack_Passive_Modifier) * attack_StatusEffect_Modifier;
+        int attackDamage = DamageCalculation(skill.attack, attackerMonster.level, attackerAttackStats, targetMonsterDef, sameTypeAttackBoost, elementModifier, (1f + attack_Passive_Modifier), criticalHitMultiplier, attack_StatusEffect_Modifier, randomDamage);
         int damageAttack = (int)Math.Floor(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
         int energyDamageAttack = (int)Math.Floor(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
         //Special Attakc Logic
-        int spAttackDamage = DamageCalculation(skill.specialAttack, attackerMonster.level, attackerMonster.specialAttack, targetMonsterSPDef, sameTypeAttackBoost, elementModifier, (1f + sp_Attack_Passive_Modifier), criticalHitMultiplier, sp_Attack_StatusEffect_Modifier, randomDamage);
+        float attackerSPAttackStats = attackerMonster.specialAttack * (1f + sp_Attack_Passive_Modifier) * sp_Attack_StatusEffect_Modifier;
+        int spAttackDamage = DamageCalculation(skill.specialAttack, attackerMonster.level, attackerSPAttackStats, targetMonsterSPDef, sameTypeAttackBoost, elementModifier, (1f + sp_Attack_Passive_Modifier), criticalHitMultiplier, sp_Attack_StatusEffect_Modifier, randomDamage);
         int damageSpAttack = (int)Math.Floor(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
         int energyDamageSPAttack = (int)Math.Floor(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
@@ -544,10 +546,10 @@ public static class AttackFunction
     }
 
     //Damage Calculation Method
-    private static int DamageCalculation(int skillPower, int attackerLevel, int attackerPower, float targetDef, float STAB, float typeEffects, float passiveDamageBoost, float criticalDamageMultiplier, float statusEffectModifier, float randomValue)
+    private static int DamageCalculation(int skillPower, int attackerLevel, float attackerPower, float targetDef, float STAB, float typeEffects, float passiveDamageBoost, float criticalDamageMultiplier, float statusEffectModifier, float randomValue)
     {
-        float func_A = (attackerLevel * skillPower * attackerPower / 10 / targetDef) + 15;
-        int overallFunc = (int)(func_A * STAB * typeEffects * passiveDamageBoost * criticalDamageMultiplier * statusEffectModifier * randomValue);
+        float func_A = ((attackerLevel * skillPower * attackerPower * statusEffectModifier * passiveDamageBoost / targetDef) / 100) + 10;
+        int overallFunc = (int)(func_A * STAB * typeEffects * criticalDamageMultiplier * randomValue);
         return overallFunc;
     }
 

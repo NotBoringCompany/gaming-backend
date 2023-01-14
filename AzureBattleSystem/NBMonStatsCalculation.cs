@@ -195,35 +195,35 @@ public static class NBMonStatsCalculation
 
     private static int HPStatCalculation(int baseStat, int level, int potentialValue, int growthValue)
     {
-        float func_A = (2 * baseStat) / 3;
-        float func_B = (potentialValue * potentialValue / 34);
-        float func_C = (growthValue / 17);
-        float func_ABC = ((func_A + func_B + func_C) * level) / 95;
-        float func_2 = (7 * level / 4) + 90;
+        float func_A = (2f * (float)baseStat) / 3f;
+        float func_B = ((float)potentialValue * (float)potentialValue / 34f);
+        float func_C = ((float)growthValue / 17f);
+        float func_ABC = ((func_A + func_B + func_C) * (float)level) / 95f;
+        float func_2 = (7f * (float)level / 4f) + 90f;
 
-        int sumUpValue = (int)(func_ABC + func_2);
+        int sumUpValue = (int)Math.Floor(func_ABC + func_2);
         return sumUpValue;
     }
 
     private static int EnergyStatCalculation(int baseStat, int level, int potentialValue, int growthValue)
     {
-        float func_A = (2 * baseStat) / 7;
-        float func_B = 10 * (float)System.Math.Sqrt(level);
-        float func_C = (float)System.Math.Sqrt(potentialValue * baseStat * level / 125);
-        float func_D = (float)System.Math.Sqrt(growthValue * baseStat * level / 175);
+        float func_A = (2f * (float)baseStat) / 7f;
+        float func_B = 10f * (float)System.Math.Sqrt((float)level);
+        float func_C = (float)System.Math.Sqrt((float)potentialValue * (float)baseStat * (float)level / 125f);
+        float func_D = (float)System.Math.Sqrt((float)growthValue * (float)baseStat * (float)level / 175f);
 
-        int sumUpValue = (int)(func_A + func_B + func_C + func_D);
+        int sumUpValue = (int)Math.Floor(func_A + func_B + func_C + func_D);
         return sumUpValue;
     }
 
     private static int OtherStatsCalculation(int baseStat, int level, int potentialValue, int growthValue)
     {
-        float func_A = (2 * baseStat) / 3;
-        float func_B = (potentialValue * potentialValue / 35);
-        float func_C = (growthValue / 19);
-        float func_ABC = ((func_A + func_B + func_C) * level) / 100;
+        float func_A = (2f * (float)baseStat) / 3f;
+        float func_B = ((float)potentialValue * (float)potentialValue / 35f);
+        float func_C = ((float)growthValue / 19f);
+        float func_ABC = ((func_A + func_B + func_C) * (float)level) / 100f;
 
-        int sumUpValue = (int)(func_ABC + 75);
+        int sumUpValue = (int)Math.Floor(func_ABC + 75);
         return sumUpValue;
     }
 
