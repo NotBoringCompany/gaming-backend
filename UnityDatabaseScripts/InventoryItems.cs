@@ -56,6 +56,7 @@ public class ItemsPlayFab
     public string AddStatusEffectDescription;
     public List<NBMonProperties.StatusEffectInfo> AddStatusEffects;
     public List<NBMonProperties.StatusEffectInfo> RemovesStatusEffects;
+    public SkillsDataBase.RemoveStatusEffectType removeStatusEffectType;
 
     public CaptureItemType CaptureItemType;
     public float CaptureRate = 0.1f;

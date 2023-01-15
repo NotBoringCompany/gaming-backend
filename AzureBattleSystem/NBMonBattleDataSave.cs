@@ -113,52 +113,92 @@ public class NBMonTeamData
     public static List<NBMonBattleDataSave> EnemyTeam;
 
     //Change the stats based on percentage (Only for HP and Energy)
-    public static void StatsPercentageChange(NBMonBattleDataSave Monster, NBMonProperties.StatsType statsType, int percentageChange)
+    public static void StatsPercentageChange(NBMonBattleDataSave monster, NBMonProperties.StatsType statsType, int percentageChange)
     {
         if (statsType == NBMonProperties.StatsType.Hp)
         {
-            Monster.hp += Convert.ToInt32(Math.Floor((float)(Monster.maxHp * percentageChange) / 100));
+            monster.hp += Convert.ToInt32(Math.Floor((float)(monster.maxHp * percentageChange) / 100));
 
-            if (Monster.hp > Monster.maxHp)
-                Monster.hp = Monster.maxHp;
+            if (monster.hp > monster.maxHp)
+                monster.hp = monster.maxHp;
 
-            if (Monster.hp < 0)
-                Monster.hp = 0;
+            if (monster.hp < 0)
+                monster.hp = 0;
         }
         else if (statsType == NBMonProperties.StatsType.Energy)
         {
-            Monster.energy += Convert.ToInt32(Math.Floor((float)(Monster.maxEnergy * percentageChange) / 100));
+            monster.energy += Convert.ToInt32(Math.Floor((float)(monster.maxEnergy * percentageChange) / 100));
 
-            if (Monster.energy > Monster.maxEnergy)
-                Monster.energy = Monster.maxEnergy;
+            if (monster.energy > monster.maxEnergy)
+                monster.energy = monster.maxEnergy;
 
-            if (Monster.energy < 0)
-                Monster.energy = 0;
+            if (monster.energy < 0)
+                monster.energy = 0;
+        }
+        else if (statsType == NBMonProperties.StatsType.Attack)
+        {
+            monster.attackBuff += (int)Math.Floor((float)(monster.attack * percentageChange) / 100);
+        }
+        else if (statsType == NBMonProperties.StatsType.Defense)
+        {
+            monster.defenseBuff += (int)Math.Floor((float)(monster.defense * percentageChange) / 100);
+        }
+        else if (statsType == NBMonProperties.StatsType.SpecialAttack)
+        {
+            monster.specialAttackBuff += (int)Math.Floor((float)(monster.specialAttack * percentageChange) / 100);
+        }
+        else if (statsType == NBMonProperties.StatsType.SpecialDefense)
+        {
+            monster.specialDefenseBuff += (int)Math.Floor((float)(monster.specialDefense * percentageChange) / 100);
+        }
+        else if (statsType == NBMonProperties.StatsType.Speed)
+        {
+            monster.battleSpeed += (int)Math.Floor((float)(monster.speed * percentageChange) / 100);
         }
     }
 
     //Change the stats based on value
-    public static void StatsValueChange(NBMonBattleDataSave Monster, NBMonProperties.StatsType statsType, int value)
+    public static void StatsValueChange(NBMonBattleDataSave monster, NBMonProperties.StatsType statsType, int value)
     {
         if (statsType == NBMonProperties.StatsType.Hp)
         {
-            Monster.hp += value;
+            monster.hp += value;
 
-            if (Monster.hp > Monster.maxHp)
-                Monster.hp = Monster.maxHp;
+            if (monster.hp > monster.maxHp)
+                monster.hp = monster.maxHp;
 
-            if (Monster.hp < 0)
-                Monster.hp = 0;
+            if (monster.hp < 0)
+                monster.hp = 0;
         }
         else if (statsType == NBMonProperties.StatsType.Energy)
         {
-            Monster.energy += value;
+            monster.energy += value;
 
-            if (Monster.energy > Monster.maxEnergy)
-                Monster.energy = Monster.maxEnergy;
+            if (monster.energy > monster.maxEnergy)
+                monster.energy = monster.maxEnergy;
 
-            if (Monster.energy < 0)
-                Monster.energy = 0;
+            if (monster.energy < 0)
+                monster.energy = 0;
+        }
+        else if (statsType == NBMonProperties.StatsType.Attack)
+        {
+            monster.attackBuff += value;
+        }
+        else if (statsType == NBMonProperties.StatsType.Defense)
+        {
+            monster.defenseBuff += value;
+        }
+        else if (statsType == NBMonProperties.StatsType.SpecialAttack)
+        {
+            monster.specialAttackBuff += value;
+        }
+        else if (statsType == NBMonProperties.StatsType.SpecialDefense)
+        {
+            monster.specialDefenseBuff += value;
+        }
+        else if (statsType == NBMonProperties.StatsType.Speed)
+        {
+            monster.battleSpeed += value;
         }
     }
 }

@@ -261,24 +261,36 @@ public static class UseItem
     }
 
     //Remove Status Effect
-    public static void RemoveStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null)
+    public static void RemoveStatusEffect(NBMonBattleDataSave thisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList)
     {
         foreach (var statusEffectInfo in statusEffectInfoList)
         {
-            for (int i = ThisMonster.statusEffectList.Count - 1; i >= 0; i--)
+            for (int i = thisMonster.statusEffectList.Count - 1; i >= 0; i--)
             {
-                if ((int)statusEffectInfo.statusEffect == ThisMonster.statusEffectList[i].statusEffect)
+                if ((int)statusEffectInfo.statusEffect == thisMonster.statusEffectList[i].statusEffect)
                 {
-                    ThisMonster.statusEffectList.RemoveAt(i);
+                    thisMonster.statusEffectList.RemoveAt(i);
                 }
             }
         }
-
-        if(log != null)
-            log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Remove Status Effect has been Called!");
     }
 
-    
+    public static void RemoveAllStatusEFfect_AskedRemoval(NBMonBattleDataSave thisMonster, SkillsDataBase.RemoveStatusEffectType askedRemoval)
+    {
+        for (int i = thisMonster.statusEffectList.Count-1; i >= 0; i--)
+        {
+            var statusEffect = thisMonster.statusEffectList[i];
+            var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
+
+            if(statusEffectData.statusEffectType == askedRemoval)
+                thisMonster.statusEffectList.Remove(statusEffect);
+        }
+    }
+
+    public static void RemoveAllStatusEFfect(NBMonBattleDataSave thisMonster)
+    {
+        thisMonster.statusEffectList.Clear();
+    }
 
     //Cloud Function Method
     [FunctionName("UseItem")]
@@ -394,7 +406,10 @@ public static class UseItem
                 }
 
                 //Remove Status Effect
-                RemoveStatusEffect(ThisMonster, UsedItem.RemovesStatusEffects, log);
+                RemoveStatusEffect(ThisMonster, UsedItem.RemovesStatusEffects);
+                
+                //remove Status Effect using Criteria
+                AttackFunction.HardCodedRemoveStatusEffect(ThisMonster, UsedItem.removeStatusEffectType);
 
                 //return JsonConvert.SerializeObject(PlayerTeam);
                 var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {

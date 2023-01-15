@@ -45,9 +45,17 @@ public class SkillsDataBase
         AllEnemy,
         All,
         EveryoneExceptMe,
-        AllTeam
+        AllTeam,
+        Self
     }
 
+    public enum RemoveStatusEffectType
+    {
+        None,
+        Positive,
+        Negative,
+        All
+    }
 
     public enum TechniqueType
     {
@@ -82,15 +90,15 @@ public class SkillsDataBase
         public float energyPercent = 0;
         public string StatusEffectDescription;
 
+        //Status Effects to target
         public List<NBMonProperties.StatusEffectInfo> statusEffectList;
+        public RemoveStatusEffectType removeStatusEffectType;
         public List<NBMonProperties.StatusEffectInfo> removeStatusEffectList;
+
+        //Status Effects to Self
         public List<NBMonProperties.StatusEffectInfo> statusEffectListSelf;
+        public RemoveStatusEffectType removeStatusEffectTypeSelf;
         public List<NBMonProperties.StatusEffectInfo> removeStatusEffectListSelf;
-
-        public List<string> additionalSkillEffect;
-
-        public List<string> allAvailableCutscene;
-
     }
 
     public List<SkillInfoPlayFab> skillInfosPlayFab;

@@ -26,6 +26,7 @@ public class StatusEffectIconDatabase
         public ObjectId _id { get; set; }
         public NBMonProperties.StatusEffect statusConditionName;
         public StatusEffectCategory statusEffectCategory;
+        public SkillsDataBase.RemoveStatusEffectType statusEffectType;
         public string description;
         public object icon;
         public bool spawnCancelIcon;

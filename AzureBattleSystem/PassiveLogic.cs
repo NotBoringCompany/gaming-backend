@@ -101,7 +101,7 @@ public class PassiveLogic
                 //Checks if all the skill element is correct, if not it will change the retur value to false!
                 if (skill.skillElement != requirements.skillElement)
                 {
-                    returnValue = false;
+                    return false;
                 }
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionReceivingElement)
@@ -109,7 +109,7 @@ public class PassiveLogic
                 //Checks if all the skill element is correct, if not it will change the return value to false!
                 if (skill.skillElement != requirements.skillElement)
                 {
-                    returnValue = false;
+                    return false;
                 }
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionUsingTechnique)
@@ -120,7 +120,7 @@ public class PassiveLogic
                     if (requirements.skillLists.Contains(skill.skillName))
                         returnValue = true;
                     else
-                        returnValue = false;
+                        return false;
                 }
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionReceivingTechnique)
@@ -138,7 +138,7 @@ public class PassiveLogic
                             if (useMonsterMemory.hp == useMonsterMemory.maxHp * statsRequirement.value / 100)
                                 returnValue = true;
                             else
-                                returnValue = false;
+                                return false;
                         }
 
                         if (statsRequirement.Numerator == PassiveDatabase.Numerator.BiggerThan)
@@ -146,7 +146,7 @@ public class PassiveLogic
                             if (useMonsterMemory.hp > useMonsterMemory.maxHp * statsRequirement.value / 100)
                                 returnValue = true;
                             else
-                                returnValue = false;
+                                return false;
                         }
 
                         if (statsRequirement.Numerator == PassiveDatabase.Numerator.SmallerThan)
@@ -154,7 +154,7 @@ public class PassiveLogic
                             if (useMonsterMemory.hp < useMonsterMemory.maxHp * statsRequirement.value / 100)
                                 returnValue = true;
                             else
-                                returnValue = false;
+                                return false;
                         }
                     }
 
@@ -165,7 +165,7 @@ public class PassiveLogic
                             if (useMonsterMemory.energy == useMonsterMemory.maxEnergy * statsRequirement.value / 100)
                                 returnValue = true;
                             else
-                                returnValue = false;
+                                return false;
                         }
 
                         if (statsRequirement.Numerator == PassiveDatabase.Numerator.BiggerThan)
@@ -173,7 +173,7 @@ public class PassiveLogic
                             if (useMonsterMemory.energy > useMonsterMemory.maxEnergy * statsRequirement.value / 100)
                                 returnValue = true;
                             else
-                                returnValue = false;
+                                return false;
                         }
 
                         if (statsRequirement.Numerator == PassiveDatabase.Numerator.SmallerThan)
@@ -181,17 +181,52 @@ public class PassiveLogic
                             if (useMonsterMemory.energy < useMonsterMemory.maxEnergy * statsRequirement.value / 100)
                                 returnValue = true;
                             else
-                                returnValue = false;
+                                return false;
                         }
                     }
                 }
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.HaveStatusEffect) //Has Status Effect
             {
+                //Check if the requirement status effect is NONE
+                if(requirements.statusEffect == NBMonProperties.StatusEffect.None)
+                {
+                    switch (requirements.statusRemovalRequirement)
+                    {
+                        case SkillsDataBase.RemoveStatusEffectType.Negative:
+                            {
+                                //For Negative Status Effect Removal
+                                foreach (var statusEffect in useMonsterMemory.statusEffectList)
+                                {
+                                    var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
+
+                                    if (statusEffectData.statusEffectType == SkillsDataBase.RemoveStatusEffectType.Negative)
+                                        return false;
+                                }
+
+                                break;
+                            }
+
+                        case SkillsDataBase.RemoveStatusEffectType.Positive:
+                            {
+                                //For Negative Status Effect Removal
+                                foreach (var statusEffect in useMonsterMemory.statusEffectList)
+                                {
+                                    var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
+
+                                    if (statusEffectData.statusEffectType == SkillsDataBase.RemoveStatusEffectType.Positive)
+                                        return false;
+                                }
+
+                                break;
+                            }
+                    }
+                }
+
                 //Checks if the useMonster have the status or not
                 if (FindNBMonStatusEffect(useMonsterMemory, requirements.statusEffect) == null)
                 {
-                    returnValue = false;
+                    return false;
                 }
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionGivingStatusEffect)
@@ -206,7 +241,7 @@ public class PassiveLogic
                 if (!checkStatusListMemory.Contains(requirements.statusEffect))
                 {
                     //If the status effect list do not contain the status effect, returns false
-                    returnValue = false;
+                    return false;
                 }
 
                 return true;
@@ -224,7 +259,7 @@ public class PassiveLogic
                 if (!checkStatusListMemory.Contains(requirements.statusEffect))
                 {
                     //If the status effect list do not contain the status effect, returns false
-                    returnValue = false;
+                    return false;
                 }
 
             }
@@ -233,7 +268,7 @@ public class PassiveLogic
                 //Check if useMonster is fainted
                 if (!useMonsterMemory.fainted)
                 {
-                    returnValue = false;
+                    return false;
                 }
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.Environment)
@@ -272,32 +307,36 @@ public class PassiveLogic
             //Remove the Status Effect to the Monster.
             UseItem.RemoveStatusEffect(useMonsterMemory, passiveEffect.removeStatusEffectInfoList);
 
+            AttackFunction.HardCodedRemoveStatusEffect(useMonsterMemory, passiveEffect.statusRemoveType_Self);
+
             //Default Condition
-            var SelfTeam = NBMonTeamData.PlayerTeam;
-            var EnemyTeam = NBMonTeamData.EnemyTeam;
+            var alliesTeam = NBMonTeamData.PlayerTeam;
+            var enemyTeam = NBMonTeamData.EnemyTeam;
 
             //Check if the Original Monster is an Enemy Team
-            if(EnemyTeam.Contains(useMonsterMemory))
+            if(enemyTeam.Contains(useMonsterMemory))
             {
-                SelfTeam = NBMonTeamData.EnemyTeam;
-                EnemyTeam = NBMonTeamData.PlayerTeam;
+                alliesTeam = NBMonTeamData.EnemyTeam;
+                enemyTeam = NBMonTeamData.PlayerTeam;
             }
 
             //Self Team 
-            foreach(var Monsters in SelfTeam)
+            foreach(var monster in alliesTeam)
             {
-                if (Monsters == originMonsterMemory)
+                if (monster == originMonsterMemory)
                     continue;
 
-                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
-                UseItem.RemoveStatusEffect(Monsters, passiveEffect.removeEnemyTeamStatusEffectInfoList);
+                UseItem.ApplyStatusEffect(monster, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
+                UseItem.RemoveStatusEffect(monster, passiveEffect.removeEnemyTeamStatusEffectInfoList);
+                AttackFunction.HardCodedRemoveStatusEffect(monster, passiveEffect.statusRemoveType_Allies);
             }
 
             //Opposing Team
-            foreach(var Monsters in EnemyTeam)
+            foreach(var monster in enemyTeam)
             {
-                UseItem.ApplyStatusEffect(Monsters, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
-                UseItem.RemoveStatusEffect(Monsters, passiveEffect.removeEnemyTeamStatusEffectInfoList);
+                UseItem.ApplyStatusEffect(monster, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
+                UseItem.RemoveStatusEffect(monster, passiveEffect.removeEnemyTeamStatusEffectInfoList);
+                AttackFunction.HardCodedRemoveStatusEffect(monster, passiveEffect.statusRemoveType_Enemies);
             }
             
         }

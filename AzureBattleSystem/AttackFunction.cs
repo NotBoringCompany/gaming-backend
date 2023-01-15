@@ -39,8 +39,10 @@ public static class AttackFunction
 
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
-            new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "BattleEnvironment", "RNGSeeds", "SortedOrder", "MoraleGaugeData", "HumanBattleData"}
+            new GetUserDataRequest
+            {
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Keys = new List<string> { "CurrentPlayerTeam", "EnemyTeam", "Team1UniqueID_BF", "BattleEnvironment", "RNGSeeds", "SortedOrder", "MoraleGaugeData", "HumanBattleData" }
             }
         );
 
@@ -48,7 +50,7 @@ public static class AttackFunction
         HumanBattleData humanBattleData = new HumanBattleData();
         List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
         List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
-        NBMonBattleDataSave AttackerMonster = new NBMonBattleDataSave();
+        NBMonBattleDataSave attackerMonster = new NBMonBattleDataSave();
         List<NBMonBattleDataSave> DefenderMonsters = new List<NBMonBattleDataSave>();
         DataFromUnity UnityData = new DataFromUnity();
         DataSendToUnity DataFromAzureToClient = new DataSendToUnity();
@@ -65,7 +67,7 @@ public static class AttackFunction
         seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
         moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
         humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
-        
+
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
 
@@ -74,7 +76,7 @@ public static class AttackFunction
         NBMonTeamData.EnemyTeam = EnemyTeam;
 
         //Get Data From Unity and Convert it back to Class.
-        if(args["UnityDataInput"] != null)
+        if (args["UnityDataInput"] != null)
         {
             string ArgumentString = args["UnityDataInput"];
 
@@ -82,13 +84,13 @@ public static class AttackFunction
         }
 
         //Get Variable if it's an NPC Battle
-        if(args["IsNPCBattle"] != null)
+        if (args["IsNPCBattle"] != null)
         {
             VS_NPC = (bool)args["IsNPCBattle"];
         }
 
         //Get Variable if it's an NPC Battle
-        if(args["IsBossBattle"] != null)
+        if (args["IsBossBattle"] != null)
         {
             VS_Boss = (bool)args["IsBossBattle"];
         }
@@ -96,36 +98,37 @@ public static class AttackFunction
         //Check if monster can attack
         var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, UnityData.AttackerMonsterUniqueID);
 
-        if(!monsterCanMove)
+        if (!monsterCanMove)
         {
             return $"No Monster in the turn order. Error Code: RH-0001";
         }
 
         //Get Attacker Data from Unity Input
-        AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, PlayerTeam, humanBattleData);
-        
+        attackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, PlayerTeam, humanBattleData);
+
         //If Attacker not found in Player Team, Find Attacker on Enemy Team
-        if(AttackerMonster == null)
-            AttackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam, humanBattleData);
+        if (attackerMonster == null)
+            attackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam, humanBattleData);
 
         //Insert Attacker Monster Unique ID.
-        DataFromAzureToClient.AttackerMonsterUniqueID = AttackerMonster.uniqueId;
+        DataFromAzureToClient.AttackerMonsterUniqueID = attackerMonster.uniqueId;
 
         //Declare Skill Slot
-        var SkillSlot = UnityData.SkillSlot;
+        var skillSlot = UnityData.SkillSlot;
 
         //Check Skill Slot Value, prevent using Value that is not 0 ~ 3
-        if(SkillSlot < 0)
-            SkillSlot = 0;
+        if (skillSlot < 0)
+            skillSlot = 0;
 
-        if(SkillSlot > AttackerMonster.skillList.Count - 1)
-            SkillSlot = AttackerMonster.skillList.Count - 1;
+        if (skillSlot > attackerMonster.skillList.Count - 1)
+            skillSlot = attackerMonster.skillList.Count - 1;
 
         //Get all Defender Data from Unity Input
-        foreach(string TargetID in UnityData.TargetUniqueIDs){
+        foreach (string TargetID in UnityData.TargetUniqueIDs)
+        {
             var Monster = UseItem.FindMonster(TargetID, PlayerTeam, humanBattleData);
 
-            if(Monster == null)
+            if (Monster == null)
             {
                 //If Target Monster not found, find this from Enemy Team 
                 Monster = UseItem.FindMonster(TargetID, EnemyTeam, humanBattleData);
@@ -138,60 +141,65 @@ public static class AttackFunction
         log.LogInformation($"Code A: 1st Step, Get Attacker Skill Data");
 
         //Let's get Attacker Data like Skill
-        SkillsDataBase.SkillInfoPlayFab AttackerSkillData = SkillsDataBase.FindSkill(AttackerMonster.skillList[SkillSlot]);
+        SkillsDataBase.SkillInfoPlayFab skill = SkillsDataBase.FindSkill(attackerMonster.skillList[skillSlot]);
 
         //Deduct Attacker Monster Energy
-        NBMonTeamData.StatsValueChange(AttackerMonster, NBMonProperties.StatsType.Energy, -AttackerSkillData.energyRequired);
+        NBMonTeamData.StatsValueChange(attackerMonster, NBMonProperties.StatsType.Energy, -skill.energyRequired);
 
         log.LogInformation($"Code B: 2nd Step, Apply Passive for Attacker");
 
         //Let's Apply Passive to Attacker Monster before Attacking (ActionBefore)
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionBefore, PassiveDatabase.TargetType.originalMonster, AttackerMonster, null, AttackerSkillData, seedClass);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionBefore, PassiveDatabase.TargetType.originalMonster, attackerMonster, null, skill, seedClass);
 
         log.LogInformation($"Code C: 3rd Step, Looping for each Monster Target");
 
         //After Applying passive, let's call Apply Skill for each Target Monster
-        foreach(var TargetMonster in DefenderMonsters)
+        foreach (var targetMonster in DefenderMonsters)
         {
-            if((TargetMonster.fainted || TargetMonster.hp <= 0) && DefenderMonsters.Count != 1)
+            if ((targetMonster.fainted || targetMonster.hp <= 0) && DefenderMonsters.Count != 1)
                 continue;
 
-            log.LogInformation($"{TargetMonster.nickName}, Apply Skill");
+            log.LogInformation($"{targetMonster.nickName}, Apply Skill");
 
             //Apply Skill
-            ApplySkill(AttackerSkillData, AttackerMonster, TargetMonster, DataFromAzureToClient, seedClass, moraleData, PlayerTeam, EnemyTeam, humanBattleData);
+            ApplySkill(skill, attackerMonster, targetMonster, DataFromAzureToClient, seedClass, moraleData, PlayerTeam, EnemyTeam, humanBattleData);
 
-            log.LogInformation($"{TargetMonster.nickName}, Apply Status Effect Immediately");
+            log.LogInformation($"{targetMonster.nickName}, Apply Status Effect Immediately");
 
             //Apply status effect logic like Anti Poison/Anti Stun.
-            StatusEffectIconDatabase.ApplyStatusEffectImmediately(TargetMonster);
+            StatusEffectIconDatabase.ApplyStatusEffectImmediately(targetMonster);
 
-            log.LogInformation($"{TargetMonster.nickName}, Check Monster Died");
+            log.LogInformation($"{targetMonster.nickName}, Check Monster Died");
 
             //Let's Check Target Monster wether it's Fainted or not
-            CheckTargetDied(TargetMonster, AttackerMonster, AttackerSkillData, PlayerTeam, EnemyTeam, Team1UniqueID_BF, DataFromAzureToClient);
+            CheckTargetDied(targetMonster, attackerMonster, skill, PlayerTeam, EnemyTeam, Team1UniqueID_BF, DataFromAzureToClient);
         }
 
         log.LogInformation($"Code D: 4th Step, Apply and Remove Status Effect from Attacker Monster");
 
         //Apply Status Effect to Attacker Monster
-        UseItem.ApplyStatusEffect(AttackerMonster, AttackerSkillData.statusEffectListSelf, null, false, seedClass);
+        UseItem.ApplyStatusEffect(attackerMonster, skill.statusEffectListSelf, null, false, seedClass);
 
         //Remove Status Effect to Attacker Monster
-        UseItem.RemoveStatusEffect(AttackerMonster, AttackerSkillData.removeStatusEffectListSelf);
+        UseItem.RemoveStatusEffect(attackerMonster, skill.removeStatusEffectListSelf);
+
+        //Remove Status Effect to Atttacker Monster with Criteria.
+        HardCodedRemoveStatusEffect(attackerMonster, skill.removeStatusEffectTypeSelf);
 
         log.LogInformation($"Code E: 5th Step, Reset Combat Related Stats");
 
         //After the Combat, let's resets the Monster's Temporary Stats that only works in Combat Phase
-        ResetTemporaryStatsAfterAttacking(AttackerMonster);
+        ResetTemporaryStatsAfterAttacking(attackerMonster);
 
-        foreach(var TargetMonster in DefenderMonsters)
+        foreach (var TargetMonster in DefenderMonsters)
             ResetTemporaryStatsAfterAttacking(TargetMonster);
 
         //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
-            new UpdateUserDataRequest {
-             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+            new UpdateUserDataRequest
+            {
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Data = new Dictionary<string, string>{
                  {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
                  {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
@@ -207,6 +215,18 @@ public static class AttackFunction
         log.LogInformation($"{DataInJsonString}");
 
         return DataFromAzureToClient;
+    }
+
+    public static void HardCodedRemoveStatusEffect(NBMonBattleDataSave selectedMonster, SkillsDataBase.RemoveStatusEffectType statusEffectRemovalType)
+    {
+        if(statusEffectRemovalType == SkillsDataBase.RemoveStatusEffectType.None)
+            return;
+
+        UseItem.RemoveAllStatusEFfect_AskedRemoval(selectedMonster, statusEffectRemovalType);
+
+        //Remove All Status Effect if the skill does that
+        if (statusEffectRemovalType == SkillsDataBase.RemoveStatusEffectType.All)
+            UseItem.RemoveAllStatusEFfect(selectedMonster);
     }
 
     [FunctionName("SkipTurnLogic")]
@@ -287,46 +307,49 @@ public static class AttackFunction
     }
 
     //Apply Skill Function
-    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab Skill, NBMonBattleDataSave AttackerMonster, NBMonBattleDataSave DefenderMonster, DataSendToUnity dataFromAzureToClient, RNGSeedClass seedClass, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
+    public static void ApplySkill(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave attackerMonster, NBMonBattleDataSave targetMonster, DataSendToUnity dataFromAzureToClient, RNGSeedClass seedClass, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
         //Declare New DamageData
-        DamageData ThisMonsterDamageData = new DamageData();
+        DamageData thisMonsterDamageData = new DamageData();
 
         //Apply passive related with receiving element input before get hit!
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionReceiving, PassiveDatabase.TargetType.targetedMonster, AttackerMonster, DefenderMonster, Skill, seedClass);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionReceiving, PassiveDatabase.TargetType.targetedMonster, attackerMonster, targetMonster, skill, seedClass);
 
         //Insert Defender Monster Unique ID.
-        ThisMonsterDamageData.DefenderMonsterUniqueID = DefenderMonster.uniqueId;
+        thisMonsterDamageData.DefenderMonsterUniqueID = targetMonster.uniqueId;
         
         //When skill type is damage, calculate the damage based on element modifier
-        if(Skill.actionType == SkillsDataBase.ActionType.Damage)
+        if(skill.actionType == SkillsDataBase.ActionType.Damage)
         {
-            CalculateAndDoDamage(Skill, AttackerMonster, DefenderMonster, ThisMonsterDamageData, seedClass, moraleData, playerTeam, enemyTeam, humanBattleData);
+            CalculateAndDoDamage(skill, attackerMonster, targetMonster, thisMonsterDamageData, seedClass, moraleData, playerTeam, enemyTeam, humanBattleData);
         }
 
         //Apply passive effect related to after action to the original monster
-        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionAfter, PassiveDatabase.TargetType.originalMonster, AttackerMonster, DefenderMonster, Skill, seedClass);
+        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ActionAfter, PassiveDatabase.TargetType.originalMonster, attackerMonster, targetMonster, skill, seedClass);
 
         //Apply passive effect that inflict status effect from this monster to attacker monster (aka original monster), make sure the attacker is not itself and the skill's type is damage
-        if (AttackerMonster != DefenderMonster && Skill.actionType == SkillsDataBase.ActionType.Damage)
+        if (attackerMonster != targetMonster && skill.actionType == SkillsDataBase.ActionType.Damage)
         {
-            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.InflictStatusEffect, PassiveDatabase.TargetType.originalMonster, DefenderMonster, AttackerMonster, Skill, seedClass);
+            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.InflictStatusEffect, PassiveDatabase.TargetType.originalMonster, targetMonster, attackerMonster, skill, seedClass);
         }
 
         //If the skill is Healing Skill, e.g HP and Energy Recovery
-        if(Skill.actionType == SkillsDataBase.ActionType.StatsRecovery)
+        if(skill.actionType == SkillsDataBase.ActionType.StatsRecovery)
         {
-            StatsRecoveryLogic(Skill, DefenderMonster, ThisMonsterDamageData);
+            StatsRecoveryLogic(skill, targetMonster, thisMonsterDamageData);
         }
 
         //Apply Status Effect to Target
-        UseItem.ApplyStatusEffect(DefenderMonster, Skill.statusEffectList, null, false, seedClass);
+        UseItem.ApplyStatusEffect(targetMonster, skill.statusEffectList, null, false, seedClass);
 
         //Remove Status Effect to Target
-        UseItem.RemoveStatusEffect(DefenderMonster, Skill.removeStatusEffectList);
+        UseItem.RemoveStatusEffect(targetMonster, skill.removeStatusEffectList);
+
+        //Remove Status Effect to Target Monster with Criteria.
+        HardCodedRemoveStatusEffect(targetMonster, skill.removeStatusEffectType);
 
         //Add ThisMonsterDamageData to DataFromAzureToClient
-        dataFromAzureToClient.DamageDatas.Add(ThisMonsterDamageData);
+        dataFromAzureToClient.DamageDatas.Add(thisMonsterDamageData);
     }
 
     //Stats Recovery Logic

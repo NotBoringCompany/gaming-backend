@@ -102,6 +102,7 @@ public class PassiveDatabase
         //List of all the requirements logic, choose one
         public List<StatsValueIsRequired> statsValueIsRequired;
         public NBMonProperties.StatusEffect statusEffect;
+        public SkillsDataBase.RemoveStatusEffectType statusRemovalRequirement;
         public List<string> skillLists;
         public List<string> EnvinromentLists;
         public ElementDatabase.Elements skillElement;
@@ -151,6 +152,7 @@ public class PassiveDatabase
         public NBMonProperties.StatsType statsType;
         public int valueChange;
         public List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, removeStatusEffectInfoList, teamStatusEffectInfoList, removeTeamStatusEffectInfoList, enemyTeamStatusEffectInfoList, removeEnemyTeamStatusEffectInfoList;
+        public SkillsDataBase.RemoveStatusEffectType statusRemoveType_Self, statusRemoveType_Allies, statusRemoveType_Enemies;
         public int triggerChance;
         public int attackBuff, specialAttackBuff, defenseBuff, specialDefenseBuff, criticalBuff, ignoreDefenses;
         public int energyShield, surviveLethalBlow, totalIgnoreDefense, mustCritical, immuneCritical;

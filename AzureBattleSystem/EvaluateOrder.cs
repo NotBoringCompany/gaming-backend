@@ -88,56 +88,61 @@ public static class EvaluateOrder
     }
 
     //Change Battle Speed Value if there's Speed Buff or Speed Debuff and Apply Status Effect
-    public static void StatusEffectLogicDuringStartTurn(NBMonBattleDataSave ThisMonster)
+    public static void ApplyEffectsOnStartTurn(NBMonBattleDataSave monster)
     {
         //Let's return This Monster's Battle Speed into Normal Speed First.
-        ThisMonster.battleSpeed = ThisMonster.speed;
+        monster.battleSpeed = monster.speed;
+        
+        //Looping through All Status Effects from the monster
+        StatusEffectLogicDuringStartTurn(monster);
+    }
 
-        //Looping through All Status Effects from ThisMonster
-        for (int i = 0; i < ThisMonster.statusEffectList.Count; i++)
+    private static void StatusEffectLogicDuringStartTurn(NBMonBattleDataSave monster)
+    {
+        for (int i = 0; i < monster.statusEffectList.Count; i++)
         {
             //Let's find status effect first (this is individual status effect for each list)
-            var TheStatusEffectParameter = UseItem.FindStatusEffectFromDatabase((int)ThisMonster.statusEffectList[i].statusEffect);
-            var StatusEffectStack = ThisMonster.statusEffectList[i].stacks;
+            var statusEffectParameter = UseItem.FindStatusEffectFromDatabase((int)monster.statusEffectList[i].statusEffect);
+            var statusEffectStack = monster.statusEffectList[i].stacks;
 
             //Get This Monster's Temporary Passive Data first.
-            var ThisNBMonTempPassive = ThisMonster.temporaryPassives;
+            var thisNBMonTempPassive = monster.temporaryPassives;
 
             //Do Logic about HP and Energy Recovery / Burn Damage
-            if(TheStatusEffectParameter.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.HP_Energy_Related)
+            if (statusEffectParameter.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.HP_Energy_Related)
             {
-                NBMonTeamData.StatsValueChange(ThisMonster, NBMonProperties.StatsType.Hp, TheStatusEffectParameter.HPChangesInNumber * StatusEffectStack);
-                NBMonTeamData.StatsValueChange(ThisMonster, NBMonProperties.StatsType.Energy, TheStatusEffectParameter.EnergyChangesInNumber * StatusEffectStack);
-                NBMonTeamData.StatsPercentageChange(ThisMonster, NBMonProperties.StatsType.Hp, TheStatusEffectParameter.HPChangesInPercent * StatusEffectStack);
-                NBMonTeamData.StatsPercentageChange(ThisMonster, NBMonProperties.StatsType.Energy, TheStatusEffectParameter.EnergyChangesInPercent * StatusEffectStack);
+                NBMonTeamData.StatsValueChange(monster, NBMonProperties.StatsType.Hp, statusEffectParameter.HPChangesInNumber * statusEffectStack);
+                NBMonTeamData.StatsValueChange(monster, NBMonProperties.StatsType.Energy, statusEffectParameter.EnergyChangesInNumber * statusEffectStack);
+                NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Hp, statusEffectParameter.HPChangesInPercent * statusEffectStack);
+                NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Energy, statusEffectParameter.EnergyChangesInPercent * statusEffectStack);
 
                 //Make Sure This NBMon's HP stays at 1 as Death by Debuff is not possible (Will Break the game)
-                if(ThisMonster.hp <= 0)
-                    ThisMonster.hp = 1;
+                if (monster.hp <= 0)
+                    monster.hp = 1;
             }
 
             //Let's change the Battle Speed
-            if(TheStatusEffectParameter.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Speed_Related)
+            if (statusEffectParameter.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Speed_Related)
             {
                 //Declare SpeedBuff and Calculate its Value
-                float SpeedBuff = TheStatusEffectParameter.Speed/100f * StatusEffectStack;
+                float SpeedBuff = statusEffectParameter.Speed / 100f * statusEffectStack;
 
                 //Calculate This Monster Battle Speed
-                ThisMonster.battleSpeed += (int)MathF.Floor((float)ThisMonster.speed * SpeedBuff);
+                monster.battleSpeed += (int)MathF.Floor((float)monster.speed * SpeedBuff);
             }
 
             //If Paralyzed, This Monster's Battle Speed is Halved
-            if(TheStatusEffectParameter.statusConditionName == NBMonProperties.StatusEffect.Paralyzed)
+            if (statusEffectParameter.statusConditionName == NBMonProperties.StatusEffect.Paralyzed)
             {
                 //Calculate This Monster Battle Speed (Paralyzed, Reduced by 50%).
-                ThisMonster.battleSpeed -= (int)MathF.Floor((float)ThisMonster.speed * 0.5f);
+                monster.battleSpeed -= (int)MathF.Floor((float)monster.speed * 0.5f);
             }
 
             //Add Temporary Passive from Status Effect
-            if(TheStatusEffectParameter.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Add_Temp_Passive_Related)
-            {   
-                if(!ThisNBMonTempPassive.Contains(TheStatusEffectParameter.passiveName))
-                    ThisNBMonTempPassive.Add(TheStatusEffectParameter.passiveName);
+            if (statusEffectParameter.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Add_Temp_Passive_Related)
+            {
+                if (!thisNBMonTempPassive.Contains(statusEffectParameter.passiveName))
+                    thisNBMonTempPassive.Add(statusEffectParameter.passiveName);
             }
         }
     }
@@ -245,7 +250,7 @@ public static class EvaluateOrder
                     }
 
                     //Status Effect Logic during Start Turn.
-                    StatusEffectLogicDuringStartTurn(PlayerNBMonData);
+                    ApplyEffectsOnStartTurn(PlayerNBMonData);
                     continue;
                 }
             }
@@ -288,7 +293,7 @@ public static class EvaluateOrder
                     }
 
                     //Status Effect Logic during Start Turn.
-                    StatusEffectLogicDuringStartTurn(EnemyNBMonData);
+                    ApplyEffectsOnStartTurn(EnemyNBMonData);
                     continue;
                 }
             }
