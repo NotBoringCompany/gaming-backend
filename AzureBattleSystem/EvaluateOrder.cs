@@ -90,9 +90,6 @@ public static class EvaluateOrder
     //Change Battle Speed Value if there's Speed Buff or Speed Debuff and Apply Status Effect
     public static void ApplyEffectsOnStartTurn(NBMonBattleDataSave monster)
     {
-        //Let's return This Monster's Battle Speed into Normal Speed First.
-        monster.battleSpeed = monster.speed;
-        
         //Looping through All Status Effects from the monster
         StatusEffectLogicDuringStartTurn(monster);
     }
@@ -215,85 +212,95 @@ public static class EvaluateOrder
 
             if(BattleCondition == 0 || BattleCondition == 1)
             {
-                var PlayerNBMonData = NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, PlayerTeam);
+                var playerNBMonData = NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, PlayerTeam);
 
-                if(PlayerNBMonData == null && monsterUniqueID == humanBattleData.playerHumanData.uniqueId)
-                    PlayerNBMonData = humanBattleData.playerHumanData;
+                if(playerNBMonData == null && monsterUniqueID == humanBattleData.playerHumanData.uniqueId)
+                    playerNBMonData = humanBattleData.playerHumanData;
 
-                if(PlayerNBMonData != null)
+                if(playerNBMonData != null)
                 {
-                    if(PlayerNBMonData.fainted || PlayerNBMonData.hp <= 0)
+                    if(playerNBMonData.fainted || playerNBMonData.hp <= 0)
                         continue;
 
-                    CurrentNBMonOnBF.Add(PlayerNBMonData);
+                    CurrentNBMonOnBF.Add(playerNBMonData);
+
+                    //Let's return This Monster's Battle Speed into Normal Speed First.
+                    playerNBMonData.battleSpeed = playerNBMonData.speed;
 
                     //Reset Temporary Passive
-                    PlayerNBMonData.temporaryPassives.Clear();
+                    playerNBMonData.temporaryPassives.Clear();
 
                     //Do Passive Logics for Player NBMon in Battle Field
                     if(CurrentTurn == 0) //when Enter Battle Field.
                     {
                         //Apply passives that works when received status effect.
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null, newSeedClass);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, playerNBMonData, null, null, newSeedClass);
                     }
                     else //Second Turn and So On.
                     {
                         //Decrease Status Effect Counter At the start of the Turn
-                        DecreaseCounter(PlayerNBMonData);
+                        DecreaseCounter(playerNBMonData);
 
-                        //Apply passives that works when received status effect. (Turn Start and Turn End combined).
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null, newSeedClass);
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, PlayerNBMonData, null, null, newSeedClass);
+                        //Apply passives that works when received status effect. (Turn End).
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, playerNBMonData, null, null, newSeedClass);
                     
                         //Add NBMon Energy
-                        NBMonTeamData.StatsValueChange(PlayerNBMonData, NBMonProperties.StatsType.Energy, 25);
+                        NBMonTeamData.StatsValueChange(playerNBMonData, NBMonProperties.StatsType.Energy, 25);
                     }
 
+                    //Apply passives that works when received status effect. (Turn Start).
+                    PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, playerNBMonData, null, null, newSeedClass);
+
                     //Status Effect Logic during Start Turn.
-                    ApplyEffectsOnStartTurn(PlayerNBMonData);
+                    ApplyEffectsOnStartTurn(playerNBMonData);
                     continue;
                 }
             }
 
             if(BattleCondition == 0 || BattleCondition == -1)
             {
-                var EnemyNBMonData =  NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, EnemyTeam);
+                var enemyNBMonData =  NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, EnemyTeam);
 
                 if(humanBattleData.enemyHumanData != null) //Check if the enemyHumanData is null or not.
-                    if(EnemyNBMonData == null && monsterUniqueID == humanBattleData.enemyHumanData.uniqueId)
-                        EnemyNBMonData = humanBattleData.enemyHumanData;
+                    if(enemyNBMonData == null && monsterUniqueID == humanBattleData.enemyHumanData.uniqueId)
+                        enemyNBMonData = humanBattleData.enemyHumanData;
 
-                if(EnemyNBMonData != null)
+                if(enemyNBMonData != null)
                 {
-                    if(EnemyNBMonData.fainted || EnemyNBMonData.hp <= 0)
+                    if(enemyNBMonData.fainted || enemyNBMonData.hp <= 0)
                         continue;
 
-                    CurrentNBMonOnBF.Add(EnemyNBMonData);
+                    CurrentNBMonOnBF.Add(enemyNBMonData);
+
+                    //Let's return This Monster's Battle Speed into Normal Speed First.
+                    enemyNBMonData.battleSpeed = enemyNBMonData.speed;
 
                     //Reset Temporary Passive
-                    EnemyNBMonData.temporaryPassives.Clear();
+                    enemyNBMonData.temporaryPassives.Clear();
 
                     //Do Passive Logics for Enemy in Battle Field
                     if(CurrentTurn == 0) //when Enter Battle Field.
                     {
                         //Apply passives that works when received status effect.
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null, newSeedClass);
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.WhenEnterBattleField, PassiveDatabase.TargetType.originalMonster, enemyNBMonData, null, null, newSeedClass);
                     }
                     else //Second Turn and So On.
                     {
                         //Decrease Status Effect Counter At the start of the Turn
-                        DecreaseCounter(EnemyNBMonData);
+                        DecreaseCounter(enemyNBMonData);
 
-                        //Apply passives that works when received status effect. (Turn Start and Turn End combined).
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null, newSeedClass);
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, EnemyNBMonData, null, null, newSeedClass);
+                        //Apply passives that works when received status effect. (Turn End).
+                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, enemyNBMonData, null, null, newSeedClass);
 
                         //Add NBMon Energy
-                        NBMonTeamData.StatsValueChange(EnemyNBMonData, NBMonProperties.StatsType.Energy, 25);
+                        NBMonTeamData.StatsValueChange(enemyNBMonData, NBMonProperties.StatsType.Energy, 25);
                     }
 
+                    //Apply passives that works when received status effect. (Turn Start).
+                    PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, enemyNBMonData, null, null, newSeedClass);
+
                     //Status Effect Logic during Start Turn.
-                    ApplyEffectsOnStartTurn(EnemyNBMonData);
+                    ApplyEffectsOnStartTurn(enemyNBMonData);
                     continue;
                 }
             }

@@ -471,14 +471,14 @@ public static class AttackFunction
         //Attack Logic
         float attackerAttackStats = attackerMonster.attack * (1f + attack_Passive_Modifier) * attack_StatusEffect_Modifier;
         int attackDamage = DamageCalculation(skill.attack, attackerMonster.level, attackerAttackStats, targetMonsterDef, sameTypeAttackBoost, elementModifier, (1f + attack_Passive_Modifier), criticalHitMultiplier, attack_StatusEffect_Modifier, randomDamage);
-        int damageAttack = (int)Math.Floor(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
-        int energyDamageAttack = (int)Math.Floor(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
+        int damageAttack = (int)Math.Truncate(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
+        int energyDamageAttack = (int)Math.Truncate(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
         //Special Attakc Logic
         float attackerSPAttackStats = attackerMonster.specialAttack * (1f + sp_Attack_Passive_Modifier) * sp_Attack_StatusEffect_Modifier;
         int spAttackDamage = DamageCalculation(skill.specialAttack, attackerMonster.level, attackerSPAttackStats, targetMonsterSPDef, sameTypeAttackBoost, elementModifier, (1f + sp_Attack_Passive_Modifier), criticalHitMultiplier, sp_Attack_StatusEffect_Modifier, randomDamage);
-        int damageSpAttack = (int)Math.Floor(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
-        int energyDamageSPAttack = (int)Math.Floor(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
+        int damageSpAttack = (int)Math.Truncate(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
+        int energyDamageSPAttack = (int)Math.Truncate(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
         //Survive Lethal Blow Logic
         if (target_NBMon_Must_Survive_Lethal_Blow >= 1)
@@ -491,6 +491,13 @@ public static class AttackFunction
             if (targetMonsterHP > 1 && damageSpAttack > targetMonsterHP)
                 damageSpAttack = targetMonsterHP - 1;
         }
+
+        //Negative Damage, becomes heal if targetMosnterDef is negative
+        if(targetMonsterDef < 0)
+            damageAttack *= -1;
+
+        if (targetMonsterSPDef < 0)
+            damageSpAttack *= -1;
 
         //Changes morale Data for attacker (increase gauge by 5)
         ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, attackerMonster, 5, humanBattleData);
@@ -505,10 +512,6 @@ public static class AttackFunction
         {
             if (elementModifier != 0)
             {
-                //Damage becomes 0 if This_NBMon_Damage_Reduction_Modifier = 1
-                if (target_NBMon_Damage_Reduction_Modifier == 1)
-                    damageAttack = 0;
-
                 //Normal Damage
                 NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Hp, damageAttack * -1);
                 ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, targetMonster, damageAttack, humanBattleData);
@@ -530,10 +533,6 @@ public static class AttackFunction
 
         if (skill.techniqueType == SkillsDataBase.TechniqueType.SpecialAttack)
         {
-            //Damage becomes 0 if This_NBMon_Damage_Reduction_Modifier = 1
-            if (target_NBMon_Damage_Reduction_Modifier == 1)
-                damageSpAttack = 0;
-
             //Normal SP Damage
             NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Hp, damageSpAttack * -1);
             ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, targetMonster, damageSpAttack, humanBattleData);
@@ -563,6 +562,9 @@ public static class AttackFunction
     //Damage Calculation Method
     private static int DamageCalculation(int skillPower, int attackerLevel, float attackerPower, float targetDef, float STAB, float typeEffects, float passiveDamageBoost, float criticalDamageMultiplier, float statusEffectModifier, float randomValue)
     {
+        if (targetDef < 0)
+            targetDef *= -1;
+
         float func_A = ((attackerLevel * skillPower * attackerPower * statusEffectModifier * passiveDamageBoost / targetDef) / 100) + 10;
         int overallFunc = (int)(func_A * STAB * typeEffects * criticalDamageMultiplier * randomValue);
         return overallFunc;
@@ -640,6 +642,9 @@ public static class AttackFunction
 
     public static void ChangeMoraleGauge(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, int damageTaken, HumanBattleData humanBattleData)
     {
+        if(damageTaken < 0)
+            damageTaken *= -1;
+
         //Player Logic
         if(playerTeam.Contains(monster))
         {
@@ -685,6 +690,9 @@ public static class AttackFunction
                         AddEXP(targetMonster, Player1Monster, dataFromAzureToClient, 1);
                     }
                 }
+
+                //Add Growth Value to the Attacker.
+                AddGrowthValueToAttacker(attackerMonster, targetMonster);
             }
         }
     }
@@ -795,5 +803,86 @@ public static class AttackFunction
         monster.totalIgnoreDefense = 0;
         monster.immuneCritical = 0;
         monster.elementDamageReduction = 0;
+    }
+
+    public static void AddGrowthValueToAttacker(NBMonBattleDataSave attackerMonster, NBMonBattleDataSave targetMonster)
+    {
+        int usedBaseStat = new int();
+
+        var monsterDataBase = NBMonDatabase.FindMonster(targetMonster.monsterId);
+        List<int> baseStats = new List<int>{
+            monsterDataBase.monsterBaseStat.maxHpBase, monsterDataBase.monsterBaseStat.maxEnergyBase,
+            monsterDataBase.monsterBaseStat.speedBase, monsterDataBase.monsterBaseStat.attackBase,
+            monsterDataBase.monsterBaseStat.specialAttackBase, monsterDataBase.monsterBaseStat.defenseBase,
+            monsterDataBase.monsterBaseStat.specialDefenseBase};
+
+        //Sort Base Stats Value from the hihgest
+        baseStats.OrderByDescending(x => x).ToList();
+        usedBaseStat = baseStats[0];
+
+        float species = 0.65f; //Assumes Wild
+
+        if (monsterDataBase.Tier == NBMonDatabase.NBMonTierType.Origin)
+            species = 1f;
+        else if (monsterDataBase.Tier == NBMonDatabase.NBMonTierType.Hybrid)
+            species = 0.8f;
+
+        //Calculate the Growth Value Points
+        float growthPoints = species * (float)usedBaseStat / 25f;
+
+        //Add the growthPoints value
+        AddGrowthValueLogic(attackerMonster, usedBaseStat, monsterDataBase, growthPoints);
+    }
+
+    private static void AddGrowthValueLogic(NBMonBattleDataSave attackerMonster, int usedBaseStat, NBMonDatabase.MonsterInfoPlayFab monsterDataBase, float growthPoints)
+    {
+        //Let's check if the total value is 5000 first
+        var totalGrowthValue = attackerMonster.maxHpEffort + attackerMonster.maxEnergyEffort + attackerMonster.speedEffort + attackerMonster.attackEffort + attackerMonster.specialAttackEffort + attackerMonster.defenseEffort + attackerMonster.specialDefenseEffort;
+
+        if((totalGrowthValue + growthPoints) >= 5000)
+        {
+            growthPoints = (5000 - totalGrowthValue);
+        }
+
+        if(growthPoints == 0)
+            return;
+
+        //Add the growthPoints value
+        if (usedBaseStat == monsterDataBase.monsterBaseStat.maxHpBase)
+            attackerMonster.maxHpEffort += (int)Math.Floor(growthPoints);
+        else if (usedBaseStat == monsterDataBase.monsterBaseStat.maxEnergyBase)
+            attackerMonster.maxEnergyEffort += (int)Math.Floor(growthPoints);
+        else if (usedBaseStat == monsterDataBase.monsterBaseStat.speedBase)
+            attackerMonster.speedEffort += (int)Math.Floor(growthPoints);
+        else if (usedBaseStat == monsterDataBase.monsterBaseStat.attackBase)
+            attackerMonster.attackEffort += (int)Math.Floor(growthPoints);
+        else if (usedBaseStat == monsterDataBase.monsterBaseStat.specialAttackBase)
+            attackerMonster.specialAttackEffort += (int)Math.Floor(growthPoints);
+        else if (usedBaseStat == monsterDataBase.monsterBaseStat.defenseBase)
+            attackerMonster.defenseEffort += (int)Math.Floor(growthPoints);
+        else if (usedBaseStat == monsterDataBase.monsterBaseStat.specialDefenseBase)
+            attackerMonster.specialDefenseEffort += (int)Math.Floor(growthPoints);
+
+        //Let's normalize the Growth Value
+        if(attackerMonster.maxHpEffort > 2250)
+            attackerMonster.maxHpEffort = 2250;
+
+        if(attackerMonster.maxEnergyEffort > 2250)
+            attackerMonster.maxEnergyEffort = 2250;
+
+        if(attackerMonster.speedEffort > 2250)
+            attackerMonster.speedEffort = 2250;
+
+        if(attackerMonster.attackEffort > 2250)
+            attackerMonster.attackEffort = 2250;
+
+        if(attackerMonster.specialAttackEffort > 2250)
+            attackerMonster.specialAttackEffort = 2250;
+
+        if(attackerMonster.defenseEffort > 2250)
+            attackerMonster.defenseEffort = 2250;
+
+        if(attackerMonster.specialDefenseEffort > 2250)
+            attackerMonster.specialDefenseEffort = 2250;
     }
 }

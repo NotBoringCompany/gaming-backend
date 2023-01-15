@@ -158,6 +158,7 @@ public class PassiveDatabase
         public int energyShield, surviveLethalBlow, totalIgnoreDefense, mustCritical, immuneCritical;
         public int damageReduction, energyShieldValue;
         public List<ElementalDamageReduction> ElementalDamageReductions;
+        public List<string> newTemporaryPassives;
 
     }
 
@@ -168,8 +169,8 @@ public class PassiveDatabase
         StatsPercentage,
         StatusEffect,
         Stats,
-        DuringBattle
-
+        DuringBattle,
+        ApplySelfTemporaryPassive
     }
 
     public class ModifierStatus

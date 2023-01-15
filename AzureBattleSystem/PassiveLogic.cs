@@ -221,6 +221,8 @@ public class PassiveLogic
                                 break;
                             }
                     }
+
+                    return true;
                 }
 
                 //Checks if the useMonster have the status or not
@@ -382,6 +384,16 @@ public class PassiveLogic
                     {
                         useMonsterMemory.elementDamageReduction += ElementDamageReduction.DamageReductionValue;
                     }
+                }
+            }
+        }
+        else if (passiveEffect.effectType == PassiveDatabase.EffectType.ApplySelfTemporaryPassive)
+        {
+            foreach(var tempPassive in passiveEffect.newTemporaryPassives)
+            {
+                if(!useMonsterMemory.temporaryPassives.Contains(tempPassive))
+                {
+                    useMonsterMemory.temporaryPassives.Add(tempPassive);
                 }
             }
         }
