@@ -21,9 +21,7 @@ public class PassiveDatabase
         public ObjectId _id { get; set; }
         public string name;
         public string description;
-        public ExecutionPosition executionPosition;
         public List<PassiveDetail> passiveDetail;
-        public bool oncePerBattleOnly = false;
     }
     public List<PassiveInfoPlayFab> passiveInfosPlayFab;
 
@@ -60,9 +58,9 @@ public class PassiveDatabase
     [System.Serializable]
     public class PassiveDetail
     {
+        public ExecutionPosition executionPosition;
         public List<Requirements> requirements;
         public List<EffectInfo> effect;
-        public SkillsDataBase.TargetType targetType;
     }
 
 
@@ -96,6 +94,8 @@ public class PassiveDatabase
     {
         //monsterTargetingCheck, if this bool = true. the effect only works to Target NBMon.
         public bool monsterTargetingCheck;
+        //monsterTargeting_EffectToSelf, if this bool is true while monsterTargetingCheck is also true, passive effect goes into the user instead target monster.
+        public bool monsterTargeting_EffectToSelf;
 
         public RequirementTypes requirementTypes;
 

@@ -56,20 +56,21 @@ public class PassiveLogic
     //Apply the passive, this is the logic we'd like to call!
     public static void PassiveExecutionLogic(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.PassiveInfoPlayFab passiveInfo, SkillsDataBase.SkillInfoPlayFab skill, string BattleEnvironment, RNGSeedClass seedClass)
     {
-        //Only Check The Passive When The Execution Position Is Correct
-        if (executionPosition == passiveInfo.executionPosition && passiveInfo != null)
+        //Loop between Passive Detail
+        foreach (var passiveDetail in passiveInfo.passiveDetail)
         {
-            //Checks If Passive Requirement is Correct
-            //Debug.Log(passiveInfo.name + " " + passiveInfo.executionPosition + " " + targetMonsterMemory.name);
-
-            foreach (var passiveDetail in passiveInfo.passiveDetail)
+            //Only Check The Passive When The Execution Position Is Correct
+            if (executionPosition == passiveDetail.executionPosition && passiveInfo != null)
             {
+                //Checks If Passive Requirement is Correct
                 if (CheckPassiveRequirement(passiveDetail, passiveDetail.requirements, skill, BattleEnvironment))
                 {
                     foreach(var checkTarget in passiveDetail.requirements)
                     {
-                        if (checkTarget.monsterTargetingCheck && targetMonsterMemory != null)
+                        if (checkTarget.monsterTargetingCheck && targetMonsterMemory != null && !checkTarget.monsterTargeting_EffectToSelf)
                             useMonsterMemory = targetMonsterMemory;
+                        else
+                            useMonsterMemory = originMonsterMemory;
                     }
 
                     //Apply Each Passive Int The List

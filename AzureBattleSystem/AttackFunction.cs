@@ -390,7 +390,7 @@ public static class AttackFunction
         //TO DO, Apply Artifact Passive to Defender Monster.
 
         //Calculate Critical Hit RNG
-        int attackerCriticalHitRate = CriticalHitStatsCalculation(attackerMonster, skill);
+        int attackerCriticalHitRate = CriticalHitStatsCalculation(attackerMonster, skill, playerTeam, enemyTeam, humanBattleData, moraleData);
         int criticalRNG = EvaluateOrder.ConvertSeedToRNG(seedClass);
         float criticalHitMultiplier = 1f;
         int mustCritical = attackerMonster.mustCritical;
@@ -581,15 +581,29 @@ public static class AttackFunction
             return 1f;
     }
 
-    private static int CriticalHitStatsCalculation(NBMonBattleDataSave originalMonster, SkillsDataBase.SkillInfoPlayFab skill)
+    private static int CriticalHitStatsCalculation(NBMonBattleDataSave originalMonster, SkillsDataBase.SkillInfoPlayFab skill, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData, BattleMoraleGauge.MoraleData moraleData)
     {
         int criticalHit_Skill = skill.criticalRate;
         int criticalHit_Passive = (int)Math.Floor(originalMonster.criticalBuff);
         int criticalHit_NBMon = originalMonster.criticalHit;
         int criticalHit_NBMon_From_StatusEffect = StatusEffectIconDatabase.CriticalStatusEffectLogic(originalMonster);
+        int criticalHit_FromMorale = GetCriticalHitFromMorale(originalMonster, playerTeam, enemyTeam, humanBattleData, moraleData);
 
-        return criticalHit_NBMon + criticalHit_NBMon_From_StatusEffect + criticalHit_Skill + criticalHit_Passive;
+        return criticalHit_NBMon + criticalHit_NBMon_From_StatusEffect + criticalHit_Skill + criticalHit_Passive + criticalHit_FromMorale;
 
+    }
+
+    private static int GetCriticalHitFromMorale(NBMonBattleDataSave originalMonster, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData, BattleMoraleGauge.MoraleData moraleData)
+    {
+        //Check if originalMonster is from Player Team
+        if(playerTeam.Contains(originalMonster) || originalMonster == humanBattleData.playerHumanData)
+        {
+            return (moraleData.playerMoraleGauge/10);
+        }
+        else
+        {
+            return (moraleData.enemyMoraleGauge/10);
+        }
     }
 
     // Calculate and return the element modifier value
