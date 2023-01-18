@@ -391,7 +391,7 @@ public static class AttackFunction
 
         //Calculate Critical Hit RNG
         int attackerCriticalHitRate = CriticalHitStatsCalculation(attackerMonster, skill, playerTeam, enemyTeam, humanBattleData, moraleData);
-        int criticalRNG = EvaluateOrder.ConvertSeedToRNG(seedClass);
+        int criticalRNG = EvaluateOrder.ConvertSeedToRNG(seedClass, 0, 1000); //Ranging from 0 to 1000 instead 0 to 100.
         float criticalHitMultiplier = 1f;
         int mustCritical = attackerMonster.mustCritical;
 
@@ -470,13 +470,13 @@ public static class AttackFunction
 
         //Attack Logic
         float attackerAttackStats = attackerMonster.attack * (1f + attack_Passive_Modifier) * attack_StatusEffect_Modifier;
-        int attackDamage = DamageCalculation(skill.attack, attackerMonster.level, attackerAttackStats, targetMonsterDef, sameTypeAttackBoost, elementModifier, (1f + attack_Passive_Modifier), criticalHitMultiplier, attack_StatusEffect_Modifier, randomDamage);
+        int attackDamage = DamageCalculation(skill.attack, attackerMonster.level, attackerAttackStats, targetMonsterDef, sameTypeAttackBoost, elementModifier, criticalHitMultiplier, randomDamage);
         int damageAttack = (int)Math.Truncate(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
         int energyDamageAttack = (int)Math.Truncate(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
         //Special Attakc Logic
         float attackerSPAttackStats = attackerMonster.specialAttack * (1f + sp_Attack_Passive_Modifier) * sp_Attack_StatusEffect_Modifier;
-        int spAttackDamage = DamageCalculation(skill.specialAttack, attackerMonster.level, attackerSPAttackStats, targetMonsterSPDef, sameTypeAttackBoost, elementModifier, (1f + sp_Attack_Passive_Modifier), criticalHitMultiplier, sp_Attack_StatusEffect_Modifier, randomDamage);
+        int spAttackDamage = DamageCalculation(skill.specialAttack, attackerMonster.level, attackerSPAttackStats, targetMonsterSPDef, sameTypeAttackBoost, elementModifier, criticalHitMultiplier, randomDamage);
         int damageSpAttack = (int)Math.Truncate(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
         int energyDamageSPAttack = (int)Math.Truncate(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
@@ -560,12 +560,12 @@ public static class AttackFunction
     }
 
     //Damage Calculation Method
-    private static int DamageCalculation(int skillPower, int attackerLevel, float attackerPower, float targetDef, float STAB, float typeEffects, float passiveDamageBoost, float criticalDamageMultiplier, float statusEffectModifier, float randomValue)
+    private static int DamageCalculation(int skillPower, int attackerLevel, float attackerPower, float targetDef, float STAB, float typeEffects, float criticalDamageMultiplier, float randomValue)
     {
         if (targetDef < 0)
             targetDef *= -1;
 
-        float func_A = ((attackerLevel * skillPower * attackerPower * statusEffectModifier * passiveDamageBoost / targetDef) / 100) + 10;
+        float func_A = ((attackerLevel * skillPower * attackerPower / targetDef / 3f) / 100) + 10;
         int overallFunc = (int)(func_A * STAB * typeEffects * criticalDamageMultiplier * randomValue);
         return overallFunc;
     }
@@ -598,11 +598,11 @@ public static class AttackFunction
         //Check if originalMonster is from Player Team
         if(playerTeam.Contains(originalMonster) || originalMonster == humanBattleData.playerHumanData)
         {
-            return (moraleData.playerMoraleGauge/10);
+            return (moraleData.playerMoraleGauge);
         }
         else
         {
-            return (moraleData.enemyMoraleGauge/10);
+            return (moraleData.enemyMoraleGauge);
         }
     }
 

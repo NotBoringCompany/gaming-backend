@@ -37,7 +37,7 @@ public static class HumanBattleBaseData
         specialAttack = 20,
         defense = 20,
         specialDefense = 20,
-        criticalHit = 20,
+        criticalHit = 200,
 
         //Buff Related
         attackBuff = 0, specialAttackBuff = 0, defenseBuff = 0, specialDefenseBuff = 0, criticalBuff = 0, ignoreDefenses = 0, damageReduction = 0, energyShieldValue = 0,
