@@ -398,8 +398,8 @@ public static class AttackFunction
         //Check Target's Immune to Critical or Not
         int immuneToCritical = targetMonster.immuneCritical;
 
-        if (criticalRNG <= attackerCriticalHitRate || mustCritical >= 1)
-            criticalHitMultiplier = (float)EvaluateOrder.CriticalRNG(seedClass) * (3f - 1.5f) + 1.5f;
+        if (criticalRNG <= attackerCriticalHitRate || mustCritical >= 1) //Critical Hit Damage Multiplier Using Andre's Equation
+            criticalHitMultiplier = ((7f * (float)attackerMonster.level) + 15f)/((4f * (float)attackerMonster.level) + 15f);
         else if (immuneToCritical >= 1)
             criticalHitMultiplier = 1f;
 
@@ -499,9 +499,6 @@ public static class AttackFunction
         if (targetMonsterSPDef < 0)
             damageSpAttack *= -1;
 
-        //Changes morale Data for attacker (increase gauge by 5)
-        ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, attackerMonster, 5, humanBattleData);
-
         // Reduce target NBMon's HP
         DamageLogic(skill, attackerMonster, targetMonster, thisMonsterDamageData, moraleData, playerTeam, enemyTeam, humanBattleData, criticalHitMultiplier, target_NBMon_Damage_Reduction_Modifier, target_NBMon_Damage_Reduction_From_Energy_Shield, target_NBMon_EnergyShield_IsActive, elementModifier, ref damageAttack, energyDamageAttack, ref damageSpAttack, energyDamageSPAttack);
     }
@@ -514,7 +511,12 @@ public static class AttackFunction
             {
                 //Normal Damage
                 NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Hp, damageAttack * -1);
-                ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, targetMonster, damageAttack, humanBattleData);
+                
+                //Changes morale Data for attacker's team
+                GainMoraleGaugeByAttacking(moraleData, playerTeam, enemyTeam, attackerMonster, damageAttack, humanBattleData);
+
+                //Increase Morale Gain to Target's Team
+                GainMoraleGaugeByTakingDamage(moraleData, playerTeam, enemyTeam, targetMonster, damageAttack, humanBattleData);
 
                 //Energy Damage
                 if (target_NBMon_EnergyShield_IsActive >= 1)
@@ -535,7 +537,12 @@ public static class AttackFunction
         {
             //Normal SP Damage
             NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Hp, damageSpAttack * -1);
-            ChangeMoraleGauge(moraleData, playerTeam, enemyTeam, targetMonster, damageSpAttack, humanBattleData);
+
+            //Changes morale Data for attacker's team
+            GainMoraleGaugeByAttacking(moraleData, playerTeam, enemyTeam, attackerMonster, damageSpAttack, humanBattleData);
+
+            //Increase Morale Gain to Target's Team
+            GainMoraleGaugeByTakingDamage(moraleData, playerTeam, enemyTeam, targetMonster, damageSpAttack, humanBattleData);
 
             if (target_NBMon_EnergyShield_IsActive >= 1)
             {
@@ -598,11 +605,11 @@ public static class AttackFunction
         //Check if originalMonster is from Player Team
         if(playerTeam.Contains(originalMonster) || originalMonster == humanBattleData.playerHumanData)
         {
-            return (moraleData.playerMoraleGauge);
+            return (moraleData.playerMoraleGauge + 1);
         }
         else
         {
-            return (moraleData.enemyMoraleGauge);
+            return (moraleData.enemyMoraleGauge + 1);
         }
     }
 
@@ -654,35 +661,52 @@ public static class AttackFunction
         thisMonsterDamageData.EnergyDrained = energyDrained;
     }
 
-    public static void ChangeMoraleGauge(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, int damageTaken, HumanBattleData humanBattleData)
+    public static void GainMoraleGaugeByAttacking(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, int damageData, HumanBattleData humanBattleData)
+    {
+        if (damageData < 0)
+            damageData *= -1;
+
+        var moraleGain = (int)System.Math.Floor((float)damageData / (0.08f * (float)monster.level));
+
+        IncreaseMoraleFunction(moraleData, playerTeam, enemyTeam, monster, humanBattleData, moraleGain);
+
+    }
+
+    public static void GainMoraleGaugeByTakingDamage(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, int damageTaken, HumanBattleData humanBattleData)
     {
         if(damageTaken < 0)
             damageTaken *= -1;
 
+        var moraleGain = (int)System.Math.Floor((float)damageTaken / (0.5f * (float)monster.level));   
+
+        IncreaseMoraleFunction(moraleData, playerTeam, enemyTeam, monster, humanBattleData, moraleGain);
+    }
+
+    private static void IncreaseMoraleFunction(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, HumanBattleData humanBattleData, int moraleGain)
+    {
         //Player Logic
-        if(playerTeam.Contains(monster))
+        if (playerTeam.Contains(monster))
         {
-            BattleMoraleGauge.IncreasePlayerMorale(moraleData, damageTaken);
+            BattleMoraleGauge.IncreasePlayerMorale(moraleData, moraleGain);
         }
 
-        if(humanBattleData.playerHumanData != null)
-            if(monster == humanBattleData.playerHumanData)
+        if (humanBattleData.playerHumanData != null)
+            if (monster == humanBattleData.playerHumanData)
             {
-                BattleMoraleGauge.IncreasePlayerMorale(moraleData, damageTaken);
+                BattleMoraleGauge.IncreasePlayerMorale(moraleData, moraleGain);
             }
 
         //Enemy Logic
-        if(enemyTeam.Contains(monster))
+        if (enemyTeam.Contains(monster))
         {
-            BattleMoraleGauge.IncreaseEnemyMorale(moraleData, damageTaken);
+            BattleMoraleGauge.IncreaseEnemyMorale(moraleData, moraleGain);
         }
 
-        if(humanBattleData.enemyHumanData != null)
-            if(monster == humanBattleData.enemyHumanData)
+        if (humanBattleData.enemyHumanData != null)
+            if (monster == humanBattleData.enemyHumanData)
             {
-                BattleMoraleGauge.IncreaseEnemyMorale(moraleData, damageTaken);
+                BattleMoraleGauge.IncreaseEnemyMorale(moraleData, moraleGain);
             }
-
     }
 
     //Monster Target Defeated

@@ -241,13 +241,13 @@ public static class NBMonStatsCalculation
                 //If there's no level requred left, then do this instead.
         return demoEXPTable[demoEXPTable.Count - 1].expRequired;
 
-        var ThisNBMon_Level = level;
-        var BaseConstant = 4;
-        var ConstantDivider = 8;
+        // var ThisNBMon_Level = level;
+        // var BaseConstant = 4;
+        // var ConstantDivider = 8;
 
-        //Next EXP Calculation;
-        var NextLevelEXPRequired = (int) Math.Ceiling(BaseConstant*Math.Pow(ThisNBMon_Level, 3)/ConstantDivider);
+        // //Next EXP Calculation;
+        // var NextLevelEXPRequired = (int) Math.Ceiling(BaseConstant*Math.Pow(ThisNBMon_Level, 3)/ConstantDivider);
 
-        return NextLevelEXPRequired;
+        // return NextLevelEXPRequired;
     }
 }

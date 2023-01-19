@@ -245,7 +245,7 @@ public static class EvaluateOrder
                         PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, playerNBMonData, null, null, newSeedClass);
                     
                         //Add NBMon Energy
-                        NBMonTeamData.StatsValueChange(playerNBMonData, NBMonProperties.StatsType.Energy, 25);
+                        NBMonTeamData.StatsValueChange(playerNBMonData, NBMonProperties.StatsType.Energy, EnergyRecoveryPerTurn(playerNBMonData));
                     }
 
                     //Apply passives that works when received status effect. (Turn Start).
@@ -293,7 +293,7 @@ public static class EvaluateOrder
                         PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnEnd, PassiveDatabase.TargetType.originalMonster, enemyNBMonData, null, null, newSeedClass);
 
                         //Add NBMon Energy
-                        NBMonTeamData.StatsValueChange(enemyNBMonData, NBMonProperties.StatsType.Energy, 25);
+                        NBMonTeamData.StatsValueChange(enemyNBMonData, NBMonProperties.StatsType.Energy, EnergyRecoveryPerTurn(enemyNBMonData));
                     }
 
                     //Apply passives that works when received status effect. (Turn Start).
@@ -345,5 +345,11 @@ public static class EvaluateOrder
         }
         else
             return false;
+    }
+
+    private static int EnergyRecoveryPerTurn(NBMonBattleDataSave monster)
+    {
+        var monsterEnergy = monster.maxEnergy;
+        return (int)Math.Ceiling((0.05f * monsterEnergy) + 1);
     }
 }
