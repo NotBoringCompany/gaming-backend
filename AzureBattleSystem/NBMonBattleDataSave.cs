@@ -45,7 +45,7 @@ public class NBMonBattleDataSave
     public int defense;
     public int specialDefense;
     public int criticalHit;
-    public float attackBuff, specialAttackBuff, defenseBuff, specialDefenseBuff, criticalBuff, ignoreDefenses, damageReduction, energyShieldValue;
+    public float attackBuff, specialAttackBuff, defenseBuff, specialDefenseBuff, criticalBuff, ignoreDefenses, damageReduction, energyShieldValue, absorbDamageValue;
     public int energyShield, surviveLethalBlow, totalIgnoreDefense, mustCritical, immuneCritical;
     public int elementDamageReduction;
 

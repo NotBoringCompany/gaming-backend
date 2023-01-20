@@ -40,7 +40,7 @@ public static class HumanBattleBaseData
         criticalHit = 200,
 
         //Buff Related
-        attackBuff = 0, specialAttackBuff = 0, defenseBuff = 0, specialDefenseBuff = 0, criticalBuff = 0, ignoreDefenses = 0, damageReduction = 0, energyShieldValue = 0,
+        attackBuff = 0, specialAttackBuff = 0, defenseBuff = 0, specialDefenseBuff = 0, criticalBuff = 0, ignoreDefenses = 0, damageReduction = 0, energyShieldValue = 0, absorbDamageValue = 0,
 
         //Damage Related
         energyShield = 0, surviveLethalBlow = 0, totalIgnoreDefense = 0, mustCritical = 0, immuneCritical = 0, elementDamageReduction = 0,

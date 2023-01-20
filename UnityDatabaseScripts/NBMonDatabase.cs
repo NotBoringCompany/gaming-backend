@@ -34,6 +34,7 @@ public class NBMonDatabase
         public MonsterBaseStat monsterBaseStat;
         public List<ElementDatabase.Elements> elements, mutationElements;
         public List<NBMonDatabase.MonsterBaseSkillPassive> baseSkillAndPassive;
+        public List<MonsterSkillTree> skillTree;
         public int RealmShardsMinimumm;
         public int RealmShardsMaximum;
         public int RealmCoinMinimum = 1;
@@ -84,6 +85,12 @@ public class NBMonDatabase
 
     }
 
+    [System.Serializable]
+    public class MonsterSkillTree
+    {
+        public string skillName;
+        public int levelRequired;
+    }
 
     //Related with monster type
     public enum GrowthLevel
@@ -140,6 +147,7 @@ public class NBMonDatabase
         public int level;
         public int expRequired;
     }
+    
 
     public static string demoEXPTable = "[{\"level\":1,\"expRequired\":200},{\"level\":2,\"expRequired\":400},{\"level\":3,\"expRequired\":600},{\"level\":4,\"expRequired\":800},{\"level\":5,\"expRequired\":1150},{\"level\":6,\"expRequired\":1500},{\"level\":7,\"expRequired\":1850},{\"level\":8,\"expRequired\":2200},{\"level\":9,\"expRequired\":2550},{\"level\":10,\"expRequired\":2900},{\"level\":11,\"expRequired\":3250},{\"level\":12,\"expRequired\":3600},{\"level\":13,\"expRequired\":3950},{\"level\":14,\"expRequired\":4300},{\"level\":15,\"expRequired\":4800},{\"level\":16,\"expRequired\":5300},{\"level\":17,\"expRequired\":5800},{\"level\":18,\"expRequired\":6300},{\"level\":19,\"expRequired\":6800},{\"level\":20,\"expRequired\":7300},{\"level\":21,\"expRequired\":7800},{\"level\":22,\"expRequired\":8300},{\"level\":23,\"expRequired\":8800},{\"level\":24,\"expRequired\":9300},{\"level\":25,\"expRequired\":10000}]";
 

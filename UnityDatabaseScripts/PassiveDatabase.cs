@@ -156,7 +156,7 @@ public class PassiveDatabase
         public int triggerChance;
         public int attackBuff, specialAttackBuff, defenseBuff, specialDefenseBuff, criticalBuff, ignoreDefenses;
         public int energyShield, surviveLethalBlow, totalIgnoreDefense, mustCritical, immuneCritical;
-        public int damageReduction, energyShieldValue;
+        public int damageReduction, energyShieldValue, absorbDamageValue;
         public List<ElementalDamageReduction> ElementalDamageReductions;
         public List<string> newTemporaryPassives;
 

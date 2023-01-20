@@ -29,7 +29,7 @@ public static class CheckNewAccount
         );
 
         //Check if Data Exists or not
-        if (reqTitleData.Result.Data.ContainsKey("CurrentPlayerTeam"))
+        if (reqTitleData.Result.Data.ContainsKey("CurrentPlayerTeam") || reqTitleData.Result.Data.ContainsKey("PlayerAccountCreated"))
         {
             //Data Found
             return "Player Team Information Found.";
@@ -45,8 +45,6 @@ public static class CheckNewAccount
             string JsonStringData = reqInternalTitleData.Result.Data["NewPlayerStarterItems"];
             string defaultQuest = reqPrimaryTitleData.Result.Data["DefaultQuest"];
             string defaultQuestVar = reqPrimaryTitleData.Result.Data["DefaultVariable"];
-            List<string> ListOfItemIDs = new List<string>();
-            ListOfItemIDs = JsonConvert.DeserializeObject<List<String>>(JsonStringData)!;
 
             List<string> BundleIDs = new List<string>();
 
@@ -58,10 +56,10 @@ public static class CheckNewAccount
                 {
                     PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
                     Data = new Dictionary<string, string>{
-                        {"CurrentPlayerTeam", TeamInformation},
+                        //{"CurrentPlayerTeam", TeamInformation}, Player is no longer able to get Dranexx.
                         {"PlayerQuestData", defaultQuest},
                         {"PlayerVariableData", defaultQuestVar},
-
+                        {"PlayerAccountCreated", "true"}
                     }
                 }
             );

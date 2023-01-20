@@ -230,17 +230,21 @@ public static class GambitFunction
             }
         }
 
+        //Let's said
+        int defaultDamagePercent = 10;
+
         //Calculate their Attack Power and Special Attack Power
         foreach(var monster in usedMonsters)
         {
-            damage += (monster.attack + monster.specialAttack);
+            damage += defaultDamagePercent;
         }
 
-        damage = (int)Math.Floor((float)damage/(float)usedMonsters.Count);
+        //Damage per monster should be increased if the opposing team only have one monster.
+        damage = (int)Math.Floor((float)damage / (float)targetMonsters.Count * 2f);
 
         foreach(var target in targetMonsters)
         {
-            NBMonTeamData.StatsValueChange(target ,NBMonProperties.StatsType.Hp, damage * -1);
+            NBMonTeamData.StatsPercentageChange(target ,NBMonProperties.StatsType.Hp, damage * -1);
 
             //Let's Check Target Monster if it's Fainted or not
             AttackFunction.CheckTargetDied(target, usedMonsters[0], null, playerTeam, enemyTeam, team1UniqueID_BF, null);
@@ -250,6 +254,7 @@ public static class GambitFunction
     public static void RevitalizeFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
         List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
+        int recoveryPercentage = 15;
 
         if(team == "Team 1")
         {
@@ -269,8 +274,8 @@ public static class GambitFunction
         //Recover all active member party HP and Energy in the field.
         foreach(var monster in usedMonsters)
         {
-            NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Hp, 40);
-            NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Energy, 40);
+            NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Hp, recoveryPercentage);
+            NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Energy, recoveryPercentage);
         }
     }
     

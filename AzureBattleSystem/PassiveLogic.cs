@@ -370,6 +370,7 @@ public class PassiveLogic
                 useMonsterMemory.ignoreDefenses += (float)passiveEffect.ignoreDefenses;
                 useMonsterMemory.damageReduction += (float)passiveEffect.damageReduction;
                 useMonsterMemory.energyShieldValue += (float)passiveEffect.energyShieldValue;
+                useMonsterMemory.absorbDamageValue += (float)passiveEffect.absorbDamageValue;
 
                 //Bool Section but using Integer
                 useMonsterMemory.energyShield += passiveEffect.energyShield;
