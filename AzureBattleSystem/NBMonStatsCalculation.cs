@@ -207,12 +207,12 @@ public static class NBMonStatsCalculation
 
     private static int EnergyStatCalculation(int baseStat, int level, int potentialValue, int growthValue)
     {
-        float func_A = (2f * (float)baseStat) / 7f;
-        float func_B = 10f * (float)System.Math.Sqrt((float)level);
-        float func_C = (float)System.Math.Sqrt((float)potentialValue * (float)baseStat * (float)level / 125f);
-        float func_D = (float)System.Math.Sqrt((float)growthValue * (float)baseStat * (float)level / 175f);
+        float func_A = (3f * (float)baseStat) / 10f;
+        float func_B = 20f * (float)System.Math.Sqrt((float)level);
+        float func_C = (float)System.Math.Sqrt((float)potentialValue * (float)baseStat * (float)level / 105f);
+        float func_D = (float)System.Math.Sqrt((float)growthValue * (float)baseStat * (float)level / 555f);
 
-        int sumUpValue = (int)Math.Floor(func_A + func_B + func_C + func_D);
+        int sumUpValue = (int)System.Math.Floor((func_A + func_B + func_C + func_D)/3f);
         return sumUpValue;
     }
 

@@ -144,7 +144,7 @@ public static class AttackFunction
         SkillsDataBase.SkillInfoPlayFab skill = SkillsDataBase.FindSkill(attackerMonster.skillList[skillSlot]);
 
         //Deduct Attacker Monster Energy
-        NBMonTeamData.StatsValueChange(attackerMonster, NBMonProperties.StatsType.Energy, -skill.energyRequired);
+        NBMonTeamData.StatsValueChange(attackerMonster, NBMonProperties.StatsType.Energy, SkillsDataBase.SkillEnergyCost(skill.skillName, attackerMonster) * -1);
 
         log.LogInformation($"Code B: 2nd Step, Apply Passive for Attacker");
 
@@ -870,7 +870,7 @@ public static class AttackFunction
             species = 0.8f;
 
         //Calculate the Growth Value Points
-        float growthPoints = species * (float)usedBaseStat / 25f;
+        float growthPoints = species * (float)usedBaseStat / 20f;
 
         //Add the growthPoints value
         AddGrowthValueLogic(attackerMonster, usedBaseStat, monsterDataBase, growthPoints);
