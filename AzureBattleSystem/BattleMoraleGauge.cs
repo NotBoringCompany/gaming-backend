@@ -27,19 +27,25 @@ public static class BattleMoraleGauge
         public int playerMoraleUsageCount;
     }
 
-    public static void IncreasePlayerMorale(MoraleData data, int damageData)
+    public static void ChangePlayerMoraleGauge(MoraleData data, int damageData)
     {
         data.playerMoraleGauge += damageData;
 
         if(data.playerMoraleGauge >= 100)
             data.playerMoraleGauge = 100;
+
+        if(data.playerMoraleGauge < 0)
+             data.playerMoraleGauge = 0;
     }
 
-    public static void IncreaseEnemyMorale(MoraleData data, int damageData)
+    public static void ChangeEnemyMoraleGauge(MoraleData data, int damageData)
     {
         data.enemyMoraleGauge += damageData;
 
         if(data.enemyMoraleGauge >= 100)
             data.enemyMoraleGauge = 100;
+            
+        if(data.enemyMoraleGauge < 0)
+            data.enemyMoraleGauge = 0;
     }
 }

@@ -167,6 +167,7 @@ public static class InitialTeamSetup
         }
 
         //Resets Enemy Morale Gauge
+        moraleData.playerMoraleGauge = 0;
         moraleData.enemyMoraleGauge = 0;
 
         //Update AllMonsterUniqueID_BF to Player Title Data

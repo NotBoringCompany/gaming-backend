@@ -75,13 +75,13 @@ public static class GambitFunction
         //Check Team One
         if(uniqueId == humanBattleData.playerHumanData.uniqueId)
         {
-            BattleMoraleGauge.IncreasePlayerMorale(moraleData, 20);
+            BattleMoraleGauge.ChangePlayerMoraleGauge(moraleData, 20);
         }
         
         if(humanBattleData.enemyHumanData != null)
         {
             if(uniqueId == humanBattleData.enemyHumanData.uniqueId)
-                BattleMoraleGauge.IncreaseEnemyMorale(moraleData, 20);
+                BattleMoraleGauge.ChangeEnemyMoraleGauge(moraleData, 20);
         }
 
         //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
@@ -202,39 +202,17 @@ public static class GambitFunction
     public static void DanceRuptureFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
         List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
-        List<NBMonBattleDataSave> targetMonsters = new List<NBMonBattleDataSave>(); 
+        List<NBMonBattleDataSave> targetMonsters = new List<NBMonBattleDataSave>();
         int damage = new int();
 
-        if(team == "Team 1")
-        {
-            foreach(var monsterId in team1UniqueID_BF)
-            {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam, humanBattleData));
-            }
-
-            foreach(var monsterId in team2UniqueID_BF)
-            {
-                targetMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam, humanBattleData));
-            }
-        }
-        else
-        {
-            foreach(var monsterId in team2UniqueID_BF)
-            {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam, humanBattleData));
-            }
-
-            foreach(var monsterId in team1UniqueID_BF)
-            {
-                targetMonsters.Add(UseItem.FindMonster(monsterId, playerTeam, humanBattleData));
-            }
-        }
+        //Check which team doing the gambit logic.
+        CheckWhichTeamInAction(team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam, humanBattleData, usedMonsters, targetMonsters);
 
         //Let's said
         int defaultDamagePercent = 10;
 
         //Calculate their Attack Power and Special Attack Power
-        foreach(var monster in usedMonsters)
+        foreach (var monster in usedMonsters)
         {
             damage += defaultDamagePercent;
         }
@@ -242,12 +220,52 @@ public static class GambitFunction
         //Damage per monster should be increased if the opposing team only have one monster.
         damage = (int)Math.Floor((float)damage / (float)targetMonsters.Count * 2f);
 
-        foreach(var target in targetMonsters)
+        foreach (var target in targetMonsters)
         {
-            NBMonTeamData.StatsPercentageChange(target ,NBMonProperties.StatsType.Hp, damage * -1);
+            NBMonTeamData.StatsPercentageChange(target, NBMonProperties.StatsType.Hp, damage * -1);
 
             //Let's Check Target Monster if it's Fainted or not
             AttackFunction.CheckTargetDied(target, usedMonsters[0], null, playerTeam, enemyTeam, team1UniqueID_BF, null);
+        }
+    }
+
+    private static void CheckWhichTeamInAction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData, List<NBMonBattleDataSave> usedMonsters, List<NBMonBattleDataSave> targetMonsters)
+    {
+        if (team == "Team 1")
+        {
+            foreach (var monsterId in team1UniqueID_BF)
+            {
+                var monster = UseItem.FindMonster(monsterId, playerTeam, humanBattleData);
+
+                if (!monster.fainted)
+                    usedMonsters.Add(monster);
+            }
+
+            foreach (var monsterId in team2UniqueID_BF)
+            {
+                var monster = UseItem.FindMonster(monsterId, enemyTeam, humanBattleData);
+
+                if (!monster.fainted)
+                    targetMonsters.Add(monster);
+            }
+        }
+        else
+        {
+            foreach (var monsterId in team2UniqueID_BF)
+            {
+                var monster = UseItem.FindMonster(monsterId, enemyTeam, humanBattleData);
+
+                if (!monster.fainted)
+                    targetMonsters.Add(monster);
+            }
+
+            foreach (var monsterId in team1UniqueID_BF)
+            {
+                var monster = UseItem.FindMonster(monsterId, playerTeam, humanBattleData);
+
+                if (!monster.fainted)
+                    usedMonsters.Add(monster);
+            }
         }
     }
 

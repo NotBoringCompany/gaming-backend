@@ -690,25 +690,25 @@ public static class AttackFunction
         //Player Logic
         if (playerTeam.Contains(monster))
         {
-            BattleMoraleGauge.IncreasePlayerMorale(moraleData, moraleGain);
+            BattleMoraleGauge.ChangePlayerMoraleGauge(moraleData, moraleGain);
         }
 
         if (humanBattleData.playerHumanData != null)
             if (monster == humanBattleData.playerHumanData)
             {
-                BattleMoraleGauge.IncreasePlayerMorale(moraleData, moraleGain);
+                BattleMoraleGauge.ChangePlayerMoraleGauge(moraleData, moraleGain);
             }
 
         //Enemy Logic
         if (enemyTeam.Contains(monster))
         {
-            BattleMoraleGauge.IncreaseEnemyMorale(moraleData, moraleGain);
+            BattleMoraleGauge.ChangeEnemyMoraleGauge(moraleData, moraleGain);
         }
 
         if (humanBattleData.enemyHumanData != null)
             if (monster == humanBattleData.enemyHumanData)
             {
-                BattleMoraleGauge.IncreaseEnemyMorale(moraleData, moraleGain);
+                BattleMoraleGauge.ChangeEnemyMoraleGauge(moraleData, moraleGain);
             }
     }
 

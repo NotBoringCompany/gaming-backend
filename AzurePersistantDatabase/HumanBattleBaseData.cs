@@ -27,6 +27,7 @@ public static class HumanBattleBaseData
         temporaryPassives = new List<string>(),
 
         //Normal Stats Related
+        level = 10,
         hp = 100,
         maxHp = 100,
         energy = 999,

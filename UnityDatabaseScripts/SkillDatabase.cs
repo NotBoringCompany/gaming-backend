@@ -146,12 +146,16 @@ public class SkillsDataBase
     public static int SkillEnergyCost(string skillName, NBMonBattleDataSave monster)
     {
         var skillData = SkillsDataBase.FindSkill(skillName);
-        var baseSkillCost = skillData.energyRequired;
-        var monsterLevel = monster.level;
-        var equation_1 = MathF.Pow(baseSkillCost, 1.5f);
-        var equation_2 = 17f * MathF.Pow(monsterLevel, ((monsterLevel + 25f)/(monsterLevel + 5))) / 70;
-        int totalEquation = (int)MathF.Floor(equation_1 + equation_2);
+                
+        //Demo
+        return skillData.energyRequired;
 
-        return totalEquation;
+        // var baseSkillCost = skillData.energyRequired;
+        // var monsterLevel = monster.level;
+        // var equation_1 = MathF.Pow(baseSkillCost, 1.5f);
+        // var equation_2 = 17f * MathF.Pow(monsterLevel, ((monsterLevel + 25f)/(monsterLevel + 5))) / 70;
+        // int totalEquation = (int)MathF.Floor(equation_1 + equation_2);
+
+        // return totalEquation;
     }
 }
