@@ -103,11 +103,11 @@ public static class CapturedMonster{
             monsterData.uniqueSkillList = MonsterDataFromRandomBattle.InheritedSkill;
             monsterData.passiveList = MonsterDataFromRandomBattle.Passive;
 
+            //Let's Generate This Monster's Level
+            monsterData.level =  UsedData.LevelRange;
+
             //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
             NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = NBMonDatabase.FindMonster(monsterData.monsterId);
-
-            //Let's Generate This Monster's Level
-            NBMonStatsCalculation.GenerateRandomLevel(monsterData, UsedData.LevelRange);
 
             //Let's Generate This Monster UniqueID
             monsterData.uniqueId = "Demo" + new Random().Next(0, 999999999).ToString();
