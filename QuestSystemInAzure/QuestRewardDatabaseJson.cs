@@ -3,7 +3,9 @@ using Newtonsoft.Json;
 
 public class QuestRewardDatabaseJson
 {
-    public static string questRewardJson = "[{\"questId\":1,\"questName\":\"Test Reward\",\"shardReward\":0,\"coinReward\":0,\"itemRewards\":[{\"itemName\":\"Ladder\",\"itemQuantity\":1}]},{\"questId\":2,\"questName\":\"A Small Detour\",\"shardReward\":0,\"coinReward\":0,\"itemRewards\":[{\"itemName\":\"Small Healing Potion\",\"itemQuantity\":5},{\"itemName\":\"Small Energy Potion\",\"itemQuantity\":5}]},{\"questId\":3,\"questName\":\"The Man In Black\",\"shardReward\":100,\"coinReward\":0,\"itemRewards\":[{\"itemName\":\"Complete Recovery Potion\",\"itemQuantity\":1}]},{\"questId\":10,\"questName\":\"Danger, Ranger!\",\"shardReward\":250,\"coinReward\":0,\"itemRewards\":[]}]";
+    public static string questRewardJson = 
+    "[{\"questId\":1,\"questName\":\"Test Reward\",\"shardReward\":0,\"coinReward\":0,\"itemRewards\":[{\"itemName\":\"Ladder\",\"itemQuantity\":1}]},{\"questId\":2,\"questName\":\"Julia Egg Related\",\"shardReward\":0,\"coinReward\":0,\"itemRewards\":[{\"itemName\":\"Julia Egg\",\"itemQuantity\":1}]}]"
+    ;    
 }
 
 public class QuestRewardDatabase
