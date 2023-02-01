@@ -52,6 +52,11 @@ public static class NBMonStatsCalculation
         monsterInfo.level = R.Next(LowerBase, UpperBase);
     }
 
+    public static void GenerateFixedLevel(NBMonBattleDataSave monsterInfo, int levelAsked)
+    {
+        monsterInfo.level = levelAsked;
+    }
+
     //Generate Wild NBmon Unique ID
     public static void GenerateWildMonsterCredential(NBMonBattleDataSave monsterInfo)
     {

@@ -104,7 +104,7 @@ public static class CapturedMonster{
             monsterData.passiveList = MonsterDataFromRandomBattle.Passive;
 
             //Let's Generate This Monster's Level
-            monsterData.level =  UsedData.LevelRange;
+            NBMonStatsCalculation.GenerateFixedLevel(monsterData, UsedData.LevelRange);
 
             //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
             NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = NBMonDatabase.FindMonster(monsterData.monsterId);
