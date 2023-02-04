@@ -249,19 +249,19 @@ public static class GambitFunction
                     targetMonsters.Add(monster);
             }
         }
-        else
+        else //Team 2 Logic. Player Monster becomes the target monster.
         {
-            foreach (var monsterId in team2UniqueID_BF)
+            foreach (var monsterId in team1UniqueID_BF)
             {
-                var monster = UseItem.FindMonster(monsterId, enemyTeam, humanBattleData);
+                var monster = UseItem.FindMonster(monsterId, playerTeam, humanBattleData);
 
                 if (!monster.fainted)
                     targetMonsters.Add(monster);
             }
 
-            foreach (var monsterId in team1UniqueID_BF)
+            foreach (var monsterId in team2UniqueID_BF)
             {
-                var monster = UseItem.FindMonster(monsterId, playerTeam, humanBattleData);
+                var monster = UseItem.FindMonster(monsterId, enemyTeam, humanBattleData);
 
                 if (!monster.fainted)
                     usedMonsters.Add(monster);
