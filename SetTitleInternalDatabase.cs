@@ -452,6 +452,8 @@ namespace NBCompany.Setters
 
             UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(contents);
 
+            //Convert Back just to check to log.
+            log.LogInformation(JsonConvert.SerializeObject(userInfo));
 
             // 2 - second request for addLoggedInUser so it doesn't override/mismatch info
             HttpClient client2 = new HttpClient();
@@ -481,6 +483,9 @@ namespace NBCompany.Setters
             data.email = email;
             data.ethAddress = ethAddress;
             data.sessionToken = sessionToken;
+
+            //Convert Back just to check to log.
+            log.LogInformation(JsonConvert.SerializeObject(data));
 
             var request = await serverApi.UpdateUserInternalDataAsync(new UpdateUserInternalDataRequest
                 {
