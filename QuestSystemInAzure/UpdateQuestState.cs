@@ -164,7 +164,7 @@ public static class UpdateQuest
         if(args["QuestNames"] != null)
         {
             var strObj = args["QuestNames"].ToString();
-            questStatesReq = JsonConvert.DeserializeObject<List<string>>(strObj);
+            questNamesReq = JsonConvert.DeserializeObject<List<string>>(strObj);
         }
         else
             return "Error: QuestName variable argument is not inserted!";
@@ -172,7 +172,7 @@ public static class UpdateQuest
         if(args["QuestStates"] != null)
         {
             var strObj = args["QuestStates"].ToString();
-            questNamesReq = JsonConvert.DeserializeObject<List<string>>(strObj);
+            questStatesReq = JsonConvert.DeserializeObject<List<string>>(strObj);
         }
         else
             return "Error: QuestState variable argument is not inserted!";
@@ -273,7 +273,7 @@ public static class UpdateQuest
             PlayFabQuestData newQuestData = new PlayFabQuestData();
 
             newQuestData.QuestName = questNameReq;
-            newQuestData.QuestState = "active"; //Quest will set to active the quest data does not exist in the player
+            newQuestData.QuestState = "unassigned";
             newQuestData.QuestID = playerQuestData.Count;
             newQuestData.QuestEntries = new List<PlayFabQuestEntriesData>(); 
 
