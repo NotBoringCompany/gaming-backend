@@ -179,7 +179,7 @@ public static class UseItem
             if(!DoNotApplyPassive)
             {
                 //Apply passives that works when received status effect.
-                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.StatusConditionReceiving, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null, seedClass);
+                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ReceiveStatusEffect, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null, seedClass);
             }
         }
     }

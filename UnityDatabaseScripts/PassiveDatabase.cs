@@ -68,15 +68,15 @@ public class PassiveDatabase
 
     public enum ExecutionPosition
     {
-        WhenEnterBattleField,
+        AtTheStartOfTheBattle,
         TurnStart,
         TurnEnd,
-        ActionBefore,
-        ActionReceiving,
-        ActionAfter,
-        StatusConditionReceiving,
-        OnKnockedOut,
-        DuringCombat,
+        WhenAttacking,
+        WhenAttacked,
+        AfterAttacked,
+        ReceiveStatusEffect,
+        OnDeath,
+        WhenAttackedDuringCombat,
         InflictStatusEffect
     }
 
