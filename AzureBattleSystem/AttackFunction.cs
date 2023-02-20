@@ -269,10 +269,8 @@ public static class AttackFunction
     public class DamageData
     {
         public string DefenderMonsterUniqueID; //Defender Monster Unique ID
-        public int Damage; //Normal Damage
-        public int SPDamage; //Special Damage
-        public int EnergyDamage; //Energy Damage
-        public int EnergySPDamage; //Energy Damage from Special Attack
+        public int DamageTaken; //Normal Damage
+        public int EnergyDamageTaken; //Energy Damage
         public bool IsCritical; //Determine if the Damage is Critical Hit.
         public bool DamageImmune; //Determine if the Monster is Immune to the Damage.
         public float ElementalVariable; //Determine if the Monster is Very Effective or Not.
@@ -465,101 +463,98 @@ public static class AttackFunction
         float sameTypeAttackBoost = SameTypeAttackBonusCalculation(skill, attackerMonster);
         float randomDamage = (float)EvaluateOrder.ConvertSeedToRNG(seedClass, 850, 1000) / 1000f;
 
-        //Attack Logic
-        float attackerAttackStats = attackerMonster.attack * (1f + attack_Passive_Modifier) * attack_StatusEffect_Modifier;
-        int attackDamage = DamageCalculation(skill.attack, attackerMonster.level, attackerAttackStats, targetMonsterDef, sameTypeAttackBoost, elementModifier, criticalHitMultiplier, randomDamage);
-        int damageAttack = (int)Math.Truncate(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
-        int energyDamageAttack = (int)Math.Truncate(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
-
-        //Special Attakc Logic
-        float attackerSPAttackStats = attackerMonster.specialAttack * (1f + sp_Attack_Passive_Modifier) * sp_Attack_StatusEffect_Modifier;
-        int spAttackDamage = DamageCalculation(skill.specialAttack, attackerMonster.level, attackerSPAttackStats, targetMonsterSPDef, sameTypeAttackBoost, elementModifier, criticalHitMultiplier, randomDamage);
-        int damageSpAttack = (int)Math.Truncate(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
-        int energyDamageSPAttack = (int)Math.Truncate(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
-
-        if(target_NBMon_Absorb_Damage > 0)
+        //Calculate Attack Logic
+        if(skill.techniqueType == SkillsDataBase.TechniqueType.Attack)
         {
-            damageAttack = (int)Math.Truncate(damageAttack * target_NBMon_Absorb_Damage) * -1;
-            damageSpAttack = (int)Math.Truncate(damageSpAttack * target_NBMon_Absorb_Damage) * -1;
-        }
+            //Attack Logic
+            float attackerAttackStats = attackerMonster.attack * (1f + attack_Passive_Modifier) * attack_StatusEffect_Modifier;
+            int attackDamage = DamageCalculation(skill.attack, attackerMonster.level, attackerAttackStats, targetMonsterDef, sameTypeAttackBoost, elementModifier, criticalHitMultiplier, randomDamage);
+            int damageAttack = (int)Math.Truncate(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
+            int energyDamageAttack = (int)Math.Truncate(attackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
-        //Survive Lethal Blow Logic
-        if (target_NBMon_Must_Survive_Lethal_Blow >= 1)
+            if(target_NBMon_Absorb_Damage > 0)
+            {
+                damageAttack = (int)Math.Truncate(damageAttack * target_NBMon_Absorb_Damage) * -1;
+            }
+
+            //Survive Lethal Blow Logic
+            if (target_NBMon_Must_Survive_Lethal_Blow >= 1)
+            {
+                int targetMonsterHP = targetMonster.hp;
+
+                if (targetMonsterHP > 1 && damageAttack > targetMonsterHP)
+                    damageAttack = targetMonsterHP - 1;
+            }
+
+            // Reduce target NBMon's HP using Attack
+            DamageLogic(skill, attackerMonster, targetMonster, thisMonsterDamageData, moraleData, playerTeam, enemyTeam, humanBattleData, criticalHitMultiplier, target_NBMon_Damage_Reduction_Modifier, target_NBMon_Damage_Reduction_From_Energy_Shield, target_NBMon_EnergyShield_IsActive, elementModifier, ref damageAttack, energyDamageAttack);
+        }
+        else //Calculate Special Attack Logic
         {
-            int targetMonsterHP = targetMonster.hp;
+            //Special Attack Logic
+            float attackerSPAttackStats = attackerMonster.specialAttack * (1f + sp_Attack_Passive_Modifier) * sp_Attack_StatusEffect_Modifier;
+            int spAttackDamage = DamageCalculation(skill.specialAttack, attackerMonster.level, attackerSPAttackStats, targetMonsterSPDef, sameTypeAttackBoost, elementModifier, criticalHitMultiplier, randomDamage);
+            int damageSpAttack = (int)Math.Truncate(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (1f - target_NBMon_Damage_Reduction_From_Energy_Shield));
+            int energyDamageSPAttack = (int)Math.Truncate(spAttackDamage * (1f - target_NBMon_Damage_Reduction_Modifier) * (target_NBMon_Damage_Reduction_From_Energy_Shield));
 
-            if (targetMonsterHP > 1 && damageAttack > targetMonsterHP)
-                damageAttack = targetMonsterHP - 1;
+            if(target_NBMon_Absorb_Damage > 0)
+            {
+                damageSpAttack = (int)Math.Truncate(damageSpAttack * target_NBMon_Absorb_Damage) * -1;
+            }
 
-            if (targetMonsterHP > 1 && damageSpAttack > targetMonsterHP)
-                damageSpAttack = targetMonsterHP - 1;
+            //Survive Lethal Blow Logic
+            if (target_NBMon_Must_Survive_Lethal_Blow >= 1)
+            {
+                int targetMonsterHP = targetMonster.hp;
+
+                if (targetMonsterHP > 1 && damageSpAttack > targetMonsterHP)
+                    damageSpAttack = targetMonsterHP - 1;
+            }
+            
+            // Reduce target NBMon's HP using Special Attack
+            DamageLogic(skill, attackerMonster, targetMonster, thisMonsterDamageData, moraleData, playerTeam, enemyTeam, humanBattleData, criticalHitMultiplier, target_NBMon_Damage_Reduction_Modifier, target_NBMon_Damage_Reduction_From_Energy_Shield, target_NBMon_EnergyShield_IsActive, elementModifier, ref damageSpAttack, energyDamageSPAttack);
         }
-
-        // Reduce target NBMon's HP
-        DamageLogic(skill, attackerMonster, targetMonster, thisMonsterDamageData, moraleData, playerTeam, enemyTeam, humanBattleData, criticalHitMultiplier, target_NBMon_Damage_Reduction_Modifier, target_NBMon_Damage_Reduction_From_Energy_Shield, target_NBMon_EnergyShield_IsActive, elementModifier, ref damageAttack, energyDamageAttack, ref damageSpAttack, energyDamageSPAttack);
     }
 
-    private static void DamageLogic(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave attackerMonster, NBMonBattleDataSave targetMonster, DamageData thisMonsterDamageData, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData, float criticalHitMultiplier, float target_NBMon_Damage_Reduction_Modifier, float target_NBMon_Damage_Reduction_From_Energy_Shield, int target_NBMon_EnergyShield_IsActive, float elementModifier, ref int damageAttack, int energyDamageAttack, ref int damageSpAttack, int energyDamageSPAttack)
+    private static void DamageLogic(SkillsDataBase.SkillInfoPlayFab skill, NBMonBattleDataSave attackerMonster, NBMonBattleDataSave targetMonster, 
+    DamageData thisMonsterDamageData, BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData, 
+    float criticalHitMultiplier, float target_NBMon_Damage_Reduction_Modifier, float target_NBMon_Damage_Reduction_From_Energy_Shield, int target_NBMon_EnergyShield_IsActive, 
+    float elementModifier, ref int overallDamage, int overallEnergyDamage)
     {
-        if (skill.techniqueType == SkillsDataBase.TechniqueType.Attack)
+        //Check if the Element Modifier is not 0, if its 0, by default the damage is 0.
+        if (elementModifier != 0)
         {
-            if (elementModifier != 0)
-            {
-                //Normal Damage
-                NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Hp, damageAttack * -1);
-                
-                //Changes morale Data for attacker's team
-                GainMoraleGaugeByAttacking(moraleData, playerTeam, enemyTeam, attackerMonster, damageAttack, humanBattleData);
-
-                //Increase Morale Gain to Target's Team
-                GainMoraleGaugeByTakingDamage(moraleData, playerTeam, enemyTeam, targetMonster, damageAttack, humanBattleData);
-
-                //Energy Damage
-                if (target_NBMon_EnergyShield_IsActive >= 1)
-                {
-                    NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Energy, energyDamageAttack * -1);
-                }
-
-                //HP and Energy Drain Logic
-                HP_EN_DrainFunction(skill, damageAttack, attackerMonster, thisMonsterDamageData);
-            }
-            else
-            {
-                //By Default, damageAttack value is 0.
-            }
-        }
-
-        if (skill.techniqueType == SkillsDataBase.TechniqueType.SpecialAttack)
-        {
-            //Normal SP Damage
-            NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Hp, damageSpAttack * -1);
-
+            //Normal Damage
+            NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Hp, overallDamage * -1);
+            
             //Changes morale Data for attacker's team
-            GainMoraleGaugeByAttacking(moraleData, playerTeam, enemyTeam, attackerMonster, damageSpAttack, humanBattleData);
+            GainMoraleGaugeByAttacking(moraleData, playerTeam, enemyTeam, attackerMonster, overallDamage, humanBattleData);
 
             //Increase Morale Gain to Target's Team
-            GainMoraleGaugeByTakingDamage(moraleData, playerTeam, enemyTeam, targetMonster, damageSpAttack, humanBattleData);
+            GainMoraleGaugeByTakingDamage(moraleData, playerTeam, enemyTeam, targetMonster, overallDamage, humanBattleData);
 
+            //Energy Damage
             if (target_NBMon_EnergyShield_IsActive >= 1)
             {
-                //Energy Damage
-                NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Energy, energyDamageSPAttack * -1);
+                NBMonTeamData.StatsValueChange(targetMonster, NBMonProperties.StatsType.Energy, overallEnergyDamage * -1);
             }
 
             //HP and Energy Drain Logic
-            HP_EN_DrainFunction(skill, damageSpAttack, attackerMonster, thisMonsterDamageData);
+            HP_EN_DrainFunction(skill, overallDamage, attackerMonster, thisMonsterDamageData);
+        }
+        else
+        {
+            //By Default, damageAttack value is 0.
         }
 
         //Let's get all necessary data from Calculate And Do Damage into This Monster Damage Data.
-        RecordDamageData(thisMonsterDamageData, criticalHitMultiplier, elementModifier, damageAttack, energyDamageAttack, damageSpAttack, energyDamageSPAttack);
+        RecordDamageData(thisMonsterDamageData, criticalHitMultiplier, elementModifier, overallDamage, overallEnergyDamage);
     }
 
-    private static void RecordDamageData(DamageData thisMonsterDamageData, float criticalHitMultiplier, float elementModifier, int damageAttack, int energyDamageAttack, int damageSpAttack, int energyDamageSPAttack)
+    private static void RecordDamageData(DamageData thisMonsterDamageData, float criticalHitMultiplier, float elementModifier, int overallDamageTaken, int overallEnergyDamage)
     {
-        thisMonsterDamageData.Damage = damageAttack;
-        thisMonsterDamageData.SPDamage = damageSpAttack;
-        thisMonsterDamageData.EnergyDamage = energyDamageAttack;
-        thisMonsterDamageData.EnergySPDamage = energyDamageSPAttack;
+        thisMonsterDamageData.DamageTaken = overallDamageTaken;
+        thisMonsterDamageData.EnergyDamageTaken = overallEnergyDamage;
         thisMonsterDamageData.IsCritical = (criticalHitMultiplier > 1); //If Critical Hit Multiplier is higher than 1, it's Critical Hit.
         thisMonsterDamageData.DamageImmune = (elementModifier == 0); //This Monster will deal 0 Damage if Element Modifier = 0.
         thisMonsterDamageData.ElementalVariable = elementModifier;
@@ -665,7 +660,7 @@ public static class AttackFunction
         if (damageData < 0)
             damageData *= -1;
 
-        var moraleGain = (int)System.Math.Ceiling((float)damageData / (0.08f * (float)monster.level));
+        var moraleGain = (int)System.Math.Ceiling((float)damageData / (0.5f * (float)monster.level));
 
         IncreaseMoraleFunction(moraleData, playerTeam, enemyTeam, monster, humanBattleData, moraleGain);
 
@@ -676,7 +671,7 @@ public static class AttackFunction
         if(damageTaken < 0)
             damageTaken *= -1;
 
-        var moraleGain = (int)System.Math.Ceiling((float)damageTaken / (0.5f * (float)monster.level));   
+        var moraleGain = (int)System.Math.Ceiling((float)damageTaken / (0.35f * (float)monster.level));   
 
         IncreaseMoraleFunction(moraleData, playerTeam, enemyTeam, monster, humanBattleData, moraleGain);
     }
