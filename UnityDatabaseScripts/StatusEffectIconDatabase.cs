@@ -55,13 +55,13 @@ public class StatusEffectIconDatabase
     {
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
         {
-            var TheStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
-            var ThisNBMonTempPassive = thisNBMon.temporaryPassives;
+            var theStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
+            var thisNBMonTempPassive = thisNBMon.temporaryPassives;
 
-            if(TheStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Add_Temp_Passive_Related)
+            if(theStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Add_Temp_Passive_Related)
             {
-                if (!ThisNBMonTempPassive.Contains(TheStatusEffectParam.passiveName))
-                    ThisNBMonTempPassive.Add(TheStatusEffectParam.passiveName);
+                if (!thisNBMonTempPassive.Contains(theStatusEffectParam.passiveName))
+                    thisNBMonTempPassive.Add(theStatusEffectParam.passiveName);
             }
         }
     }
@@ -70,11 +70,11 @@ public class StatusEffectIconDatabase
     {
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
         {
-            var TheStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
-            var TheStackValueOfTheCurrentEffect = thisNBMon.statusEffectList[i].stacks;
+            var theStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
+            var theStackValueOfTheCurrentEffect = thisNBMon.statusEffectList[i].stacks;
 
-            if (TheStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Critical_Rate_Related)
-                return (int) (TheStatusEffectParam.CritRate * (float)TheStackValueOfTheCurrentEffect);
+            if (theStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Critical_Rate_Related)
+                return (int) (theStatusEffectParam.CritRate * (float)theStackValueOfTheCurrentEffect);
         }
         return 0;
     }
@@ -82,97 +82,103 @@ public class StatusEffectIconDatabase
     //Attack Stats
     public static float AttackStatusEffectLogic(NBMonBattleDataSave thisNBMon)
     {
-        float AttackModifier = 1f;
+        float attackModifier = 1f;
 
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
         {
-            var TheStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
-            var TheStackValueOfTheCurrentEffect = thisNBMon.statusEffectList[i].stacks;
+            var statusEffectFromMonster = thisNBMon.statusEffectList[i];
+            var statusEffectFromDatabase = UseItem.FindStatusEffectFromDatabase(statusEffectFromMonster.statusEffect);
 
-            if(TheStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Combat_Related)
+            if(statusEffectFromDatabase.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Combat_Related)
             {
-                var BuffAttackParam = (TheStatusEffectParam.Attack / 100f) * (float)TheStackValueOfTheCurrentEffect;
+                var buffAttackParam = (statusEffectFromDatabase.Attack / 100f) * (float)statusEffectFromMonster.stacks;
 
-                AttackModifier *= (1f + BuffAttackParam);
+                attackModifier *= (1f + buffAttackParam);
+            }
+
+            //Burn reduce Attack by 50%.
+            if(statusEffectFromDatabase.statusConditionName == NBMonProperties.StatusEffect.Burned)
+            {
+                attackModifier *= 0.5f;
             }
         }
 
-        return AttackModifier;
+        return attackModifier;
     }
 
     //SP Attack Stats
     public static float SPAttackStatusEffectLogic(NBMonBattleDataSave thisNBMon)
     {
-        float SPAttackModifier = 1f;
+        float spAttackModifier = 1f;
 
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
         {
-            var TheStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
-            var TheStackValueOfTheCurrentEffect = thisNBMon.statusEffectList[i].stacks;
+            var statusEffectFromMonster = thisNBMon.statusEffectList[i];
+            var statusEffectFromDatabase = UseItem.FindStatusEffectFromDatabase(statusEffectFromMonster.statusEffect);
             
-            if(TheStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Combat_Related)
+            if(statusEffectFromDatabase.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Combat_Related)
             {
-                var BuffSPAttackParam = (TheStatusEffectParam.SP_Attack / 100f) * (float)TheStackValueOfTheCurrentEffect;
+                var buffSPAttackParam = (statusEffectFromDatabase.SP_Attack / 100f) * (float)statusEffectFromMonster.stacks;
 
-                SPAttackModifier *= (1f + BuffSPAttackParam);
+                spAttackModifier *= (1f + buffSPAttackParam);
             }
         }
 
-        return SPAttackModifier;
+        return spAttackModifier;
     }
 
     //Defense Stats
     public static float DefenseStatusEffectLogic(NBMonBattleDataSave thisNBMon)
     {
-        float DefenseModifier = 1f;
+        float defenseModifier = 1f;
 
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
         {
-            var TheStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
-            var TheStackValueOfTheCurrentEffect = thisNBMon.statusEffectList[i].stacks;
+            var statusEffectFromDatabase = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
+            var stacks = thisNBMon.statusEffectList[i].stacks;
             
             //Normal Logic
-            if(TheStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Combat_Related)
+            if(statusEffectFromDatabase.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Combat_Related)
             {
-                var BuffDefenseParam = (TheStatusEffectParam.Defense / 100f) * (float)TheStackValueOfTheCurrentEffect;
+                var buffDefenseParam = (statusEffectFromDatabase.Defense / 100f) * (float)stacks;
 
-                DefenseModifier *= (1f + BuffDefenseParam);
+                defenseModifier *= (1f + buffDefenseParam);
             }
 
             //Increase Defense when Frozen
-            if(TheStatusEffectParam.statusConditionName == NBMonProperties.StatusEffect.Frozen)
+            if(statusEffectFromDatabase.statusConditionName == NBMonProperties.StatusEffect.Frozen)
             {
-                DefenseModifier *= 1.5f;
+                defenseModifier *= 1.5f;
             }
         }
 
-        return DefenseModifier;
+        return defenseModifier;
     }
 
     public static float SPDefenseStatusEffectLogic(NBMonBattleDataSave thisNBMon)
     {
-        float SPDefenseModifier = 1f;
+        float spDefenseModifier = 1f;
 
         for (int i = 0; i < thisNBMon.statusEffectList.Count; i++)
         {
-            var TheStatusEffectParam = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
-            var TheStackValueOfTheCurrentEffect = thisNBMon.statusEffectList[i].stacks;
+            var statusEffectFromDatabase = UseItem.FindStatusEffectFromDatabase(thisNBMon.statusEffectList[i].statusEffect);
+            var stacks = thisNBMon.statusEffectList[i].stacks;
 
             //Normal Logic
-            if (TheStatusEffectParam.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Combat_Related)
+            if (statusEffectFromDatabase.statusEffectCategory == StatusEffectIconDatabase.StatusEffectCategory.Combat_Related)
             {
-                var BuffSPDefenseParam = (TheStatusEffectParam.SP_Defense / 100f) * (float)TheStackValueOfTheCurrentEffect;
+                var buffSPDefenseParam = (statusEffectFromDatabase.SP_Defense / 100f) * (float)stacks;
 
-                SPDefenseModifier *= (1f + BuffSPDefenseParam);
+                spDefenseModifier *= (1f + buffSPDefenseParam);
             }
 
             //Increase Defense when Frozen
-            if(TheStatusEffectParam.statusConditionName == NBMonProperties.StatusEffect.Frozen)
+            if(statusEffectFromDatabase.statusConditionName == NBMonProperties.StatusEffect.Frozen)
             {
-                SPDefenseModifier *= 1.5f;
+                spDefenseModifier *= 1.5f;
             }
         }
 
-        return SPDefenseModifier;
+        return spDefenseModifier;
     }
 }
