@@ -91,6 +91,7 @@ public class PassiveLogic
         //Declare New Variable
         List<NBMonProperties.StatusEffect> checkStatusListMemory = new List<NBMonProperties.StatusEffect>();
 
+        //Declare default returnValue as true;
         bool returnValue = true;
 
         //Requirement Logic
@@ -304,44 +305,8 @@ public class PassiveLogic
     {
         if (passiveEffect.effectType == PassiveDatabase.EffectType.StatusEffect)
         {
-            //Add the Status Effect to the Monster.
-            UseItem.ApplyStatusEffect(useMonsterMemory, passiveEffect.statusEffectInfoList, null, true, seedClass);
-            
-            //Remove the Status Effect to the Monster.
-            UseItem.RemoveStatusEffect(useMonsterMemory, passiveEffect.removeStatusEffectInfoList);
+            PassiveStatusEffectLogic(passiveEffect, seedClass);
 
-            AttackFunction.HardCodedRemoveStatusEffect(useMonsterMemory, passiveEffect.statusRemoveType_Self);
-
-            //Default Condition
-            var alliesTeam = NBMonTeamData.PlayerTeam;
-            var enemyTeam = NBMonTeamData.EnemyTeam;
-
-            //Check if the Original Monster is an Enemy Team
-            if(enemyTeam.Contains(useMonsterMemory))
-            {
-                alliesTeam = NBMonTeamData.EnemyTeam;
-                enemyTeam = NBMonTeamData.PlayerTeam;
-            }
-
-            //Self Team 
-            foreach(var monster in alliesTeam)
-            {
-                if (monster == originMonsterMemory)
-                    continue;
-
-                UseItem.ApplyStatusEffect(monster, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
-                UseItem.RemoveStatusEffect(monster, passiveEffect.removeEnemyTeamStatusEffectInfoList);
-                AttackFunction.HardCodedRemoveStatusEffect(monster, passiveEffect.statusRemoveType_Allies);
-            }
-
-            //Opposing Team
-            foreach(var monster in enemyTeam)
-            {
-                UseItem.ApplyStatusEffect(monster, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
-                UseItem.RemoveStatusEffect(monster, passiveEffect.removeEnemyTeamStatusEffectInfoList);
-                AttackFunction.HardCodedRemoveStatusEffect(monster, passiveEffect.statusRemoveType_Enemies);
-            }
-            
         }
         else if (passiveEffect.effectType == PassiveDatabase.EffectType.StatsPercentage)
         {
@@ -355,48 +320,101 @@ public class PassiveLogic
         }
         else if (passiveEffect.effectType == PassiveDatabase.EffectType.DuringBattle)
         {
-            //RNG for Passive Effects that works During Battle
-            var RNG = EvaluateOrder.ConvertSeedToRNG(seedClass);
-
-
-            if(RNG <= passiveEffect.triggerChance)
-            {
-                //Apply the Temporary Stats to the mosnter.
-                useMonsterMemory.attackBuff += (float)passiveEffect.attackBuff;
-                useMonsterMemory.specialAttackBuff += (float)passiveEffect.specialAttackBuff;
-                useMonsterMemory.defenseBuff += (float)passiveEffect.defenseBuff;
-                useMonsterMemory.specialDefenseBuff += (float)passiveEffect.specialDefenseBuff;
-                useMonsterMemory.criticalBuff += (float)passiveEffect.criticalBuff;
-                useMonsterMemory.ignoreDefenses += (float)passiveEffect.ignoreDefenses;
-                useMonsterMemory.damageReduction += (float)passiveEffect.damageReduction;
-                useMonsterMemory.energyShieldValue += (float)passiveEffect.energyShieldValue;
-                useMonsterMemory.absorbDamageValue += (float)passiveEffect.absorbDamageValue;
-
-                //Bool Section but using Integer
-                useMonsterMemory.energyShield += passiveEffect.energyShield;
-                useMonsterMemory.mustCritical += passiveEffect.mustCritical;
-                useMonsterMemory.surviveLethalBlow += passiveEffect.surviveLethalBlow;
-                useMonsterMemory.totalIgnoreDefense += passiveEffect.totalIgnoreDefense;
-                useMonsterMemory.immuneCritical += passiveEffect.immuneCritical;
-
-                //Elemental Damage Reduction
-                foreach(var ElementDamageReduction in passiveEffect.ElementalDamageReductions)
-                {
-                    if(skill.skillElement == ElementDamageReduction.SkillElementTaken)
-                    {
-                        useMonsterMemory.elementDamageReduction += ElementDamageReduction.DamageReductionValue;
-                    }
-                }
-            }
+            PassiveDuringBattleLogic(passiveEffect, skill, seedClass);
         }
         else if (passiveEffect.effectType == PassiveDatabase.EffectType.ApplySelfTemporaryPassive)
         {
-            foreach(var tempPassive in passiveEffect.newTemporaryPassives)
+            ApplySelfTempPassive(passiveEffect);
+        }
+    }
+
+    //Apply Passive that gives Status Effect
+    private static void PassiveStatusEffectLogic(PassiveDatabase.EffectInfo passiveEffect, RNGSeedClass seedClass)
+    {
+        //Add the Status Effect to the Monster.
+        UseItem.ApplyStatusEffect(useMonsterMemory, passiveEffect.statusEffectInfoList, null, true, seedClass);
+
+        //Remove the Status Effect to the Monster.
+        UseItem.RemoveStatusEffect(useMonsterMemory, passiveEffect.removeStatusEffectInfoList);
+
+        AttackFunction.HardCodedRemoveStatusEffect(useMonsterMemory, passiveEffect.statusRemoveType_Self);
+
+        //Default Condition
+        var alliesTeam = NBMonTeamData.PlayerTeam;
+        var enemyTeam = NBMonTeamData.EnemyTeam;
+
+        //Check if the Original Monster is an Enemy Team
+        if (enemyTeam.Contains(useMonsterMemory))
+        {
+            alliesTeam = NBMonTeamData.EnemyTeam;
+            enemyTeam = NBMonTeamData.PlayerTeam;
+        }
+
+        //Self Team 
+        foreach (var monster in alliesTeam)
+        {
+            if (monster == originMonsterMemory)
+                continue;
+
+            UseItem.ApplyStatusEffect(monster, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
+            UseItem.RemoveStatusEffect(monster, passiveEffect.removeEnemyTeamStatusEffectInfoList);
+            AttackFunction.HardCodedRemoveStatusEffect(monster, passiveEffect.statusRemoveType_Allies);
+        }
+
+        //Opposing Team
+        foreach (var monster in enemyTeam)
+        {
+            UseItem.ApplyStatusEffect(monster, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
+            UseItem.RemoveStatusEffect(monster, passiveEffect.removeEnemyTeamStatusEffectInfoList);
+            AttackFunction.HardCodedRemoveStatusEffect(monster, passiveEffect.statusRemoveType_Enemies);
+        }
+    }
+
+    //Apply Passive that works During Battle
+    private static void PassiveDuringBattleLogic(PassiveDatabase.EffectInfo passiveEffect, SkillsDataBase.SkillInfoPlayFab skill, RNGSeedClass seedClass)
+    {
+        //RNG for Passive Effects that works During Battle
+        var rng = EvaluateOrder.ConvertSeedToRNG(seedClass);
+
+        if (rng > passiveEffect.triggerChance)
+            return;
+
+        //Apply the Temporary Stats to the mosnter.
+        useMonsterMemory.attackBuff += (float)passiveEffect.attackBuff;
+        useMonsterMemory.specialAttackBuff += (float)passiveEffect.specialAttackBuff;
+        useMonsterMemory.defenseBuff += (float)passiveEffect.defenseBuff;
+        useMonsterMemory.specialDefenseBuff += (float)passiveEffect.specialDefenseBuff;
+        useMonsterMemory.criticalBuff += (float)passiveEffect.criticalBuff;
+        useMonsterMemory.ignoreDefenses += (float)passiveEffect.ignoreDefenses;
+        useMonsterMemory.damageReduction += (float)passiveEffect.damageReduction;
+        useMonsterMemory.energyShieldValue += (float)passiveEffect.energyShieldValue;
+        useMonsterMemory.absorbDamageValue += (float)passiveEffect.absorbDamageValue;
+
+        //Bool Section but using Integer
+        useMonsterMemory.energyShield += passiveEffect.energyShield;
+        useMonsterMemory.mustCritical += passiveEffect.mustCritical;
+        useMonsterMemory.surviveLethalBlow += passiveEffect.surviveLethalBlow;
+        useMonsterMemory.totalIgnoreDefense += passiveEffect.totalIgnoreDefense;
+        useMonsterMemory.immuneCritical += passiveEffect.immuneCritical;
+
+        //Elemental Damage Reduction
+        foreach (var elementDamageReduction in passiveEffect.ElementalDamageReductions)
+        {
+            if (skill.skillElement == elementDamageReduction.SkillElementTaken)
             {
-                if(!useMonsterMemory.temporaryPassives.Contains(tempPassive))
-                {
-                    useMonsterMemory.temporaryPassives.Add(tempPassive);
-                }
+                useMonsterMemory.elementDamageReduction += elementDamageReduction.DamageReductionValue;
+            }
+        }
+    }
+
+    //Apply Self Temporary Passive
+    private static void ApplySelfTempPassive(PassiveDatabase.EffectInfo passiveEffect)
+    {
+        foreach (var tempPassive in passiveEffect.newTemporaryPassives)
+        {
+            if (!useMonsterMemory.temporaryPassives.Contains(tempPassive))
+            {
+                useMonsterMemory.temporaryPassives.Add(tempPassive);
             }
         }
     }
