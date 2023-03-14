@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Azure.Documents.Client;
 
 public class PassiveLogic
@@ -12,53 +11,76 @@ public class PassiveLogic
     //Logics
     //Apply the passive according to the targetting type in script
     public static void ApplyPassive(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.TargetType targetType, NBMonBattleDataSave originMonsterPass, NBMonBattleDataSave targetMonsterPass, SkillsDataBase.SkillInfoPlayFab skill, RNGSeedClass seedClass)
-{
-    // Get Battle Environment Value.
-    var battleEnvironment = AttackFunction.BattleEnvironment;
-    var useMonsterMemory = new NBMonBattleDataSave();
-
-    // Check all the passive from the original monster
-    if (targetType == PassiveDatabase.TargetType.originalMonster || targetType == PassiveDatabase.TargetType.both)
     {
-        useMonsterMemory = originMonsterPass;
+        //Get Battle Environment Value.
+        var BattleEnvironment = AttackFunction.BattleEnvironment;
 
-        foreach (var passive in originMonsterPass.passiveList.Concat(originMonsterPass.temporaryPassives))
+        //Set the local data value 
+        originMonsterMemory = originMonsterPass; //Current Used Monster
+        targetMonsterMemory = targetMonsterPass; //Target Monster
+
+        //Check all the passive from the original monster
+        if (targetType == PassiveDatabase.TargetType.originalMonster || targetType == PassiveDatabase.TargetType.both)
         {
-            PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(passive), skill, battleEnvironment, seedClass);
+            useMonsterMemory = originMonsterMemory;
+
+            foreach (var passive in originMonsterPass.passiveList)
+            {
+                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(passive), skill, BattleEnvironment, seedClass);
+                //To do, change the PassiveDatabase.FindPassiveSkill(passive) into the variable you created, applies to other as well.
+            }
+
+            foreach (var tempPassive in originMonsterPass.temporaryPassives)
+            {
+                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(tempPassive), skill, BattleEnvironment, seedClass);
+            }
+        }
+
+        //Check all the passive from the target monster
+        if (targetType == PassiveDatabase.TargetType.targetedMonster || targetType == PassiveDatabase.TargetType.both)
+        {
+            useMonsterMemory = targetMonsterMemory;
+
+            foreach (var passive in targetMonsterPass.passiveList)
+            {
+                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(passive), skill, BattleEnvironment, seedClass);
+            }
+
+            foreach (var tempPassive in targetMonsterPass.temporaryPassives)
+            {
+                PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(tempPassive), skill, BattleEnvironment, seedClass);
+            }
         }
     }
 
-    // Check all the passive from the target monster
-    if (targetType == PassiveDatabase.TargetType.targetedMonster || targetType == PassiveDatabase.TargetType.both)
+    //Apply the passive, this is the logic we'd like to call!
+    public static void PassiveExecutionLogic(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.PassiveInfoPlayFab passiveInfo, SkillsDataBase.SkillInfoPlayFab skill, string BattleEnvironment, RNGSeedClass seedClass)
     {
-        useMonsterMemory = targetMonsterPass;
-
-        foreach (var passive in targetMonsterPass.passiveList.Concat(targetMonsterPass.temporaryPassives))
-        {
-            PassiveExecutionLogic(executionPosition, PassiveDatabase.FindPassiveSkill(passive), skill, battleEnvironment, seedClass);
-        }
-    }
-}
-
-        //Apply the passive, this is the logic we'd like to call!
-    public static void PassiveExecutionLogic(PassiveDatabase.ExecutionPosition executionPosition, PassiveDatabase.PassiveInfoPlayFab passiveInfo, SkillsDataBase.SkillInfoPlayFab skill, string battleEnvironment, RNGSeedClass seedClass)
-    {
-        if (passiveInfo == null)
-            return;
-
+        //Loop between Passive Detail
         foreach (var passiveDetail in passiveInfo.passiveDetail)
         {
-            if (executionPosition != passiveDetail.executionPosition)
-                continue;
-
-            if (!CheckPassiveRequirement(passiveDetail, passiveDetail.requirements, skill, battleEnvironment))
-                continue;
-
-            useMonsterMemory = (passiveDetail.requirements.Any(x => x.monsterTargetingCheck && targetMonsterMemory != null && !x.monsterTargeting_EffectToSelf)) ? targetMonsterMemory : originMonsterMemory;
-
-            foreach (var passive in passiveDetail.effect)
+            //Only Check The Passive When The Execution Position Is Correct
+            if (executionPosition == passiveDetail.executionPosition && passiveInfo != null)
             {
-                DoPassive(passive, skill, seedClass);
+                //Checks If Passive Requirement is Correct
+                if (CheckPassiveRequirement(passiveDetail, passiveDetail.requirements, skill, BattleEnvironment))
+                {
+                    foreach(var checkTarget in passiveDetail.requirements)
+                    {
+                        if (checkTarget.monsterTargetingCheck && targetMonsterMemory != null && !checkTarget.monsterTargeting_EffectToSelf)
+                            useMonsterMemory = targetMonsterMemory;
+                        else
+                            useMonsterMemory = originMonsterMemory;
+                    }
+
+                    //Apply Each Passive Int The List
+                    foreach (var passive in passiveDetail.effect)
+                    {
+                        //Do the passive
+                        DoPassive(passive, skill, seedClass);
+                    }
+
+                }
             }
         }
     }
@@ -66,132 +88,152 @@ public class PassiveLogic
     //Checks the list of modifier requirements
     private static bool CheckPassiveRequirement(PassiveDatabase.PassiveDetail passiveDetail, List<PassiveDatabase.Requirements> passiveRequirements, SkillsDataBase.SkillInfoPlayFab skill, string BattleEnvironment) 
     { 
+        //Declare New Variable
+        List<NBMonProperties.StatusEffect> checkStatusListMemory = new List<NBMonProperties.StatusEffect>();
+
+        //Declare default returnValue as true;
+        bool returnValue = true;
+
+        //Requirement Logic
         foreach (var requirements in passiveRequirements)
         {
-            switch (requirements.requirementTypes)
+            //Logic filters out all the requirement. When at least one requirement do not match, make the return value false;
+            if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionUsingElement)
             {
-                case PassiveDatabase.RequirementTypes.ActionUsingElement:
-                case PassiveDatabase.RequirementTypes.ActionReceivingElement:
-                    if (skill.skillElement != requirements.skillElement) 
-                        return false;
-                    break;
-
-                case PassiveDatabase.RequirementTypes.ActionUsingTechnique:
-                case PassiveDatabase.RequirementTypes.ActionReceivingTechnique:
-                    if (!requirements.skillLists.Contains(skill.skillName)) 
-                        return false;
-                    break;
-
-                case PassiveDatabase.RequirementTypes.StatsValueReq:
-                    if (!StatsValueRequirementLogic(true, requirements)) 
-                        return false;
-                    break;
-
-                case PassiveDatabase.RequirementTypes.HaveStatusEffect:
-                    if (!HaveStatusEffectRequirementLogic(true, requirements)) 
-                        return false;
-                    break;
-
-                case PassiveDatabase.RequirementTypes.ActionGivingStatusEffect:
-                case PassiveDatabase.RequirementTypes.ActionReceivingStatusEffect:
-                    if (!StatusEffectRequirementLogic(skill, new List<NBMonProperties.StatusEffect>(), requirements)) 
-                        return false;
-                    break;
-
-                case PassiveDatabase.RequirementTypes.Fainted:
-                    if (!useMonsterMemory.fainted) 
-                        return false;
-                    break;
-
-                case PassiveDatabase.RequirementTypes.Environment:
-                    if (!requirements.EnvinromentLists.Contains(BattleEnvironment)) 
-                        return false;
-                    break;
-
-                default:
-                    break;
+                //Checks if all the skill element is correct, if not it will change the retur value to false!
+                return (skill.skillElement == requirements.skillElement);
+            }
+            else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionReceivingElement)
+            {
+                //Checks if all the skill element is correct, if not it will change the return value to false!
+                return (skill.skillElement == requirements.skillElement);
+            }
+            else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionUsingTechnique)
+            {
+                //Check if the used skills are inside the Skill List from the passive
+                return requirements.skillLists.Contains(skill.skillName);
+            }
+            else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionReceivingTechnique)
+            {
+                //Check if the used skills are inside the Skill List from the passive
+                return requirements.skillLists.Contains(skill.skillName);
+            }
+            else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.StatsValueReq)
+            {
+                return StatsValueRequirementLogic(returnValue, requirements);
+            }
+            else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.HaveStatusEffect) //Has Status Effect
+            {
+                return HaveStatusEffectRequirementLogic(returnValue, requirements);
+            }
+            else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionGivingStatusEffect)
+            {
+                //Create the temporary list memory based on the status effect group of the action
+                return StatusEffectRequirementLogic(skill, checkStatusListMemory, requirements);
+            }
+            else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionReceivingStatusEffect)
+            {
+                //Create the temporary list memory based on the status effect group of the action
+                return StatusEffectRequirementLogic(skill, checkStatusListMemory, requirements);
+            }
+            else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.Fainted)
+            {
+                //Check if useMonster is fainted
+                return useMonsterMemory.fainted;
+            }
+            else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.Environment)
+            {
+                return requirements.EnvinromentLists.Contains(BattleEnvironment);
             }
         }
 
-        return true;
+        return returnValue;
     }
 
     //Find This Monster Status Effect
-    public static StatusEffectList FindNBMonStatusEffect(NBMonBattleDataSave monster, NBMonProperties.StatusEffect statusEffect)
+    public static StatusEffectList FindNBMonStatusEffect(NBMonBattleDataSave ThisMonster, NBMonProperties.StatusEffect StatusEffect)
     {
-        foreach (var statusInMonster in monster.statusEffectList)
+        foreach(var StatusInMonster in ThisMonster.statusEffectList)
         {
-            if (statusInMonster.statusEffect == (int)statusEffect && statusInMonster.counter > 0)
+            if(StatusInMonster.statusEffect == (int)StatusEffect && StatusInMonster.counter > 0)
             {
-                return statusInMonster;
+                return StatusInMonster;
             }
         }
 
+        //If none found, return False.
         return null;
     }
 
-
     //Apply the passive effect and change the monster stats based on it
     private static void DoPassive(PassiveDatabase.EffectInfo passiveEffect, SkillsDataBase.SkillInfoPlayFab skill, RNGSeedClass seedClass)
-{
-    switch (passiveEffect.effectType)
     {
-        case PassiveDatabase.EffectType.StatusEffect:
+        if (passiveEffect.effectType == PassiveDatabase.EffectType.StatusEffect)
+        {
             PassiveStatusEffectLogic(passiveEffect, seedClass);
-            break;
-        case PassiveDatabase.EffectType.StatsPercentage:
-            NBMonTeamData.StatsPercentageChange(useMonsterMemory, passiveEffect.statsType, passiveEffect.valueChange);
-            break;
-        case PassiveDatabase.EffectType.Stats:
-            NBMonTeamData.StatsValueChange(useMonsterMemory, passiveEffect.statsType, passiveEffect.valueChange);
-            break;
-        case PassiveDatabase.EffectType.DuringBattle:
-            PassiveDuringBattleLogic(passiveEffect, skill, seedClass);
-            break;
-        case PassiveDatabase.EffectType.ApplySelfTemporaryPassive:
-            ApplySelfTempPassive(passiveEffect);
-            break;
-    }
-}
 
+        }
+        else if (passiveEffect.effectType == PassiveDatabase.EffectType.StatsPercentage)
+        {
+            //Apply the stats change to the useMonster
+            NBMonTeamData.StatsPercentageChange(useMonsterMemory, passiveEffect.statsType, passiveEffect.valueChange);
+        }
+        else if (passiveEffect.effectType == PassiveDatabase.EffectType.Stats)
+        {
+            //Apply the stats change to the useMonster
+            NBMonTeamData.StatsValueChange(useMonsterMemory, passiveEffect.statsType, passiveEffect.valueChange);
+        }
+        else if (passiveEffect.effectType == PassiveDatabase.EffectType.DuringBattle)
+        {
+            PassiveDuringBattleLogic(passiveEffect, skill, seedClass);
+        }
+        else if (passiveEffect.effectType == PassiveDatabase.EffectType.ApplySelfTemporaryPassive)
+        {
+            ApplySelfTempPassive(passiveEffect);
+        }
+    }
 
     //Apply Passive that gives Status Effect
     private static void PassiveStatusEffectLogic(PassiveDatabase.EffectInfo passiveEffect, RNGSeedClass seedClass)
     {
-        // Apply status effect to useMonster
+        //Add the Status Effect to the Monster.
         UseItem.ApplyStatusEffect(useMonsterMemory, passiveEffect.statusEffectInfoList, null, true, seedClass);
+
+        //Remove the Status Effect to the Monster.
         UseItem.RemoveStatusEffect(useMonsterMemory, passiveEffect.removeStatusEffectInfoList);
+
         AttackFunction.HardCodedRemoveStatusEffect(useMonsterMemory, passiveEffect.statusRemoveType_Self);
 
-        // Determine teams
+        //Default Condition
         var alliesTeam = NBMonTeamData.PlayerTeam;
         var enemyTeam = NBMonTeamData.EnemyTeam;
+
+        //Check if the Original Monster is an Enemy Team
         if (enemyTeam.Contains(useMonsterMemory))
         {
             alliesTeam = NBMonTeamData.EnemyTeam;
             enemyTeam = NBMonTeamData.PlayerTeam;
         }
 
-        // Apply status effects and remove enemy status effects on allies team
-        TeamStatusEffectLogic(alliesTeam, originMonsterMemory, passiveEffect, seedClass, passiveEffect.statusRemoveType_Allies);
-
-        // Apply status effects and remove enemy status effects on opposing team
-        TeamStatusEffectLogic(enemyTeam, null, passiveEffect, seedClass, passiveEffect.statusRemoveType_Enemies);
-    }
-
-    private static void TeamStatusEffectLogic(List<NBMonBattleDataSave> team, NBMonBattleDataSave exceptMonster, PassiveDatabase.EffectInfo passiveEffect, RNGSeedClass seedClass, SkillsDataBase.RemoveStatusEffectType statusRemoveType)
-    {
-        foreach (var monster in team)
+        //Self Team 
+        foreach (var monster in alliesTeam)
         {
-            if (monster == exceptMonster)
+            if (monster == originMonsterMemory)
                 continue;
 
             UseItem.ApplyStatusEffect(monster, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
             UseItem.RemoveStatusEffect(monster, passiveEffect.removeEnemyTeamStatusEffectInfoList);
-            AttackFunction.HardCodedRemoveStatusEffect(monster, statusRemoveType);
+            AttackFunction.HardCodedRemoveStatusEffect(monster, passiveEffect.statusRemoveType_Allies);
+        }
+
+        //Opposing Team
+        foreach (var monster in enemyTeam)
+        {
+            UseItem.ApplyStatusEffect(monster, passiveEffect.teamStatusEffectInfoList, null, true, seedClass);
+            UseItem.RemoveStatusEffect(monster, passiveEffect.removeEnemyTeamStatusEffectInfoList);
+            AttackFunction.HardCodedRemoveStatusEffect(monster, passiveEffect.statusRemoveType_Enemies);
         }
     }
-
 
     //Apply Passive that works During Battle
     private static void PassiveDuringBattleLogic(PassiveDatabase.EffectInfo passiveEffect, SkillsDataBase.SkillInfoPlayFab skill, RNGSeedClass seedClass)
@@ -256,19 +298,40 @@ public class PassiveLogic
 
     private static bool HaveStatusEffectRequirementLogic(bool returnValue, PassiveDatabase.Requirements requirements)
     {
+        //Check if the passive's status effect requirement is not None.
         if (requirements.statusEffect != NBMonProperties.StatusEffect.None)
         {
             returnValue = FindNBMonStatusEffect(useMonsterMemory, requirements.statusEffect) != null;
         }
-        else
+        else //If its None, check if the passive requires having any Negative Status Effect or Not.
         {
-            var effectType = requirements.statusRemovalRequirement;
-            foreach (var statusEffect in useMonsterMemory.statusEffectList)
+            switch (requirements.statusRemovalRequirement)
             {
-                var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
-                if (statusEffectData.statusEffectType == effectType)
+                case SkillsDataBase.RemoveStatusEffectType.Negative:
                 {
-                    returnValue = false;
+                    //Do not trigger passive if the monster has negative status effect.
+                    foreach (var statusEffect in useMonsterMemory.statusEffectList)
+                    {
+                        var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
+
+                        if (statusEffectData.statusEffectType == SkillsDataBase.RemoveStatusEffectType.Negative)
+                            returnValue = false;
+                    }
+
+                    break;
+                }
+
+                case SkillsDataBase.RemoveStatusEffectType.Positive:
+                {
+                    //Do not trigger passive if the monster has positive status effect.
+                    foreach (var statusEffect in useMonsterMemory.statusEffectList)
+                    {
+                        var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
+
+                        if (statusEffectData.statusEffectType == SkillsDataBase.RemoveStatusEffectType.Positive)
+                            returnValue = false;
+                    }
+
                     break;
                 }
             }
@@ -277,25 +340,39 @@ public class PassiveLogic
         return returnValue;
     }
 
-
     private static bool StatsValueRequirementLogic(bool returnValue, PassiveDatabase.Requirements requirements)
     {
         foreach (var statsRequirement in requirements.statsValueIsRequired)
         {
-            var statValue = statsRequirement.stats == NBMonProperties.InputChange.HP_Percent ? useMonsterMemory.hp : useMonsterMemory.energy;
-            var requiredValue = statsRequirement.value * (statsRequirement.stats == NBMonProperties.InputChange.HP_Percent ? useMonsterMemory.maxHp : useMonsterMemory.maxEnergy) / 100;
-            
-            switch (statsRequirement.Numerator)
+            if (statsRequirement.stats == NBMonProperties.InputChange.HP_Percent) //Check by HP vs Max HP Value
             {
-                case PassiveDatabase.Numerator.Same:
-                    returnValue = (statValue == requiredValue);
-                    break;
-                case PassiveDatabase.Numerator.BiggerThan:
-                    returnValue = (statValue >= requiredValue);
-                    break;
-                case PassiveDatabase.Numerator.SmallerThan:
-                    returnValue = (statValue <= requiredValue);
-                    break;
+                switch (statsRequirement.Numerator)
+                {
+                    case PassiveDatabase.Numerator.Same:
+                        returnValue = (useMonsterMemory.hp == useMonsterMemory.maxHp * statsRequirement.value / 100);
+                        break;
+                    case PassiveDatabase.Numerator.BiggerThan:
+                        returnValue = (useMonsterMemory.hp >= useMonsterMemory.maxHp * statsRequirement.value / 100);
+                        break;
+                    case PassiveDatabase.Numerator.SmallerThan:
+                        returnValue = (useMonsterMemory.hp < useMonsterMemory.maxHp * statsRequirement.value / 100);
+                        break;
+                }
+            }
+            else //Check by Energy vs Max Energy Value
+            {
+                switch (statsRequirement.Numerator)
+                {
+                    case PassiveDatabase.Numerator.Same:
+                        returnValue = (useMonsterMemory.energy == useMonsterMemory.maxEnergy * statsRequirement.value / 100);
+                        break;
+                    case PassiveDatabase.Numerator.BiggerThan:
+                        returnValue = (useMonsterMemory.energy >= useMonsterMemory.maxEnergy * statsRequirement.value / 100);
+                        break;
+                    case PassiveDatabase.Numerator.SmallerThan:
+                        returnValue = (useMonsterMemory.energy <= useMonsterMemory.maxEnergy * statsRequirement.value / 100);
+                        break;
+                }
             }
         }
 
