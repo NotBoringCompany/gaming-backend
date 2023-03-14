@@ -27,17 +27,25 @@ public static class BattleMoraleGauge
         public int playerMoraleUsageCount;
     }
 
-    public static void ChangeMoraleGauge(MoraleData data, int damageData, bool isPlayerGauge)
+    public static void ChangePlayerMoraleGauge(MoraleData data, int damageData)
     {
-        if (isPlayerGauge)
-        {
-            data.playerMoraleGauge += damageData;
-            data.playerMoraleGauge = Math.Max(0, Math.Min(100, data.playerMoraleGauge));
-        }
-        else
-        {
-            data.enemyMoraleGauge += damageData;
-            data.enemyMoraleGauge = Math.Max(0, Math.Min(100, data.enemyMoraleGauge));
-        }
+        data.playerMoraleGauge += damageData;
+
+        if(data.playerMoraleGauge >= 100)
+            data.playerMoraleGauge = 100;
+
+        if(data.playerMoraleGauge < 0)
+             data.playerMoraleGauge = 0;
+    }
+
+    public static void ChangeEnemyMoraleGauge(MoraleData data, int damageData)
+    {
+        data.enemyMoraleGauge += damageData;
+
+        if(data.enemyMoraleGauge >= 100)
+            data.enemyMoraleGauge = 100;
+            
+        if(data.enemyMoraleGauge < 0)
+            data.enemyMoraleGauge = 0;
     }
 }

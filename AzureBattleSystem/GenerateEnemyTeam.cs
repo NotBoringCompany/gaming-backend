@@ -23,61 +23,63 @@ public static class GenerateEnemyTeam
 
     //Cloud Method
     [FunctionName("GenerateEnemyTeamData")]
-    public static async Task<dynamic> GenerateEnemyTeamData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
-    {
-        // Deserialize function arguments from request body
-        var context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
-        var args = context.FunctionArgument;
+    public static async Task<dynamic> GenerateEnemyTeamData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, 
+    ILogger log)
+    {   
+        //Setup serverApi (Server API to PlayFab)
+        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+        dynamic args = context.FunctionArgument;
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
-        // Setup serverApi (Server API to PlayFab)
-        var serverApi = AzureHelper.ServerAPISetup(args, context);
+        //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
+        List<NBMonBattleDataSave> enemyTeam = new List<NBMonBattleDataSave>();
+        int dataId = new int();
 
-        // Get dataId and battleCategory from function arguments
-        var dataId = (int?)args["DataID"] ?? 0;
-        var battleCategory = (int?)args["BattleCategory"] ?? 0;
+        //Battle Category Consist of 0 which is a Wild NBMon Battle, 1 is an NPC Battle, and 2 is a Boss Battle.
+        int battleCategory = new int();
 
-        // Generate enemy team based on battle category
-        var enemyTeam = new List<NBMonBattleDataSave>();
-        switch (battleCategory)
-        {
-            case 0:
-                GenerateWildNBMon(enemyTeam, dataId);
-                break;
-            case 1:
-                GenerateNPCTeam(enemyTeam, dataId);
-                break;
-            case 2:
-                GenerateBossTeam(enemyTeam, dataId);
-                break;
-        }
+        //Check args["ThisMonsterUniqueID"] if it's null or not
+        if(args["DataID"] != null)
+            dataId = (int)args["DataID"];
 
-        // Update user data in PlayFab
-        await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
-            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-            Data = new Dictionary<string, string> {
-                {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
-                {"BattleCategory", battleCategory.ToString()}
+        if(args["BattleCategory"] != null)
+            battleCategory = (int)args["BattleCategory"];
+        
+        //Do Generate Wild NBMon Logic
+        if(battleCategory == 0)
+            GenerateWildNBMon(enemyTeam, dataId);
+
+        //Do Generate NPC NBMon Logic
+        if(battleCategory == 1)
+            GenerateNPCTeam(enemyTeam, dataId);
+
+        if(battleCategory == 2)
+            GenerateBossTeam(enemyTeam, dataId);
+
+        //Let's convert it into Json String and Send it into PlayFab (Player Title Data).
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
+            new UpdateUserDataRequest {
+             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+                 {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
+                 {"BattleCategory", battleCategory.ToString()}
+                }
             }
-        });
+        );
 
-        // Return null (or any desired response)
+        //In Client, After This Function Finished, Pls Get Enemy Team Data from PlayFab Directly
         return null;
     }
-
 
     //Generate Wild NBMon
     public static void GenerateWildNBMon(List<NBMonBattleDataSave> enemyTeam, int dataId)
     {
-        // Get battle data from the database using the data ID
-        NBMonBattleDatabase usedData = RandomBattleDatabase.GetWildBattleData(dataId);
+        NBMonBattleDatabase usedData = RandomBattleDatabase.GetWildBattleData(dataId);;
 
-        // Generate monster data for each monster in the battle data
-        foreach (var randomMonsterData in usedData.MonsterDatas)
+        foreach(var randomMonsterData in usedData.MonsterDatas)
         {
-            // Create a new NBMonBattleDataSave object to store the monster data
             NBMonBattleDataSave monsterData = new NBMonBattleDataSave();
 
-            // Set the owner to "WILD", the monster ID, nickname, skills, and passives
+            //Insert Data from Databse into NBMonBattleDataSave
             monsterData.owner = "WILD";
             monsterData.monsterId = randomMonsterData.MonsterID;
             monsterData.nickName = monsterData.monsterId;
@@ -85,34 +87,40 @@ public static class GenerateEnemyTeam
             monsterData.uniqueSkillList = randomMonsterData.InheritedSkill;
             monsterData.passiveList = randomMonsterData.Passive;
 
-            // Get the monster data from the database using the monster ID
+            //Get Monster Data Base using Monster's MonsterID. Not Unique ID.
             NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = NBMonDatabase.FindMonster(monsterData.monsterId);
+            
+            /*
+            NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase = client.CreateDocumentQuery<NBMonDatabase.MonsterInfoPlayFab>(monsterUri, 
+            $"SELECT * FROM db WHERE db.monsterName = '{monsterData.monsterId}'",
+            option).AsEnumerable().FirstOrDefault();
+            */
 
-            // Generate a random level for the monster based on the level range in the battle data
+            //Let's Generate This Monster's Level
             NBMonStatsCalculation.GenerateRandomLevel(monsterData, usedData.LevelRange);
 
-            // Generate a unique ID for the monster
+            //Let's Generate This Monster UniqueID
             NBMonStatsCalculation.GenerateWildMonsterCredential(monsterData);
 
-            // Generate a quality value for the monster
+            //Let's Generate This Monster's Quality
             NBMonStatsCalculation.GenerateThisMonsterQuality(monsterData);
 
-            // Generate potential stats for the monster
+            //Let's Generate It's Potential Stats
             NBMonStatsCalculation.GenerateRandomPotentialValue(monsterData, monsterFromDatabase);
 
-            // Generate base stats for the monster
+            //Generate This Monster Base Stats
             NBMonStatsCalculation.StatsCalculation(monsterData, monsterFromDatabase);
 
-            // Set the monster's HP and energy to full
+            //Fully Recovery HP and Energy
             NBMonTeamData.StatsPercentageChange(monsterData, NBMonProperties.StatsType.Hp, 100);
             NBMonTeamData.StatsPercentageChange(monsterData, NBMonProperties.StatsType.Energy, 100);
 
-            // Initialize other data fields
+            //Make Other Data not null.
             monsterData.statusEffectList = new List<StatusEffectList>();
             monsterData.temporaryPassives = new List<string>();
             monsterData.setSkillByHPBoundaries = new List<NBMonBattleDataSave.SkillByHP>();
 
-            // Add the monster to the enemy team
+            //Once Done Processing This Monster Data, Add This Monster into Enemy Team
             enemyTeam.Add(monsterData);
         }
     }

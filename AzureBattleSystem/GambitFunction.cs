@@ -71,7 +71,18 @@ public static class GambitFunction
         if(!monsterCanMove)
             return $"Error: RH-0006, no such Unique ID of {uniqueId} exist in the SortedOrder";
 
-        BattleMoraleGauge.ChangeMoraleGauge(moraleData, 20, uniqueId == humanBattleData.playerHumanData.uniqueId);
+        //Let's get which team the uniqueId was.
+        //Check Team One
+        if(uniqueId == humanBattleData.playerHumanData.uniqueId)
+        {
+            BattleMoraleGauge.ChangePlayerMoraleGauge(moraleData, 20);
+        }
+        
+        if(humanBattleData.enemyHumanData != null)
+        {
+            if(uniqueId == humanBattleData.enemyHumanData.uniqueId)
+                BattleMoraleGauge.ChangeEnemyMoraleGauge(moraleData, 20);
+        }
 
         //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(

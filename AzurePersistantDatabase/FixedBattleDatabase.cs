@@ -24,16 +24,21 @@ public class FixedBattleDatabase
 
     public static FixedNBMonBattleDatabase GetBattleData(string battleData, int dataId)
     {
-        // Set the MongoDB server API version
+        //============================================================
+        // MONGODB Logic
+        // battleData can be npcData or bossData
+        //============================================================
         MongoHelper.settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        //Let's create a filter to query single data
+        var filter = Builders<BsonDocument>.Filter.Eq("dataId", dataId);
+        //Setting for Collection
+        var collection = MongoHelper.db.GetCollection<BsonDocument>(battleData).Find(filter).FirstOrDefault().AsEnumerable();
+        var wildBattleData = new FixedNBMonBattleDatabase();
 
-        var collection = MongoHelper.db.GetCollection<FixedNBMonBattleDatabase>(battleData);
-        var filter = Builders<FixedNBMonBattleDatabase>.Filter.Eq(x => x.dataId, dataId);
-        var result = collection.Find(filter).FirstOrDefault();
-
-        return result;
+        //Convert the Result into desire Class
+        wildBattleData = BsonSerializer.Deserialize<FixedNBMonBattleDatabase>(collection.ToBsonDocument());
+        return wildBattleData;
     }
-
 
     //A static function to Convert JsonString into a Class
     public static void GetData()

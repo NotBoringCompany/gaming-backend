@@ -101,184 +101,49 @@ public class PassiveLogic
             if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionUsingElement)
             {
                 //Checks if all the skill element is correct, if not it will change the retur value to false!
-                if (skill.skillElement != requirements.skillElement)
-                {
-                    return false;
-                }
+                return (skill.skillElement == requirements.skillElement);
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionReceivingElement)
             {
                 //Checks if all the skill element is correct, if not it will change the return value to false!
-                if (skill.skillElement != requirements.skillElement)
-                {
-                    return false;
-                }
+                return (skill.skillElement == requirements.skillElement);
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionUsingTechnique)
             {
-                if(requirements.skillLists.Count != 0)
-                {
-                    //Check if the used skills are inside the Skill List from the passive
-                    if (requirements.skillLists.Contains(skill.skillName))
-                        returnValue = true;
-                    else
-                        return false;
-                }
+                //Check if the used skills are inside the Skill List from the passive
+                return requirements.skillLists.Contains(skill.skillName);
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionReceivingTechnique)
             {
-                
+                //Check if the used skills are inside the Skill List from the passive
+                return requirements.skillLists.Contains(skill.skillName);
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.StatsValueReq)
             {
-                foreach (var statsRequirement in requirements.statsValueIsRequired)
-                {
-                    if (statsRequirement.stats == NBMonProperties.InputChange.HP_Percent) //Check by HP vs Max HP Value
-                    {
-                        if (statsRequirement.Numerator == PassiveDatabase.Numerator.Same)
-                        {
-                            if (useMonsterMemory.hp == useMonsterMemory.maxHp * statsRequirement.value / 100)
-                                returnValue = true;
-                            else
-                                return false;
-                        }
-
-                        if (statsRequirement.Numerator == PassiveDatabase.Numerator.BiggerThan)
-                        {
-                            if (useMonsterMemory.hp > useMonsterMemory.maxHp * statsRequirement.value / 100)
-                                returnValue = true;
-                            else
-                                return false;
-                        }
-
-                        if (statsRequirement.Numerator == PassiveDatabase.Numerator.SmallerThan)
-                        {
-                            if (useMonsterMemory.hp < useMonsterMemory.maxHp * statsRequirement.value / 100)
-                                returnValue = true;
-                            else
-                                return false;
-                        }
-                    }
-
-                    if (statsRequirement.stats == NBMonProperties.InputChange.Energy_Percent) //Check by Energy vs Max Energy Value
-                    {
-                        if (statsRequirement.Numerator == PassiveDatabase.Numerator.Same)
-                        {
-                            if (useMonsterMemory.energy == useMonsterMemory.maxEnergy * statsRequirement.value / 100)
-                                returnValue = true;
-                            else
-                                return false;
-                        }
-
-                        if (statsRequirement.Numerator == PassiveDatabase.Numerator.BiggerThan)
-                        {
-                            if (useMonsterMemory.energy > useMonsterMemory.maxEnergy * statsRequirement.value / 100)
-                                returnValue = true;
-                            else
-                                return false;
-                        }
-
-                        if (statsRequirement.Numerator == PassiveDatabase.Numerator.SmallerThan)
-                        {
-                            if (useMonsterMemory.energy < useMonsterMemory.maxEnergy * statsRequirement.value / 100)
-                                returnValue = true;
-                            else
-                                return false;
-                        }
-                    }
-                }
+                return StatsValueRequirementLogic(returnValue, requirements);
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.HaveStatusEffect) //Has Status Effect
             {
-                //Check if the requirement status effect is NONE
-                if(requirements.statusEffect == NBMonProperties.StatusEffect.None)
-                {
-                    switch (requirements.statusRemovalRequirement)
-                    {
-                        case SkillsDataBase.RemoveStatusEffectType.Negative:
-                            {
-                                //For Negative Status Effect Removal
-                                foreach (var statusEffect in useMonsterMemory.statusEffectList)
-                                {
-                                    var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
-
-                                    if (statusEffectData.statusEffectType == SkillsDataBase.RemoveStatusEffectType.Negative)
-                                        return false;
-                                }
-
-                                break;
-                            }
-
-                        case SkillsDataBase.RemoveStatusEffectType.Positive:
-                            {
-                                //For Negative Status Effect Removal
-                                foreach (var statusEffect in useMonsterMemory.statusEffectList)
-                                {
-                                    var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
-
-                                    if (statusEffectData.statusEffectType == SkillsDataBase.RemoveStatusEffectType.Positive)
-                                        return false;
-                                }
-
-                                break;
-                            }
-                    }
-
-                    return true;
-                }
-
-                //Checks if the useMonster have the status or not
-                if (FindNBMonStatusEffect(useMonsterMemory, requirements.statusEffect) == null)
-                {
-                    return false;
-                }
+                return HaveStatusEffectRequirementLogic(returnValue, requirements);
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionGivingStatusEffect)
             {
                 //Create the temporary list memory based on the status effect group of the action
-                checkStatusListMemory.Clear();
-                foreach (var statusEffectGroup in skill.statusEffectList)
-                {
-                    checkStatusListMemory.Add(statusEffectGroup.statusEffect);
-                }
-
-                if (!checkStatusListMemory.Contains(requirements.statusEffect))
-                {
-                    //If the status effect list do not contain the status effect, returns false
-                    return false;
-                }
-
-                return true;
-
+                return StatusEffectRequirementLogic(skill, checkStatusListMemory, requirements);
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.ActionReceivingStatusEffect)
             {
                 //Create the temporary list memory based on the status effect group of the action
-                checkStatusListMemory.Clear();
-                foreach (var statusEffectGroup in skill.statusEffectList)
-                {
-                    checkStatusListMemory.Add(statusEffectGroup.statusEffect);
-                }
-
-                if (!checkStatusListMemory.Contains(requirements.statusEffect))
-                {
-                    //If the status effect list do not contain the status effect, returns false
-                    return false;
-                }
-
+                return StatusEffectRequirementLogic(skill, checkStatusListMemory, requirements);
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.Fainted)
             {
                 //Check if useMonster is fainted
-                if (!useMonsterMemory.fainted)
-                {
-                    return false;
-                }
+                return useMonsterMemory.fainted;
             }
             else if (requirements.requirementTypes == PassiveDatabase.RequirementTypes.Environment)
             {
-                if (!requirements.EnvinromentLists.Contains(BattleEnvironment))
-                    return false;
+                return requirements.EnvinromentLists.Contains(BattleEnvironment);
             }
         }
 
@@ -417,5 +282,100 @@ public class PassiveLogic
                 useMonsterMemory.temporaryPassives.Add(tempPassive);
             }
         }
+    }
+
+    //Related to Passive Requirement Booleans
+    private static bool StatusEffectRequirementLogic(SkillsDataBase.SkillInfoPlayFab skill, List<NBMonProperties.StatusEffect> checkStatusListMemory, PassiveDatabase.Requirements requirements)
+    {
+        checkStatusListMemory.Clear();
+        foreach (var statusEffectGroup in skill.statusEffectList)
+        {
+            checkStatusListMemory.Add(statusEffectGroup.statusEffect);
+        }
+
+        return checkStatusListMemory.Contains(requirements.statusEffect);
+    }
+
+    private static bool HaveStatusEffectRequirementLogic(bool returnValue, PassiveDatabase.Requirements requirements)
+    {
+        //Check if the passive's status effect requirement is not None.
+        if (requirements.statusEffect != NBMonProperties.StatusEffect.None)
+        {
+            returnValue = FindNBMonStatusEffect(useMonsterMemory, requirements.statusEffect) != null;
+        }
+        else //If its None, check if the passive requires having any Negative Status Effect or Not.
+        {
+            switch (requirements.statusRemovalRequirement)
+            {
+                case SkillsDataBase.RemoveStatusEffectType.Negative:
+                {
+                    //Do not trigger passive if the monster has negative status effect.
+                    foreach (var statusEffect in useMonsterMemory.statusEffectList)
+                    {
+                        var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
+
+                        if (statusEffectData.statusEffectType == SkillsDataBase.RemoveStatusEffectType.Negative)
+                            returnValue = false;
+                    }
+
+                    break;
+                }
+
+                case SkillsDataBase.RemoveStatusEffectType.Positive:
+                {
+                    //Do not trigger passive if the monster has positive status effect.
+                    foreach (var statusEffect in useMonsterMemory.statusEffectList)
+                    {
+                        var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
+
+                        if (statusEffectData.statusEffectType == SkillsDataBase.RemoveStatusEffectType.Positive)
+                            returnValue = false;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return returnValue;
+    }
+
+    private static bool StatsValueRequirementLogic(bool returnValue, PassiveDatabase.Requirements requirements)
+    {
+        foreach (var statsRequirement in requirements.statsValueIsRequired)
+        {
+            if (statsRequirement.stats == NBMonProperties.InputChange.HP_Percent) //Check by HP vs Max HP Value
+            {
+                switch (statsRequirement.Numerator)
+                {
+                    case PassiveDatabase.Numerator.Same:
+                        returnValue = (useMonsterMemory.hp == useMonsterMemory.maxHp * statsRequirement.value / 100);
+                        break;
+                    case PassiveDatabase.Numerator.BiggerThan:
+                        returnValue = (useMonsterMemory.hp >= useMonsterMemory.maxHp * statsRequirement.value / 100);
+                        break;
+                    case PassiveDatabase.Numerator.SmallerThan:
+                        returnValue = (useMonsterMemory.hp < useMonsterMemory.maxHp * statsRequirement.value / 100);
+                        break;
+                }
+            }
+            else //Check by Energy vs Max Energy Value
+            {
+                switch (statsRequirement.Numerator)
+                {
+                    case PassiveDatabase.Numerator.Same:
+                        returnValue = (useMonsterMemory.energy == useMonsterMemory.maxEnergy * statsRequirement.value / 100);
+                        break;
+                    case PassiveDatabase.Numerator.BiggerThan:
+                        returnValue = (useMonsterMemory.energy >= useMonsterMemory.maxEnergy * statsRequirement.value / 100);
+                        break;
+                    case PassiveDatabase.Numerator.SmallerThan:
+                        returnValue = (useMonsterMemory.energy <= useMonsterMemory.maxEnergy * statsRequirement.value / 100);
+                        break;
+                }
+            }
+        }
+
+        return returnValue;
     }
 }
