@@ -48,22 +48,22 @@ public static class AttackFunction
 
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
         HumanBattleData humanBattleData = new HumanBattleData();
-        List<NBMonBattleDataSave> playerTeam = new List<NBMonBattleDataSave>();
-        List<NBMonBattleDataSave> enemyTeam = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
         NBMonBattleDataSave attackerMonster = new NBMonBattleDataSave();
-        List<NBMonBattleDataSave> defenderMonsters = new List<NBMonBattleDataSave>();
-        DataFromUnity unityData = new DataFromUnity();
-        DataSendToUnity dataFromAzureToClient = new DataSendToUnity();
-        List<string> team1UniqueID_BF = new List<string>();
-        List<String> sortedOrder = new List<string>();
+        List<NBMonBattleDataSave> DefenderMonsters = new List<NBMonBattleDataSave>();
+        DataFromUnity UnityData = new DataFromUnity();
+        DataSendToUnity DataFromAzureToClient = new DataSendToUnity();
+        List<string> Team1UniqueID_BF = new List<string>();
+        List<String> SortedOrder = new List<string>();
         RNGSeedClass seedClass = new RNGSeedClass();
         BattleMoraleGauge.MoraleData moraleData = new BattleMoraleGauge.MoraleData();
 
         //Convert from json to NBmonBattleDataSave
-        playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
-        enemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
-        team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
-        sortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+        PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
+        EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+        Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
+        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
         seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
         moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
         humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
@@ -72,15 +72,15 @@ public static class AttackFunction
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
 
         //Insert Data to Static Variable for (Passive Purpose)
-        NBMonTeamData.PlayerTeam = playerTeam;
-        NBMonTeamData.EnemyTeam = enemyTeam;
+        NBMonTeamData.PlayerTeam = PlayerTeam;
+        NBMonTeamData.EnemyTeam = EnemyTeam;
 
         //Get Data From Unity and Convert it back to Class.
         if (args["UnityDataInput"] != null)
         {
             string ArgumentString = args["UnityDataInput"];
 
-            unityData = JsonConvert.DeserializeObject<DataFromUnity>(ArgumentString);
+            UnityData = JsonConvert.DeserializeObject<DataFromUnity>(ArgumentString);
         }
 
         //Get Variable if it's an NPC Battle
@@ -96,7 +96,7 @@ public static class AttackFunction
         }
 
         //Check if monster can attack
-        var monsterCanMove = EvaluateOrder.CheckBattleOrder(sortedOrder, unityData.AttackerMonsterUniqueID);
+        var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, UnityData.AttackerMonsterUniqueID);
 
         if (!monsterCanMove)
         {
@@ -104,17 +104,17 @@ public static class AttackFunction
         }
 
         //Get Attacker Data from Unity Input
-        attackerMonster = UseItem.FindMonster(unityData.AttackerMonsterUniqueID, playerTeam, humanBattleData);
+        attackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, PlayerTeam, humanBattleData);
 
         //If Attacker not found in Player Team, Find Attacker on Enemy Team
         if (attackerMonster == null)
-            attackerMonster = UseItem.FindMonster(unityData.AttackerMonsterUniqueID, enemyTeam, humanBattleData);
+            attackerMonster = UseItem.FindMonster(UnityData.AttackerMonsterUniqueID, EnemyTeam, humanBattleData);
 
         //Insert Attacker Monster Unique ID.
-        dataFromAzureToClient.AttackerMonsterUniqueID = attackerMonster.uniqueId;
+        DataFromAzureToClient.AttackerMonsterUniqueID = attackerMonster.uniqueId;
 
         //Declare Skill Slot
-        var skillSlot = unityData.SkillSlot;
+        var skillSlot = UnityData.SkillSlot;
 
         //Check Skill Slot Value, prevent using Value that is not 0 ~ 3
         if (skillSlot < 0)
@@ -124,49 +124,22 @@ public static class AttackFunction
             skillSlot = attackerMonster.skillList.Count - 1;
 
         //Get all Defender Data from Unity Input
-        foreach (string TargetID in unityData.TargetUniqueIDs)
+        foreach (string TargetID in UnityData.TargetUniqueIDs)
         {
-            var Monster = UseItem.FindMonster(TargetID, playerTeam, humanBattleData);
+            var Monster = UseItem.FindMonster(TargetID, PlayerTeam, humanBattleData);
 
             if (Monster == null)
             {
                 //If Target Monster not found, find this from Enemy Team 
-                Monster = UseItem.FindMonster(TargetID, enemyTeam, humanBattleData);
+                Monster = UseItem.FindMonster(TargetID, EnemyTeam, humanBattleData);
             }
 
             //Add Monster into DefenderMonster List
-            defenderMonsters.Add(Monster);
+            DefenderMonsters.Add(Monster);
         }
 
         log.LogInformation($"Code A: 1st Step, Get Attacker Skill Data");
 
-        ServerAttackLogic(log, humanBattleData, playerTeam, enemyTeam, attackerMonster, defenderMonsters, dataFromAzureToClient, team1UniqueID_BF, seedClass, moraleData, skillSlot);
-
-        //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
-        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
-            new UpdateUserDataRequest
-            {
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-                Data = new Dictionary<string, string>{
-                 {"SortedOrder", JsonConvert.SerializeObject(sortedOrder)},
-                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)},
-                 {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
-                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)},
-                 {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)}
-                }
-            }
-        );
-
-        //Lets turn DataFromAzureToClient into JsonString.
-        string DataInJsonString = JsonConvert.SerializeObject(dataFromAzureToClient);
-
-        log.LogInformation($"{DataInJsonString}");
-
-        return dataFromAzureToClient;
-    }
-
-    private static void ServerAttackLogic(ILogger log, HumanBattleData humanBattleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave attackerMonster, List<NBMonBattleDataSave> defenderMonsters, DataSendToUnity dataFromAzureToClient, List<string> team1UniqueID_BF, RNGSeedClass seedClass, BattleMoraleGauge.MoraleData moraleData, int skillSlot)
-    {
         //Let's get Attacker Data like Skill
         SkillsDataBase.SkillInfoPlayFab skill = SkillsDataBase.FindSkill(attackerMonster.skillList[skillSlot]);
 
@@ -181,15 +154,15 @@ public static class AttackFunction
         log.LogInformation($"Code C: 3rd Step, Looping for each Monster Target");
 
         //After Applying passive, let's call Apply Skill for each Target Monster
-        foreach (var targetMonster in defenderMonsters)
+        foreach (var targetMonster in DefenderMonsters)
         {
-            if ((targetMonster.fainted || targetMonster.hp <= 0) && defenderMonsters.Count != 1)
+            if ((targetMonster.fainted || targetMonster.hp <= 0) && DefenderMonsters.Count != 1)
                 continue;
 
             log.LogInformation($"{targetMonster.nickName}, Apply Skill");
 
             //Apply Skill
-            ApplySkill(skill, attackerMonster, targetMonster, dataFromAzureToClient, seedClass, moraleData, playerTeam, enemyTeam, humanBattleData);
+            ApplySkill(skill, attackerMonster, targetMonster, DataFromAzureToClient, seedClass, moraleData, PlayerTeam, EnemyTeam, humanBattleData);
 
             log.LogInformation($"{targetMonster.nickName}, Apply Status Effect Immediately");
 
@@ -199,7 +172,7 @@ public static class AttackFunction
             log.LogInformation($"{targetMonster.nickName}, Check Monster Died");
 
             //Let's Check Target Monster wether it's Fainted or not
-            CheckTargetDied(targetMonster, attackerMonster, skill, playerTeam, enemyTeam, team1UniqueID_BF, dataFromAzureToClient);
+            CheckTargetDied(targetMonster, attackerMonster, skill, PlayerTeam, EnemyTeam, Team1UniqueID_BF, DataFromAzureToClient);
         }
 
         log.LogInformation($"Code D: 4th Step, Apply and Remove Status Effect from Attacker Monster");
@@ -218,8 +191,30 @@ public static class AttackFunction
         //After the Combat, let's resets the Monster's Temporary Stats that only works in Combat Phase
         ResetTemporaryStatsAfterAttacking(attackerMonster);
 
-        foreach (var TargetMonster in defenderMonsters)
+        foreach (var TargetMonster in DefenderMonsters)
             ResetTemporaryStatsAfterAttacking(TargetMonster);
+
+        //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
+            new UpdateUserDataRequest
+            {
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Data = new Dictionary<string, string>{
+                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
+                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
+                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
+                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)},
+                 {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)}
+                }
+            }
+        );
+
+        //Lets turn DataFromAzureToClient into JsonString.
+        string DataInJsonString = JsonConvert.SerializeObject(DataFromAzureToClient);
+
+        log.LogInformation($"{DataInJsonString}");
+
+        return DataFromAzureToClient;
     }
 
     public static void HardCodedRemoveStatusEffect(NBMonBattleDataSave selectedMonster, SkillsDataBase.RemoveStatusEffectType statusEffectRemovalType)
@@ -683,46 +678,56 @@ public static class AttackFunction
 
     private static void IncreaseMoraleFunction(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, HumanBattleData humanBattleData, int moraleGain)
     {
-        bool isPlayerTeam = playerTeam.Contains(monster) || monster == humanBattleData.playerHumanData;
-        bool isEnemyTeam = enemyTeam.Contains(monster) || monster == humanBattleData.enemyHumanData;
-
-        if (isPlayerTeam)
+        //Player Logic
+        if (playerTeam.Contains(monster))
         {
             BattleMoraleGauge.ChangeMoraleGauge(moraleData, moraleGain, true);
         }
 
-        if (isEnemyTeam)
+        if (humanBattleData.playerHumanData != null)
+            if (monster == humanBattleData.playerHumanData)
+            {
+                BattleMoraleGauge.ChangeMoraleGauge(moraleData, moraleGain, true);
+            }
+
+        //Enemy Logic
+        if (enemyTeam.Contains(monster))
         {
             BattleMoraleGauge.ChangeMoraleGauge(moraleData, moraleGain, false);
         }
-    }
 
+        if (humanBattleData.enemyHumanData != null)
+            if (monster == humanBattleData.enemyHumanData)
+            {
+                BattleMoraleGauge.ChangeMoraleGauge(moraleData, moraleGain, false);
+            }
+    }
 
     //Monster Target Defeated
     public static void CheckTargetDied(NBMonBattleDataSave targetMonster, NBMonBattleDataSave attackerMonster, SkillsDataBase.SkillInfoPlayFab attackerSkillData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, List<string> team1UniqueID_BF, DataSendToUnity dataFromAzureToClient)
     {
-        if (targetMonster.hp > 0)
-            return;
-
-        targetMonster.fainted = true;
-
-        if (!team1UniqueID_BF.Contains(targetMonster.uniqueId))
-            return;
-
-        bool attackerIsPlayer1 = team1UniqueID_BF.Contains(attackerMonster.uniqueId) || attackerMonster.monsterId == "Human";
-
-        if (!attackerIsPlayer1)
-            return;
-
-        foreach (var player1Monster in playerTeam)
+        //Let's Check if the TargetMonster's HP reached 0.
+        if(targetMonster.hp <= 0)
         {
-            if (team1UniqueID_BF.Contains(player1Monster.uniqueId))
-            AddEXP(targetMonster, player1Monster, dataFromAzureToClient, 1);
+            //TargetMonster becomes Fainted
+            targetMonster.fainted = true;
+
+            //Apply EXP to Every Single Monster (For Player Team Only), Check if the Attacker Monster is from Player 1 (or human) and the Killed Monster is not from Player 1
+            if((team1UniqueID_BF.Contains(attackerMonster.uniqueId) || attackerMonster.monsterId == "Human") && !team1UniqueID_BF.Contains(targetMonster.uniqueId))
+            {
+                foreach(var Player1Monster in playerTeam)
+                {
+                    if(team1UniqueID_BF.Contains(Player1Monster.uniqueId))
+                    {
+                        AddEXP(targetMonster, Player1Monster, dataFromAzureToClient, 1);
+                    }
+                }
+
+                //Add Growth Value to the Attacker.
+                AddGrowthValueToAttacker(attackerMonster, targetMonster);
+            }
         }
-
-        AddGrowthValueToAttacker(attackerMonster, targetMonster);
     }
-
 
     //Add EXP Function
     public static void AddEXP(NBMonBattleDataSave targetMonster, NBMonBattleDataSave attackerMonster, DataSendToUnity dataFromAzureToClient, int expDivider)
@@ -835,33 +840,32 @@ public static class AttackFunction
 
     public static void AddGrowthValueToAttacker(NBMonBattleDataSave attackerMonster, NBMonBattleDataSave targetMonster)
     {
-        var monsterDataBase = NBMonDatabase.FindMonster(targetMonster.monsterId);
+        int usedBaseStat = new int();
 
-        // Get the base stats for the target monster
+        var monsterDataBase = NBMonDatabase.FindMonster(targetMonster.monsterId);
         List<int> baseStats = new List<int>{
             monsterDataBase.monsterBaseStat.maxHpBase, monsterDataBase.monsterBaseStat.maxEnergyBase,
             monsterDataBase.monsterBaseStat.speedBase, monsterDataBase.monsterBaseStat.attackBase,
             monsterDataBase.monsterBaseStat.specialAttackBase, monsterDataBase.monsterBaseStat.defenseBase,
             monsterDataBase.monsterBaseStat.specialDefenseBase};
 
-        // Sort base stats in descending order and get the highest value
-        int usedBaseStat = baseStats.OrderByDescending(x => x).FirstOrDefault();
+        //Sort Base Stats Value from the hihgest
+        baseStats.OrderByDescending(x => x).ToList();
+        usedBaseStat = baseStats[0];
 
-        // Determine the species value based on the target monster's tier
-        float species = monsterDataBase.Tier switch
-        {
-            NBMonDatabase.NBMonTierType.Origin => 1f,
-            NBMonDatabase.NBMonTierType.Hybrid => 0.8f,
-            _ => 0.65f, // Assumes Wild for other tiers
-        };
+        float species = 0.65f; //Assumes Wild
 
-        // Calculate the growth value points
+        if (monsterDataBase.Tier == NBMonDatabase.NBMonTierType.Origin)
+            species = 1f;
+        else if (monsterDataBase.Tier == NBMonDatabase.NBMonTierType.Hybrid)
+            species = 0.8f;
+
+        //Calculate the Growth Value Points
         float growthPoints = species * (float)usedBaseStat / 20f;
 
-        // Add the growth points to the attacker monster's growth value
+        //Add the growthPoints value
         AddGrowthValueLogic(attackerMonster, usedBaseStat, monsterDataBase, growthPoints);
     }
-
 
     private static void AddGrowthValueLogic(NBMonBattleDataSave attackerMonster, int usedBaseStat, NBMonDatabase.MonsterInfoPlayFab monsterDataBase, float growthPoints)
     {
