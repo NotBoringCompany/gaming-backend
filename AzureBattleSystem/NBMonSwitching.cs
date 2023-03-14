@@ -32,122 +32,71 @@ public static class NBMonSwitching
     [FunctionName("NBMonSwitching")]
     public static async Task<dynamic> SwitchingAzure([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
     {
-        //Setup serverApi (Server API to PlayFab)
-        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
-        dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
+        // Read the request body
+        var requestBody = await req.ReadAsStringAsync();
 
-        //Request Team Information (Player and Enemy)
-        var requestTeamInformation = await serverApi.GetUserDataAsync(
-            new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"Team1UniqueID_BF", "Team2UniqueID_BF", "SortedOrder", "HumanBattleData"}
-            }
-        );
+        // Parse the input arguments
+        var inputArgs = JsonConvert.DeserializeObject<dynamic>(requestBody);
+        var inputUniqueID = inputArgs.inputUniqueID;
+        var switchInputValue = inputArgs.SwitchInput;
+        var hasMonsterDied = inputArgs.HasMonsterDied;
 
-        //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
-        List<string> AllMonsterUniqueID_BF = new List<string>();
-        List<string> Team1UniqueID_BF = new List<string>();
-        List<string> Team2UniqueID_BF = new List<string>();
-        List<String> SortedOrder = new List<string>();
-        string inputUniqueID = string.Empty;
-        NBMonSwitchingInput Input = new NBMonSwitchingInput();
-        dynamic SwitchInputValue = null;
-        bool hasMonsterDied = false;
-        HumanBattleData humanBattleData = new HumanBattleData();
-
-        //Check args["SwitchInput"] if it's null or not
-        if(args["SwitchInput"] != null && args["HasMonsterDied"] != null)
+        // Retrieve some data from a server API
+        var serverApi = AzureHelper.ServerAPISetup(inputArgs, null);
+        var teamData = await serverApi.GetUserDataAsync(new GetUserDataRequest
         {
-            //Let's extract the argument value to SwitchInputValue variable.
-            SwitchInputValue = args["SwitchInput"];
-            hasMonsterDied = args["HasMonsterDied"];
+            PlayFabId = inputArgs.PlayerUniqueID,
+            Keys = new List<string>{"Team1UniqueID_BF", "Team2UniqueID_BF", "SortedOrder", "HumanBattleData"}
+        });
 
-            //Change from Dynamic to String
-            string SwitchInputValueString = SwitchInputValue;
+        var team1 = JsonConvert.DeserializeObject<List<string>>(teamData.Result.Data["Team1UniqueID_BF"].Value);
+        var team2 = JsonConvert.DeserializeObject<List<string>>(teamData.Result.Data["Team2UniqueID_BF"].Value);
+        var sortedOrder = JsonConvert.DeserializeObject<List<string>>(teamData.Result.Data["SortedOrder"].Value);
+        var humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(teamData.Result.Data["HumanBattleData"].Value);
 
-            //Convert that argument into Input variable.
-            Input = JsonConvert.DeserializeObject<NBMonSwitchingInput>(SwitchInputValueString);
-        }
-
-        if(args["InputUniqueID"] != null)
+        // Check if the monster can switch
+        if (!hasMonsterDied)
         {
-            inputUniqueID = args["InputUniqueID"];
-        }
+            var monsterCanMove = EvaluateOrder.CheckBattleOrder(sortedOrder, inputUniqueID);
+            var monsterSwitched = EvaluateOrder.CheckBattleOrder(sortedOrder, switchInputValue.MonsterUniqueID_TargetSwitched);
 
-        //Convert from json to List<String>
-        Team1UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team1UniqueID_BF"].Value);
-        Team2UniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["Team2UniqueID_BF"].Value);
-        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
-        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
-
-        //Let's check the Team Credential First.
-        if(Input.TeamCredential == "Team 1") //Team 1 Logic
-        {
-            if(!hasMonsterDied)
+            if (!monsterCanMove)
             {
-                //Check if monster can switch (normally not ded)
-                var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, inputUniqueID);
-                var monsterSwitched = EvaluateOrder.CheckBattleOrder(SortedOrder, Input.MonsterUniqueID_TargetSwitched);
-
-                if(!monsterCanMove)
-                {
-                    return $"No Monster in the turn order. Error Code: RH-0001";
-                }
-    
+                return $"No monster in the turn order. Error Code: RH-0001";
             }
-
-            //Let's Delete the Existing NBMon in the Battle Field (for: Team Data and Global Data Variables)
-            foreach(var MonsterID in Team1UniqueID_BF)
-            {
-                if(Input.MonsterUniqueID_TargetSwitched == MonsterID)
-                {
-                    Team1UniqueID_BF.Remove(MonsterID);
-                    break;
-                }
-            }
-
-            //Let's Add the NBMon the Input want to Switch with.
-            if(!Team1UniqueID_BF.Contains(Input.MonsterUniqueID_Switch))
-                Team1UniqueID_BF.Add(Input.MonsterUniqueID_Switch);
         }
-        else //Team 2 Logic
+
+        // Switch the monsters
+        var team = inputArgs.TeamCredential == "Team 1" ? team1 : team2;
+        team.Remove(switchInputValue.MonsterUniqueID_TargetSwitched);
+        if (!team.Contains(switchInputValue.MonsterUniqueID_Switch))
         {
-            //Let's Delete the Existing NBMon in the Battle Field (for: Team Data and Global Data Variables)
-            foreach(var MonsterID in Team2UniqueID_BF)
-            {
-                if(Input.MonsterUniqueID_TargetSwitched == MonsterID)
-                {
-                    Team2UniqueID_BF.Remove(MonsterID);
-                    break;
-                }
-            }
-
-            //Let's Add the NBMon the Input want to Switch with.
-            if(!Team2UniqueID_BF.Contains(Input.MonsterUniqueID_Switch))
-                Team2UniqueID_BF.Add(Input.MonsterUniqueID_Switch);
+            team.Add(switchInputValue.MonsterUniqueID_Switch);
         }
 
-        //Let's add Both Teams again.
-        AllMonsterUniqueID_BF = Team1UniqueID_BF.Concat<string>(Team2UniqueID_BF).ToList<string>();
+        // Update the server API with the new data
+        var allMonsters = team1.Concat(team2).ToList();
+        allMonsters.Add(humanBattleData.playerHumanData.uniqueId);
 
-        //Let's add Humans Unique IDs.
-        AllMonsterUniqueID_BF.Add(humanBattleData.playerHumanData.uniqueId);
+        if (humanBattleData.enemyHumanData != null)
+        {
+            allMonsters.Add(humanBattleData.enemyHumanData.uniqueId);
+        }
 
-        if(humanBattleData.enemyHumanData != null)
-            AllMonsterUniqueID_BF.Add(humanBattleData.enemyHumanData.uniqueId);
-
-        //Update AllMonsterUniqueID_BF to Player Title Data
-        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
-            new UpdateUserDataRequest {
-             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
-                 {"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(AllMonsterUniqueID_BF)},
-                 {"Team1UniqueID_BF", JsonConvert.SerializeObject(Team1UniqueID_BF)},
-                 {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)},
-                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
-                }
+        var updateRequest = new UpdateUserDataRequest
+        {
+            PlayFabId = inputArgs.PlayerUniqueID,
+            Data = new Dictionary<string, string>
+            {
+                {"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(allMonsters)},
+                {"Team1UniqueID_BF", JsonConvert.SerializeObject(team1)},
+                {"Team2UniqueID_BF", JsonConvert.SerializeObject(team2)},
+                {"SortedOrder", JsonConvert.SerializeObject(sortedOrder)}
             }
-        );
+        };
 
+        var updateResult = await serverApi.UpdateUserDataAsync(updateRequest);
         return null;
     }
+
 }

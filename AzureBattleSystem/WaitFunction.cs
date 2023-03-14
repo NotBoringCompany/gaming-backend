@@ -31,50 +31,26 @@ public static class WaitFunction
         PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
 
         //Request Team Information (Player and Enemy)
-        var requestTeamInformation = await serverApi.GetUserDataAsync(
-            new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "SortedOrder", "HumanBattleData"}
-            }
-        );
-
-        //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
-        List<NBMonBattleDataSave> playerTeam = new List<NBMonBattleDataSave>();
-        List<NBMonBattleDataSave> enemyTeam = new List<NBMonBattleDataSave>();
-        List<NBMonBattleDataSave> currentNBMonOnBF = new List<NBMonBattleDataSave>();
-        List<String> sortedOrder = new List<string>();
-        string thisMonsterUniqueID = string.Empty;
-        HumanBattleData humanBattleData = new HumanBattleData();
-
-        //Check args["ThisMonsterUniqueID"] if it's null or not
-        if(args["ThisMonsterUniqueID"] != null)
-        {
-            dynamic Val = args["ThisMonsterUniqueID"];
-
-            thisMonsterUniqueID = Val.ToString();
-        }
+        var requestTeamInformation = await serverApi.GetUserDataAsync(new GetUserDataRequest { PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "SortedOrder", "HumanBattleData"} });
 
         //Convert from json to NBmonBattleDataSave
-        playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
-        enemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
-        sortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
-        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
+        List<NBMonBattleDataSave> playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
+        List<NBMonBattleDataSave> enemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+        List<String> sortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+        HumanBattleData humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
+
+        //Check args["ThisMonsterUniqueID"] if it's null or not
+        string thisMonsterUniqueID = args["ThisMonsterUniqueID"]?.ToString();
 
         //Let's Recover this Monster's Energy by 50 points.
-        var monster = UseItem.FindMonster(thisMonsterUniqueID, playerTeam, humanBattleData);
-
-        //If the Monster Variable still Null, let's find it using Enemy Team.
-        if(monster == null)
-        {
-            monster = UseItem.FindMonster(thisMonsterUniqueID, enemyTeam, humanBattleData);
-        }
+        var monster = UseItem.FindMonster(thisMonsterUniqueID, playerTeam, humanBattleData) ?? UseItem.FindMonster(thisMonsterUniqueID, enemyTeam, humanBattleData);
 
         //If monster found in the player team, let's check its turn order.
-        if(monster != null)
+        if (monster != null)
         {
             //Check if monster can attack
             var monsterCanMove = EvaluateOrder.CheckBattleOrder(sortedOrder, thisMonsterUniqueID);
-
-            if(!monsterCanMove)
+            if (!monsterCanMove)
             {
                 return $"No Monster in the turn order. Error Code: RH-0001";
             }
@@ -86,17 +62,17 @@ public static class WaitFunction
         NBMonTeamData.StatsValueChange(monster, NBMonProperties.StatsType.Energy, energyRecoveryResting);
 
         //Once the Sorted Monster's ID has been added into SortedOrder. Let's convert it into Json String and Send it into PlayFab (Player Title Data).
-        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
-            new UpdateUserDataRequest {
-             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
-                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)},
-                 {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
-                 {"SortedOrder", JsonConvert.SerializeObject(sortedOrder)},
-                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
-                }
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+            Data = new Dictionary<string, string>{
+                {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)},
+                {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
+                {"SortedOrder", JsonConvert.SerializeObject(sortedOrder)},
+                {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
             }
-        );
+        });
 
-        return $"{monster.nickName} / {monster.uniqueId} has recovered 50 Energy successfully!";
+        return $"{monster?.nickName} / {monster?.uniqueId} has recovered 50 Energy successfully!";
     }
+
 }

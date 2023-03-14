@@ -29,74 +29,57 @@ public static class GambitFunction
 
     //Cloud Function
     [FunctionName("MoraleBoost")]
-    public static async Task<dynamic> MoraleBoost([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-    ILogger log)
+    public static async Task<dynamic> MoraleBoost([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req, ILogger log)
     {
-        //Setup serverApi (Server API to PlayFab)
-        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
-        dynamic args = context.FunctionArgument;
-        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
+        // Setup serverApi (Server API to PlayFab)
+        var context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+        var args = context.FunctionArgument;
+        var serverApi = AzureHelper.ServerAPISetup(args, context);
 
-                //Request Team Information (Player and Enemy)
-        var requestTeamInformation = await serverApi.GetUserDataAsync(
-            new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId}
-        );
-
-        //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
-        BattleMoraleGauge.MoraleData moraleData = new BattleMoraleGauge.MoraleData();
-        HumanBattleData humanBattleData = new HumanBattleData();
-        List<string> SortedOrder = new List<string>();
-        string uniqueId = string.Empty;
-
-        //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
-        moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
-        humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
-        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
-
-        //Get Input from Client
-        if(args["InputFromClient"] != null)
+        // Get player and enemy team information
+        var requestTeamInformation = await serverApi.GetUserDataAsync(new GetUserDataRequest
         {
-            uniqueId = args["InputFromClient"];
-        }
-        else
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+        });
+
+        // Deserialize saved data
+        var moraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestTeamInformation.Result.Data["MoraleGaugeData"].Value);
+        var humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
+        var sortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+
+        // Get input from client
+        var uniqueId = args["InputFromClient"]?.ToString();
+        if (string.IsNullOrEmpty(uniqueId))
         {
-            return $"Error: RH-0005, no such Unique ID of {uniqueId} exist in the game";
+            return "Error: RH-0005, no Unique ID specified.";
         }
 
-        //Check if monster can move
-        var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, uniqueId);
-
-        //Gives Error if can't move
-        if(!monsterCanMove)
-            return $"Error: RH-0006, no such Unique ID of {uniqueId} exist in the SortedOrder";
-
-        //Let's get which team the uniqueId was.
-        //Check Team One
-        if(uniqueId == humanBattleData.playerHumanData.uniqueId)
+        // Check if the monster can move
+        var monsterCanMove = EvaluateOrder.CheckBattleOrder(sortedOrder, uniqueId);
+        if (!monsterCanMove)
         {
-            BattleMoraleGauge.ChangePlayerMoraleGauge(moraleData, 20);
+            return $"Error: RH-0006, no such Unique ID of {uniqueId} exist in the SortedOrder.";
         }
+
+        // Change morale gauge based on team
+        BattleMoraleGauge.ChangeMoraleGauge(moraleData, 20, uniqueId == humanBattleData.playerHumanData.uniqueId);
+
         
-        if(humanBattleData.enemyHumanData != null)
+        // Save updated data
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest
         {
-            if(uniqueId == humanBattleData.enemyHumanData.uniqueId)
-                BattleMoraleGauge.ChangeEnemyMoraleGauge(moraleData, 20);
-        }
-
-        //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
-        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
-            new UpdateUserDataRequest {
-             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
-                 {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
-                 {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)},
-                 {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
-                }
-            }
-        );
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+            Data = new Dictionary<string, string>
+            {
+                {"SortedOrder", JsonConvert.SerializeObject(sortedOrder)},
+                {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)},
+                {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)},
+            },
+        });
 
         return string.Empty;
     }
+
 
     //Cloud Function
     [FunctionName("GambitLogic")]
@@ -152,28 +135,24 @@ public static class GambitFunction
             return $"Error: RH-00002, Gambit Input is NULL.";
         }
 
-        if(gambitInput.team == "Team 1")
+        if (gambitInput.team == "Team 1")
         {
-            if(moraleData.playerMoraleGauge != 100)
+            if (moraleData.playerMoraleGauge != 100)
             {
-                return $"Error: RH-00003, Player Moral Gauge is not 100.";   
+                return "Error: RH-00003, Player Morale Gauge is not 100.";
             }
-            else
-            {
-                moraleData.playerMoraleGauge = 0;
-                moraleData.playerMoraleUsageCount ++;
-            }
+            
+            moraleData.playerMoraleGauge = 0;
+            moraleData.playerMoraleUsageCount++;
         }
         else
         {
-            if(moraleData.enemyMoraleGauge != 100)
+            if (moraleData.enemyMoraleGauge != 100)
             {
-                return $"Error: RH-00003, Enemy Moral Gauge is not 100.";   
+                return "Error: RH-00003, Enemy Morale Gauge is not 100.";
             }
-            else
-            {
-                moraleData.enemyMoraleGauge = 0;
-            }
+            
+            moraleData.enemyMoraleGauge = 0;
         }
 
         //Let's do Gambit Function
@@ -201,102 +180,87 @@ public static class GambitFunction
 
     public static void DanceRuptureFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
-        List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
-        List<NBMonBattleDataSave> targetMonsters = new List<NBMonBattleDataSave>();
-        int damage = new int();
-
-        //Check which team doing the gambit logic.
+        // Collect the monsters to be used and the target monsters
+        var usedMonsters = new List<NBMonBattleDataSave>();
+        var targetMonsters = new List<NBMonBattleDataSave>();
         CheckWhichTeamInAction(team, team1UniqueID_BF, team2UniqueID_BF, playerTeam, enemyTeam, humanBattleData, usedMonsters, targetMonsters);
 
-        //Let's said
-        int defaultDamagePercent = 10;
+        // Calculate the attack power
+        var defaultDamagePercent = 10;
+        var damage = usedMonsters.Count * defaultDamagePercent;
 
-        //Calculate their Attack Power and Special Attack Power
-        foreach (var monster in usedMonsters)
+        // Increase the damage per monster if the opposing team only has one monster
+        if (targetMonsters.Count == 1)
         {
-            damage += defaultDamagePercent;
+            damage *= 2;
         }
+        damage = (int)Math.Floor((float)damage / targetMonsters.Count);
 
-        //Damage per monster should be increased if the opposing team only have one monster.
-        damage = (int)Math.Floor((float)damage / (float)targetMonsters.Count * 2f);
-
+        // Apply the damage to the target monsters
         foreach (var target in targetMonsters)
         {
-            NBMonTeamData.StatsPercentageChange(target, NBMonProperties.StatsType.Hp, damage * -1);
+            NBMonTeamData.StatsPercentageChange(target, NBMonProperties.StatsType.Hp, -damage);
 
-            //Let's Check Target Monster if it's Fainted or not
+            // Check if the target monster has fainted
             AttackFunction.CheckTargetDied(target, usedMonsters[0], null, playerTeam, enemyTeam, team1UniqueID_BF, null);
         }
     }
 
     private static void CheckWhichTeamInAction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData, List<NBMonBattleDataSave> usedMonsters, List<NBMonBattleDataSave> targetMonsters)
     {
-        if (team == "Team 1")
+        var team1Monsters = (team == "Team 1") ? team1UniqueID_BF : team2UniqueID_BF;
+        var team2Monsters = (team == "Team 1") ? team2UniqueID_BF : team1UniqueID_BF;
+
+        foreach (var monsterId in team1Monsters)
         {
-            foreach (var monsterId in team1UniqueID_BF)
-            {
-                var monster = UseItem.FindMonster(monsterId, playerTeam, humanBattleData);
+            var monster = UseItem.FindMonster(monsterId, playerTeam, humanBattleData);
 
-                if (!monster.fainted)
+            if (!monster.fainted)
+            {
+                if (team == "Team 1")
                     usedMonsters.Add(monster);
-            }
-
-            foreach (var monsterId in team2UniqueID_BF)
-            {
-                var monster = UseItem.FindMonster(monsterId, enemyTeam, humanBattleData);
-
-                if (!monster.fainted)
+                else
                     targetMonsters.Add(monster);
             }
         }
-        else //Team 2 Logic. Player Monster becomes the target monster.
+
+        foreach (var monsterId in team2Monsters)
         {
-            foreach (var monsterId in team1UniqueID_BF)
-            {
-                var monster = UseItem.FindMonster(monsterId, playerTeam, humanBattleData);
+            var monster = UseItem.FindMonster(monsterId, enemyTeam, humanBattleData);
 
-                if (!monster.fainted)
+            if (!monster.fainted)
+            {
+                if (team == "Team 1")
                     targetMonsters.Add(monster);
-            }
-
-            foreach (var monsterId in team2UniqueID_BF)
-            {
-                var monster = UseItem.FindMonster(monsterId, enemyTeam, humanBattleData);
-
-                if (!monster.fainted)
+                else
                     usedMonsters.Add(monster);
             }
         }
     }
+
 
     public static void RevitalizeFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
     {
         List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
         int recoveryPercentage = 15;
 
-        if(team == "Team 1")
+        // Determine which team to apply the function to and collect the active monsters
+        if (team == "Team 1")
         {
-            foreach(var monsterId in team1UniqueID_BF)
-            {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, playerTeam, humanBattleData));
-            }
+            usedMonsters = team1UniqueID_BF.Select(id => UseItem.FindMonster(id, playerTeam, humanBattleData)).Where(monster => !monster.fainted).ToList();
         }
         else
         {
-            foreach(var monsterId in team2UniqueID_BF)
-            {
-                usedMonsters.Add(UseItem.FindMonster(monsterId, enemyTeam, humanBattleData));
-            }
+            usedMonsters = team2UniqueID_BF.Select(id => UseItem.FindMonster(id, enemyTeam, humanBattleData)).Where(monster => !monster.fainted).ToList();
         }
 
-        //Recover all active member party HP and Energy in the field.
-        foreach(var monster in usedMonsters)
-        {
+        // Recover HP and Energy of active monsters
+        usedMonsters.ForEach(monster => {
             NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Hp, recoveryPercentage);
             NBMonTeamData.StatsPercentageChange(monster, NBMonProperties.StatsType.Energy, recoveryPercentage);
-        }
+        });
     }
-    
+
     public static void GuardianFunction(string team, List<string> team1UniqueID_BF, List<string> team2UniqueID_BF, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, RNGSeedClass seedClass, HumanBattleData humanBattleData)
     {
         //Declared New Variable.

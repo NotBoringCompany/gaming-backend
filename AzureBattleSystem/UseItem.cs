@@ -129,60 +129,45 @@ public static class UseItem
     }
 
     //Add Status Effect
-    public static void ApplyStatusEffect(NBMonBattleDataSave ThisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList, ILogger log = null, bool DoNotApplyPassive = false, RNGSeedClass seedClass = null)
+    public static void ApplyStatusEffect(NBMonBattleDataSave thisMonster, List<NBMonProperties.StatusEffectInfo> statusEffects, ILogger logger = null, bool skipPassive = false, RNGSeedClass seed = null)
+{
+    foreach (var statusEffect in statusEffects)
     {
-        //If there is no existing opposite status start by adding new data
-        foreach (var statusEffectInfo in statusEffectInfoList)
+        var rng = EvaluateOrder.ConvertSeedToRNG(seed);
+
+        var existingStatusEffect = FindNBMonStatusEffect(thisMonster, statusEffect);
+        var statusEffectExists = existingStatusEffect != null;
+        var elementImmunity = FindStatusEffectFromDatabase((int)statusEffect.statusEffect).elementImmunity;
+
+        var monsterData = NBMonDatabase.FindMonster(thisMonster.monsterId);
+        var monsterImmune = monsterData.elements.Contains(FindStatusEffectFromDatabase((int)statusEffect.statusEffect).immuneAgainstElement);
+
+        if (elementImmunity && monsterImmune)
         {
-            //Make RNG Chances vary between Loop
-            var RNG = EvaluateOrder.ConvertSeedToRNG(seedClass);
+            continue;
+        }
 
-            // Store variables related with the status effect
-            bool statusEffectExist = FindNBMonStatusEffect(ThisMonster, statusEffectInfo) != null;
-            var ThisMonsterStatusEffect = FindNBMonStatusEffect(ThisMonster, statusEffectInfo);
+        if (rng > statusEffect.triggerChance)
+        {
+            continue;
+        }
 
-            bool ElementImmunity = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect).elementImmunity;
+        if (!statusEffectExists)
+        {
+            AddNewStatusEffect(statusEffect.statusEffect, statusEffect.countAmmount, statusEffect.stackAmount, thisMonster);
+        }
+        else
+        {
+            ModifyStatusEffectValue(statusEffect.statusEffect, statusEffect.countAmmount, statusEffect.stackAmount, statusEffect, existingStatusEffect, thisMonster);
+        }
 
-            NBMonDatabase.MonsterInfoPlayFab MonsterData = NBMonDatabase.FindMonster(ThisMonster.monsterId);
-
-            bool MonsterImmune = MonsterData.elements.Contains(FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect).immuneAgainstElement);
-
-            //Status Effect Immunity based on Monster's Element.
-            if(ElementImmunity)
-            {
-                //Find Monster Data First and Check if the Monster contains the Element which make the Status Effect unaffected by this Monster.
-                if(MonsterImmune)
-                {
-                   continue; 
-                }
-            }
-
-            //Status Effect RNG
-            if (RNG > statusEffectInfo.triggerChance)
-            {
-                //Indicating the Apply Status Effect failes because the RNG Value is higher then the chance
-                continue;
-            }
-
-            if (!statusEffectExist) //If the Status Effect is not inside This Monster.
-            {
-                //Add new status effect if the NBMon don't have this status effect
-                AddNewStatusEffect(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, ThisMonster);
-            }
-            else if (statusEffectExist) //If the Status Effect already inside This Monster
-            {
-                //Check if the Status Effect is Stackable
-                ModifyStatusEffectValue(statusEffectInfo.statusEffect, statusEffectInfo.countAmmount, statusEffectInfo.stackAmount, statusEffectInfo, ThisMonsterStatusEffect, ThisMonster);
-            }
-           
-            //Check if the function does not want to Apply Passive (used to avoid Infinite Loop Error).
-            if(!DoNotApplyPassive)
-            {
-                //Apply passives that works when received status effect.
-                PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ReceiveStatusEffect, PassiveDatabase.TargetType.originalMonster, ThisMonster, null, null, seedClass);
-            }
+        if (!skipPassive)
+        {
+            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.ReceiveStatusEffect, PassiveDatabase.TargetType.originalMonster, thisMonster, null, null, seed);
         }
     }
+}
+
 
     //Find Status Effect from Database
     public static StatusEffectIconDatabase.StatusConditionDataPlayFab FindStatusEffectFromDatabase(int StatusEffectInt)
@@ -237,54 +222,42 @@ public static class UseItem
     }
 
     //Add New Status Effect to ThisMonster
-    public static void ModifyStatusEffectValue(NBMonProperties.StatusEffect statusEffect, int count, int stacks, NBMonProperties.StatusEffectInfo statusEffectInfo, StatusEffectList thisMonsterStatusEffect, NBMonBattleDataSave ThisMonster)
+    public static void ModifyStatusEffectValue(NBMonProperties.StatusEffect statusEffect, int count, int stacks, NBMonProperties.StatusEffectInfo statusEffectInfo, StatusEffectList thisMonsterStatusEffect, NBMonBattleDataSave thisMonster)
     {
-        //Declare Variables
-        var StatusEffectFromDatabase = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect);
-        int MaximumStacks = StatusEffectFromDatabase.maxStacks;
-        bool Stackable = StatusEffectFromDatabase.stackable;
+        var statusEffectFromDatabase = FindStatusEffectFromDatabase((int)statusEffectInfo.statusEffect);
+        int maxStacks = statusEffectFromDatabase.maxStacks;
+        bool stackable = statusEffectFromDatabase.stackable;
 
-        //Add Duration to the Status Effect (up to it's original value)
-        if(thisMonsterStatusEffect.counter < count)
+        if (thisMonsterStatusEffect.counter < count)
             thisMonsterStatusEffect.counter = count;
 
-        //Check if the Status Effect can Stack
-        if(Stackable)
+        if (stackable)
         {
             thisMonsterStatusEffect.stacks += stacks;
 
-            if(thisMonsterStatusEffect.stacks > MaximumStacks)
-            {
-                thisMonsterStatusEffect.stacks = MaximumStacks;
-            }
+            if (thisMonsterStatusEffect.stacks > maxStacks)
+                thisMonsterStatusEffect.stacks = maxStacks;
         }
     }
+
 
     //Remove Status Effect
     public static void RemoveStatusEffect(NBMonBattleDataSave thisMonster, List<NBMonProperties.StatusEffectInfo> statusEffectInfoList)
     {
         foreach (var statusEffectInfo in statusEffectInfoList)
         {
-            for (int i = thisMonster.statusEffectList.Count - 1; i >= 0; i--)
-            {
-                if ((int)statusEffectInfo.statusEffect == thisMonster.statusEffectList[i].statusEffect)
-                {
-                    thisMonster.statusEffectList.RemoveAt(i);
-                }
-            }
+            thisMonster.statusEffectList.RemoveAll(s => (int)statusEffectInfo.statusEffect == s.statusEffect);
         }
     }
 
-    public static void RemoveAllStatusEFfect_AskedRemoval(NBMonBattleDataSave thisMonster, SkillsDataBase.RemoveStatusEffectType askedRemoval)
-    {
-        for (int i = thisMonster.statusEffectList.Count-1; i >= 0; i--)
-        {
-            var statusEffect = thisMonster.statusEffectList[i];
-            var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
 
-            if(statusEffectData.statusEffectType == askedRemoval)
-                thisMonster.statusEffectList.Remove(statusEffect);
-        }
+    public static void RemoveStatusEffectByType(NBMonBattleDataSave thisMonster, SkillsDataBase.RemoveStatusEffectType statusType)
+    {
+        thisMonster.statusEffectList.RemoveAll(statusEffect =>
+        {
+            var statusEffectData = UseItem.FindStatusEffectFromDatabase(statusEffect.statusEffect);
+            return statusEffectData.statusEffectType == statusType;
+        });
     }
 
     public static void RemoveAllStatusEFfect(NBMonBattleDataSave thisMonster)
@@ -309,129 +282,119 @@ public static class UseItem
         );
         
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
-        List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
-        List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
-        NBMonBattleDataSave ThisMonster = new NBMonBattleDataSave();
-        UseItemDataInput ConvertedInputData = new UseItemDataInput();
-        ItemsPlayFab UsedItem = new ItemsPlayFab();
+        List<NBMonBattleDataSave> playerTeam = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> enemyTeam = new List<NBMonBattleDataSave>();
+        NBMonBattleDataSave thisMonster = new NBMonBattleDataSave();
+        UseItemDataInput convertedInputData = new UseItemDataInput();
+        ItemsPlayFab usedItem = new ItemsPlayFab();
         RNGSeedClass seedClass = new RNGSeedClass();
-        dynamic UseItemInputValue = null;
-        List<string> SortedOrder = new List<string>();
-        bool NonCombat = new bool();
+        dynamic useItemInputValue = null;
+        List<string> sortedOrder = new List<string>();
+        bool nonCombat = new bool();
         HumanBattleData humanBattleData = new HumanBattleData();
 
         //Check args["UseItemInput"] if it's null or not
         if(args["UseItemInput"] != null)
         {
             //Let's extract the argument value to SwitchInputValue variable.
-            UseItemInputValue = args["UseItemInput"];
+            useItemInputValue = args["UseItemInput"];
 
             //Change from Dynamic to String
-            string UseItemInputValueString = UseItemInputValue;
+            string UseItemInputValueString = useItemInputValue;
 
             //Convert that argument into Input variable.
-            ConvertedInputData = JsonConvert.DeserializeObject<UseItemDataInput>(UseItemInputValueString);
+            convertedInputData = JsonConvert.DeserializeObject<UseItemDataInput>(UseItemInputValueString);
         }
 
         //Check it UseItem is called on Non Combat.
         if(args["NonCombat"] != null)
-            NonCombat = true;
+            nonCombat = true;
         else
-            NonCombat = false;
+            nonCombat = false;
 
         //Convert from json to NBmonBattleDataSave and Other Type Data (String for Battle Environment).
-        PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
-        EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+        playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
+        enemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         seedClass = JsonConvert.DeserializeObject<RNGSeedClass>(requestTeamInformation.Result.Data["RNGSeeds"].Value);
-        SortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
+        sortedOrder = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["SortedOrder"].Value);
         humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
         
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
 
         //Send Data to Static Team Data
-        NBMonTeamData.PlayerTeam = PlayerTeam;
-        NBMonTeamData.EnemyTeam = EnemyTeam;
+        NBMonTeamData.PlayerTeam = playerTeam;
+        NBMonTeamData.EnemyTeam = enemyTeam;
 
         //Find Item
-        UsedItem = FindItem(ConvertedInputData.ItemName);
+        usedItem = FindItem(convertedInputData.ItemName);
 
-        log.LogInformation($"Is Item {ConvertedInputData.ItemName} Found? {UsedItem != null}");
+        log.LogInformation($"Is Item {convertedInputData.ItemName} Found? {usedItem != null}");
 
         //Check if monster can use item
-        var monsterCanMove = EvaluateOrder.CheckBattleOrder(SortedOrder, ConvertedInputData.InputMonsterUniqueID);
+        var monsterCanMove = EvaluateOrder.CheckBattleOrder(sortedOrder, convertedInputData.InputMonsterUniqueID);
 
         if(!monsterCanMove)
         {
             return $"No Monster in the turn order. Error Code: RH-0001";
         }
 
-        //When UsedItem is not Null, Let's recover their stats.
-        if(UsedItem != null)
-        {
-            //Find This Monster on player team 1
-            ThisMonster = FindMonster(ConvertedInputData.UsedMonsterUniqueID, PlayerTeam, humanBattleData);
-
-            //if this monster still null, check team 2
-            if(ThisMonster == null)
-                ThisMonster = FindMonster(ConvertedInputData.UsedMonsterUniqueID, EnemyTeam, humanBattleData);
-
-            //Setup HP's Tooltip
-            int TotalHPRecovery = UsedItem.HPRecovery + (int)Math.Floor((float)UsedItem.HPRecovery_Percentage/100f * (float)ThisMonster.maxHp);
-            int TotalEnergyRecovery = UsedItem.EnergyRecover + (int)Math.Floor((float)UsedItem.EnergyRecover_Percentage/100f * (float)ThisMonster.maxEnergy);
-
-            log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} found!");
-
-            //If This Monster is Not NULL
-            if(ThisMonster != null)
-            {
-                //Recover HP
-                ThisMonster.hp += TotalHPRecovery;
-                if(ThisMonster.hp > ThisMonster.maxHp)
-                    ThisMonster.hp = ThisMonster.maxHp;
-
-                log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} HP Recovered!");
-
-                //Energy Recovery
-                ThisMonster.energy += TotalEnergyRecovery;
-                if(ThisMonster.energy > ThisMonster.maxEnergy)
-                    ThisMonster.energy = ThisMonster.maxEnergy;
-
-                log.LogInformation($"Monster {ThisMonster.nickName} with {ThisMonster.uniqueId} Energy Recovered!");
-
-                if(!NonCombat) //Apply Status Effect is only called during Combat.
-                {
-                    //Add Status Effect
-                    ApplyStatusEffect(ThisMonster, UsedItem.AddStatusEffects, log, false, seedClass);
-                }
-
-                //Remove Status Effect
-                RemoveStatusEffect(ThisMonster, UsedItem.RemovesStatusEffects);
-                
-                //remove Status Effect using Criteria
-                AttackFunction.HardCodedRemoveStatusEffect(ThisMonster, UsedItem.removeStatusEffectType);
-
-                //return JsonConvert.SerializeObject(PlayerTeam);
-                var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
-                        PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, 
-                        Data = new Dictionary<string, string>{ 
-                            {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
-                            {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
-                            {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
-                            {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
-                    }
-                });
-
-                return "Item Usage Success";
-            }
-            else
-            {
-                return "Monster Not Found!";
-            }
-        }
-        else
+        if (usedItem == null)
         {
             return "Item Data Not Found!";
         }
+
+        // Find the monster that used the item
+        thisMonster = FindMonster(convertedInputData.UsedMonsterUniqueID, playerTeam, humanBattleData);
+
+        // If the monster isn't on player team 1, check team 2
+        if (thisMonster == null)
+        {
+            thisMonster = FindMonster(convertedInputData.UsedMonsterUniqueID, enemyTeam, humanBattleData);
+        }
+
+        // If the monster still isn't found, return an error message
+        if (thisMonster == null)
+        {
+            return "Monster Not Found!";
+        }
+
+        // Recover HP and energy
+        int TotalHPRecovery = usedItem.HPRecovery + (int)Math.Floor((float)usedItem.HPRecovery_Percentage / 100f * (float)thisMonster.maxHp);
+        int TotalEnergyRecovery = usedItem.EnergyRecover + (int)Math.Floor((float)usedItem.EnergyRecover_Percentage / 100f * (float)thisMonster.maxEnergy);
+        thisMonster.hp += TotalHPRecovery;
+
+        if (thisMonster.hp > thisMonster.maxHp)
+        {
+            thisMonster.hp = thisMonster.maxHp;
+        }
+        thisMonster.energy += TotalEnergyRecovery;
+        if (thisMonster.energy > thisMonster.maxEnergy)
+        {
+            thisMonster.energy = thisMonster.maxEnergy;
+        }
+
+        // Apply and remove status effects if applicable
+        if (!nonCombat)
+        {
+            ApplyStatusEffect(thisMonster, usedItem.AddStatusEffects, log, false, seedClass);
+        }
+            RemoveStatusEffect(thisMonster, usedItem.RemovesStatusEffects);
+            AttackFunction.HardCodedRemoveStatusEffect(thisMonster, usedItem.removeStatusEffectType);
+
+        // Serialize updated player data and return success message
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest
+        {
+            PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+            Data = new Dictionary<string, string>{
+                {"SortedOrder", JsonConvert.SerializeObject(sortedOrder)},
+                {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)},
+                {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
+                {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
+            }
+        });
+
+        return "Item Usage Success";
+
     }
 }
