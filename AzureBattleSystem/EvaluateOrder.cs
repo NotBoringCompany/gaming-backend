@@ -155,8 +155,10 @@ public static class EvaluateOrder
 
         //Request Team Information (Player and Enemy)
         var requestTeamInformation = await serverApi.GetUserDataAsync(
-            new GetUserDataRequest { 
-                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Keys = new List<string>{"CurrentPlayerTeam", "EnemyTeam", "AllMonsterUniqueID_BF", "BattleEnvironment", "HumanBattleData"}
+            new GetUserDataRequest
+            {
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Keys = new List<string> { "CurrentPlayerTeam", "EnemyTeam", "AllMonsterUniqueID_BF", "BattleEnvironment", "HumanBattleData" }
             }
         );
 
@@ -176,13 +178,13 @@ public static class EvaluateOrder
         HumanBattleData humanBattleData = new HumanBattleData();
 
         //Check args["BattleAdvantage"] if it's null or not
-        if(args["BattleAdvantage"] != null)
+        if (args["BattleAdvantage"] != null)
             BattleCondition = (int)args["BattleAdvantage"];
         else
             BattleCondition = 0; //Default Battle Condition
 
         //Check args["Turn"] if it's null or not
-        if(args["Turn"] != null)
+        if (args["Turn"] != null)
             CurrentTurn = (int)args["Turn"];
         else
             CurrentTurn = 1;
@@ -192,7 +194,7 @@ public static class EvaluateOrder
         EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
         AllMonsterUniqueID_BF = JsonConvert.DeserializeObject<List<string>>(requestTeamInformation.Result.Data["AllMonsterUniqueID_BF"].Value);
         humanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestTeamInformation.Result.Data["HumanBattleData"].Value);
-        
+
         //Insert Battle Environment Value into Static Variable from Attack Function.
         AttackFunction.BattleEnvironment = requestTeamInformation.Result.Data["BattleEnvironment"].Value;
 
@@ -201,110 +203,13 @@ public static class EvaluateOrder
         NBMonTeamData.EnemyTeam = EnemyTeam;
 
         //Let's find NBMon in BF using AllMonsterUniqueID_BF
-        foreach(var monsterUniqueID in AllMonsterUniqueID_BF)
-        {
-            ///BattleCondition = 0, Normal Battle
-            ///BattleCondition = 1, Player Advantage
-            ///BattleCondition = -1. Enemy Advantage
-
-            //CurrentTurn = 0, First Turn
-            //CurrentTurn > 0, Second Turn and So On
-
-            if(BattleCondition == 0 || BattleCondition == 1)
-            {
-                var playerNBMonData = NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, PlayerTeam);
-
-                if(playerNBMonData == null && monsterUniqueID == humanBattleData.playerHumanData.uniqueId)
-                    playerNBMonData = humanBattleData.playerHumanData;
-
-                if(playerNBMonData != null)
-                {
-                    if(playerNBMonData.fainted || playerNBMonData.hp <= 0)
-                        continue;
-
-                    CurrentNBMonOnBF.Add(playerNBMonData);
-
-                    //Let's return This Monster's Battle Speed into Normal Speed First.
-                    playerNBMonData.battleSpeed = playerNBMonData.speed;
-
-                    //Reset Temporary Passive
-                    playerNBMonData.temporaryPassives.Clear();
-
-                    //Do Passive Logics for Player NBMon in Battle Field
-                    if(CurrentTurn == 0) //when Enter Battle Field.
-                    {
-                        //Apply passives that works when received status effect.
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.AtTheStartOfTheBattle, PassiveDatabase.TargetType.originalMonster, playerNBMonData, null, null, newSeedClass);
-                    }
-                    else //Second Turn and So On.
-                    {
-                        //Decrease Status Effect Counter At the start of the Turn
-                        DecreaseCounter(playerNBMonData);
-                        
-                        //Add NBMon Energy
-                        NBMonTeamData.StatsValueChange(playerNBMonData, NBMonProperties.StatsType.Energy, EnergyRecoveryPerTurn(playerNBMonData));
-                    }
-
-                    //Apply passives that works when received status effect. (Turn Start).
-                    PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, playerNBMonData, null, null, newSeedClass);
-
-                    //Status Effect Logic during Start Turn.
-                    ApplyEffectsOnStartTurn(playerNBMonData);
-                    continue;
-                }
-            }
-
-            if(BattleCondition == 0 || BattleCondition == -1)
-            {
-                var enemyNBMonData =  NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, EnemyTeam);
-
-                if(humanBattleData.enemyHumanData != null) //Check if the enemyHumanData is null or not.
-                    if(enemyNBMonData == null && monsterUniqueID == humanBattleData.enemyHumanData.uniqueId)
-                        enemyNBMonData = humanBattleData.enemyHumanData;
-
-                if(enemyNBMonData != null)
-                {
-                    if(enemyNBMonData.fainted || enemyNBMonData.hp <= 0)
-                        continue;
-
-                    CurrentNBMonOnBF.Add(enemyNBMonData);
-
-                    //Let's return This Monster's Battle Speed into Normal Speed First.
-                    enemyNBMonData.battleSpeed = enemyNBMonData.speed;
-
-                    //Reset Temporary Passive
-                    enemyNBMonData.temporaryPassives.Clear();
-
-                    //Do Passive Logics for Enemy in Battle Field
-                    if(CurrentTurn == 0) //when Enter Battle Field.
-                    {
-                        //Apply passives that works when received status effect.
-                        PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.AtTheStartOfTheBattle, PassiveDatabase.TargetType.originalMonster, enemyNBMonData, null, null, newSeedClass);
-                    }
-                    else //Second Turn and So On.
-                    {
-                        //Decrease Status Effect Counter At the start of the Turn
-                        DecreaseCounter(enemyNBMonData);
-
-                        //Add NBMon Energy
-                        NBMonTeamData.StatsValueChange(enemyNBMonData, NBMonProperties.StatsType.Energy, EnergyRecoveryPerTurn(enemyNBMonData));
-                    }
-
-                    //Apply passives that works when received status effect. (Turn Start).
-                    PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, enemyNBMonData, null, null, newSeedClass);
-
-                    //Status Effect Logic during Start Turn.
-                    ApplyEffectsOnStartTurn(enemyNBMonData);
-                    continue;
-                }
-            }
-        }
+        ServerOrderLogic(newSeedClass, PlayerTeam, EnemyTeam, CurrentNBMonOnBF, AllMonsterUniqueID_BF, BattleCondition, CurrentTurn, humanBattleData);
 
         //After getting the NBMons to be sorted, let's sort it by Battle Speed.
         CurrentNBMonOnBF = CurrentNBMonOnBF.OrderByDescending(f => f.battleSpeed).ToList();
 
         //After sorted by Battle Speed, add their Unique IDs into the SortOrder String List.
-        foreach(var SortedMonster in CurrentNBMonOnBF)
+        foreach (var SortedMonster in CurrentNBMonOnBF)
         {
             SortedOrder.Add(SortedMonster.uniqueId);
         }
@@ -313,8 +218,10 @@ public static class EvaluateOrder
 
         //Once the Sorted Monster's ID has been added into SortedOrder. Let's convert it into Json String and Send it into PlayFab (Player Title Data).
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
-            new UpdateUserDataRequest {
-             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+            new UpdateUserDataRequest
+            {
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Data = new Dictionary<string, string>{
                  {"SortedOrder", JsonConvert.SerializeObject(SortedOrder)},
                  {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
                  {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
@@ -323,12 +230,90 @@ public static class EvaluateOrder
                 }
             }
         );
-        
+
         var SortedOrderJsonString = JsonConvert.SerializeObject(SortedOrder);
 
         return SortedOrderJsonString;
     }
 
+    private static void ServerOrderLogic(RNGSeedClass newSeedClass, List<NBMonBattleDataSave> PlayerTeam, List<NBMonBattleDataSave> EnemyTeam, List<NBMonBattleDataSave> CurrentNBMonOnBF, List<string> AllMonsterUniqueID_BF, int BattleCondition, int CurrentTurn, HumanBattleData humanBattleData)
+    {
+        foreach (var monsterUniqueID in AllMonsterUniqueID_BF)
+        {
+            var nbMonData = FindNBMonData(monsterUniqueID, BattleCondition, PlayerTeam, EnemyTeam, humanBattleData);
+
+            if (nbMonData == null || nbMonData.fainted || nbMonData.hp <= 0)
+            {
+                continue;
+            }
+
+            CurrentNBMonOnBF.Add(nbMonData);
+
+            nbMonData.battleSpeed = nbMonData.speed;
+            nbMonData.temporaryPassives.Clear();
+
+            //Decrease Status Effect Counter.
+            DecreaseCounter(nbMonData);
+            NBMonTeamData.StatsValueChange(nbMonData, NBMonProperties.StatsType.Energy, EnergyRecoveryPerTurn(nbMonData));
+
+            ApplyPassiveEffects(newSeedClass, CurrentTurn, nbMonData);
+            
+            ApplyEffectsOnStartTurn(nbMonData);
+        }
+    }
+
+    private static NBMonBattleDataSave FindNBMonData(string monsterUniqueID, int battleCondition, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, HumanBattleData humanBattleData)
+    {
+        if (battleCondition == 1 || battleCondition == 0)
+        {
+            var nbMonData = NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, playerTeam);
+
+            if (nbMonData == null && monsterUniqueID == humanBattleData.playerHumanData?.uniqueId)
+            {
+                nbMonData = humanBattleData.playerHumanData;
+            }
+
+            if (nbMonData != null)
+            {
+                return nbMonData;
+            }
+        }
+
+        if (battleCondition == -1 || battleCondition == 0)
+        {
+            var nbMonData = NBMonDatabase_Azure.FindNBMonDataUsingUniqueID(monsterUniqueID, enemyTeam);
+
+            if (nbMonData == null && monsterUniqueID == humanBattleData.enemyHumanData?.uniqueId)
+            {
+                nbMonData = humanBattleData.enemyHumanData;
+            }
+
+            if (nbMonData != null)
+            {
+                return nbMonData;
+            }
+        }
+
+        return null;
+    }
+
+
+    private static void ApplyPassiveEffects(RNGSeedClass newSeedClass, int currentTurn, NBMonBattleDataSave nbMonData)
+    {
+        //Apply passives at the start of the battle
+        if (currentTurn == 0)
+        {
+            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.AtTheStartOfTheBattle, PassiveDatabase.TargetType.originalMonster, nbMonData, null, null, newSeedClass);
+        }
+
+        //Apply passives for each turn, includes at the start of the battle as well.
+        if (currentTurn >= 0)
+        {
+            PassiveLogic.ApplyPassive(PassiveDatabase.ExecutionPosition.TurnStart, PassiveDatabase.TargetType.originalMonster, nbMonData, null, null, newSeedClass);
+        }
+    }
+
+    
     public static bool CheckBattleOrder(List<string> sortedOrder, string selectedMonsterUniqueID)
     {
         //Let's check the selectedMonsterUniqueID. If exisst, removes the monster from the sorted Order.

@@ -222,7 +222,7 @@ public static class AttackFunction
         if(statusEffectRemovalType == SkillsDataBase.RemoveStatusEffectType.None)
             return;
 
-        UseItem.RemoveAllStatusEFfect_AskedRemoval(selectedMonster, statusEffectRemovalType);
+        UseItem.RemoveStatusEffectByType(selectedMonster, statusEffectRemovalType);
 
         //Remove All Status Effect if the skill does that
         if (statusEffectRemovalType == SkillsDataBase.RemoveStatusEffectType.All)
@@ -678,19 +678,29 @@ public static class AttackFunction
 
     private static void IncreaseMoraleFunction(BattleMoraleGauge.MoraleData moraleData, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, NBMonBattleDataSave monster, HumanBattleData humanBattleData, int moraleGain)
     {
-        bool isPlayerTeam = playerTeam.Contains(monster) || monster == humanBattleData.playerHumanData;
-        bool isEnemyTeam = enemyTeam.Contains(monster) || monster == humanBattleData.enemyHumanData;
-
-        if (isPlayerTeam)
+        //Player Logic
+        if (playerTeam.Contains(monster))
         {
-            BattleMoraleGauge.ChangePlayerMoraleGauge(moraleData, moraleGain);
+            BattleMoraleGauge.ChangeMoraleGauge(moraleData, moraleGain, true);
         }
+
+        if (humanBattleData.playerHumanData != null)
+            if (monster == humanBattleData.playerHumanData)
+            {
+                BattleMoraleGauge.ChangeMoraleGauge(moraleData, moraleGain, true);
+            }
 
         //Enemy Logic
         if (enemyTeam.Contains(monster))
         {
-            BattleMoraleGauge.ChangeEnemyMoraleGauge(moraleData, moraleGain);
+            BattleMoraleGauge.ChangeMoraleGauge(moraleData, moraleGain, false);
         }
+
+        if (humanBattleData.enemyHumanData != null)
+            if (monster == humanBattleData.enemyHumanData)
+            {
+                BattleMoraleGauge.ChangeMoraleGauge(moraleData, moraleGain, false);
+            }
     }
 
     //Monster Target Defeated

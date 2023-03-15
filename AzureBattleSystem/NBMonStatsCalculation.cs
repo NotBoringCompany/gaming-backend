@@ -139,64 +139,26 @@ public static class NBMonStatsCalculation
     public static void StatsCalculation(NBMonBattleDataSave monsterInfo, NBMonDatabase.MonsterInfoPlayFab monsterFromDatabase, bool resetMonsterStats = false)
     {
         int level = monsterInfo.level;
+        var baseStats = monsterFromDatabase.monsterBaseStat;
 
-        monsterInfo.maxHp =
-            HPStatCalculation(monsterFromDatabase.monsterBaseStat.maxHpBase, 
-            level, 
-            monsterInfo.maxHpPotential, 
-            monsterInfo.maxHpEffort);
+        monsterInfo.maxHp = HPStatCalculation(baseStats.maxHpBase, level, monsterInfo.maxHpPotential, monsterInfo.maxHpEffort);
+        monsterInfo.maxEnergy = EnergyStatCalculation(baseStats.maxEnergyBase, level, monsterInfo.maxEnergyPotential, monsterInfo.maxEnergyEffort);
+        monsterInfo.speed = OtherStatsCalculation(baseStats.speedBase, level, monsterInfo.speedPotential, monsterInfo.speedEffort);
+        monsterInfo.attack = OtherStatsCalculation(baseStats.attackBase, level, monsterInfo.attackPotential, monsterInfo.attackEffort);
+        monsterInfo.specialAttack = OtherStatsCalculation(baseStats.specialAttackBase, level, monsterInfo.specialAttackPotential, monsterInfo.specialAttackEffort);
+        monsterInfo.defense = OtherStatsCalculation(baseStats.defenseBase, level, monsterInfo.defensePotential, monsterInfo.defenseEffort);
+        monsterInfo.specialDefense = OtherStatsCalculation(baseStats.specialDefenseBase, level, monsterInfo.specialDefensePotential, monsterInfo.specialDefenseEffort);
 
-        monsterInfo.maxEnergy =
-            EnergyStatCalculation(monsterFromDatabase.monsterBaseStat.maxEnergyBase, 
-            level, 
-            monsterInfo.maxEnergyPotential, 
-            monsterInfo.maxEnergyEffort);
-
-        monsterInfo.speed =
-            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.speedBase, 
-            level, 
-            monsterInfo.speedPotential, 
-            monsterInfo.speedEffort);
-
-        monsterInfo.attack =
-            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.attackBase, 
-            level, 
-            monsterInfo.attackPotential, 
-            monsterInfo.attackEffort);
-
-        monsterInfo.specialAttack =
-            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.specialAttackBase, 
-            level, 
-            monsterInfo.specialAttackPotential, 
-            monsterInfo.specialAttackEffort);
-
-
-        monsterInfo.defense =
-            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.defenseBase, 
-            level, 
-            monsterInfo.defensePotential, 
-            monsterInfo.defenseEffort);
-
-        monsterInfo.specialDefense =
-            OtherStatsCalculation(monsterFromDatabase.monsterBaseStat.specialDefenseBase, 
-            level, 
-            monsterInfo.specialDefensePotential, 
-            monsterInfo.specialDefenseEffort);
-
-        //Recovery HP and Energy if ResetMonsterStats Bool is True
-        if(resetMonsterStats)
+        if (resetMonsterStats)
         {
-            //Recover HP and Energy
             monsterInfo.hp = monsterInfo.maxHp;
             monsterInfo.energy = monsterInfo.maxEnergy;
-
-            //Reset Battle Speed
             monsterInfo.battleSpeed = monsterInfo.speed;
         }
 
-        //Next EXP Required Calculation
-        monsterInfo.nextLevelExpRequired = IncreaseExpRequirementFormula(monsterInfo.level);
+        monsterInfo.nextLevelExpRequired = IncreaseExpRequirementFormula(level);
     }
+
 
     private static int HPStatCalculation(int baseStat, int level, int potentialValue, int growthValue)
     {

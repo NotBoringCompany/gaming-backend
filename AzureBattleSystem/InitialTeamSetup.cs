@@ -82,17 +82,17 @@ public static class InitialTeamSetup
 
         //Declare Variables we gonna need (BF means Battlefield aka Monster On Screen)
         BattleMoraleGauge.MoraleData moraleData = new BattleMoraleGauge.MoraleData();
-        List<NBMonBattleDataSave> PlayerTeam = new List<NBMonBattleDataSave>();
-        List<NBMonBattleDataSave> EnemyTeam = new List<NBMonBattleDataSave>();
-        List<string> AllMonsterUniqueID_BF = new List<string>();
-        List<string> Team1UniqueID_BF = new List<string>();
-        List<string> Team2UniqueID_BF = new List<string>();
+        List<NBMonBattleDataSave> playerTeam = new List<NBMonBattleDataSave>();
+        List<NBMonBattleDataSave> enemyTeam = new List<NBMonBattleDataSave>();
+        List<string> allMonsterUniqueID_BF = new List<string>();
+        List<string> team1UniqueID_BF = new List<string>();
+        List<string> team2UniqueID_BF = new List<string>();
         HumanBattleData humanBattleData = new HumanBattleData();
         int battleCategory = 0;
 
         //Convert from json to NBmonBattleDataSave
-        PlayerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
-        EnemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
+        playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
+        enemyTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["EnemyTeam"].Value);
 
         if(requestTeamInformation.Result.Data.ContainsKey("BattleCategory"))
             battleCategory = int.Parse(requestTeamInformation.Result.Data["BattleCategory"].Value);
@@ -107,66 +107,56 @@ public static class InitialTeamSetup
         string PlayFabID = context.CallerEntityProfile.Lineage.MasterPlayerAccountId;
 
         //Genrate Human Battle Data
-        GenerateHumanData(humanBattleData, battleCategory, PlayerTeam, EnemyTeam, displayName, PlayFabID);
+        GenerateHumanData(humanBattleData, battleCategory, playerTeam, enemyTeam, displayName, PlayFabID);
 
-        //Looping Team 1
-        byte P1Count = 0;
-        foreach(var Monster in PlayerTeam)
-        {   
-            if(P1Count == 2)
-                continue;
-
-            AllMonsterUniqueID_BF.Add(Monster.uniqueId);
-            Team1UniqueID_BF.Add(Monster.uniqueId);
-
-            P1Count++;
-        }
-
-        //Let's add Player Unique ID
-        AllMonsterUniqueID_BF.Add(humanBattleData.playerHumanData.uniqueId);
-
-        //Looping Team 2
-        byte P2Count = 0;
-        foreach(var Monster in EnemyTeam)
+        // Loop through Team 1 and add monsters to respective lists
+        for (int i = 0; i < Math.Min(playerTeam.Count, 2); i++)
         {
-            if(P2Count == 2)
-                continue;
-
-            AllMonsterUniqueID_BF.Add(Monster.uniqueId);
-            Team2UniqueID_BF.Add(Monster.uniqueId);
-
-            P2Count++;
+            var monster = playerTeam[i];
+            allMonsterUniqueID_BF.Add(monster.uniqueId);
+            team1UniqueID_BF.Add(monster.uniqueId);
         }
 
-        //Let's add Enemy Unique ID (Indicating NPC)
-        if(battleCategory == 1)
-            AllMonsterUniqueID_BF.Add(humanBattleData.enemyHumanData.uniqueId);
+        // Add Player Unique ID
+        allMonsterUniqueID_BF.Add(humanBattleData.playerHumanData.uniqueId);
 
-        //Purge NBMon Level Up Bool, Status Effect List, and Temporary Stats;
-        foreach(var Monster in PlayerTeam)
+        // Loop through Team 2 and add monsters to respective lists
+        for (int i = 0; i < Math.Min(enemyTeam.Count, 2); i++)
         {
-            Monster.NBMonLevelUp = false;
-
-            if(Monster.fainted)
-                Monster.hp = 1;
-
-            Monster.fainted = false;
-            //Monster.statusEffectList.Clear();
-            Monster.temporaryPassives.Clear();
+            var monster = enemyTeam[i];
+            allMonsterUniqueID_BF.Add(monster.uniqueId);
+            team2UniqueID_BF.Add(monster.uniqueId);
         }
 
-        //Setup Enemy Team HP and Energy back to Full Health
-        foreach(var Monster in EnemyTeam)
+        // Add NPC if battleCategory is 1, which mean vs NPC
+        if (battleCategory == 1)
+            allMonsterUniqueID_BF.Add(humanBattleData.enemyHumanData.uniqueId);
+
+        // Purge NBMon Level Up Bool, Status Effect List, and Temporary Stats
+        foreach (var monster in playerTeam)
         {
-            Monster.hp = Monster.maxHp;
-            Monster.energy = Monster.maxEnergy;
-            Monster.NBMonLevelUp = false;
-            Monster.fainted = false;
-            Monster.statusEffectList.Clear();
-            Monster.temporaryPassives.Clear();
+            monster.NBMonLevelUp = false;
+
+            if (monster.fainted)
+                monster.hp = 1;
+
+            monster.fainted = false;
+            // monster.statusEffectList.Clear(); // This line is commented out
+            monster.temporaryPassives.Clear();
         }
 
-        //Resets Enemy Morale Gauge
+        // Reset Enemy Team HP and Energy back to Full Health
+        foreach (var monster in enemyTeam)
+        {
+            monster.hp = monster.maxHp;
+            monster.energy = monster.maxEnergy;
+            monster.NBMonLevelUp = false;
+            monster.fainted = false;
+            monster.statusEffectList.Clear();
+            monster.temporaryPassives.Clear();
+        }
+
+        // Reset Enemy Morale Gauge
         moraleData.playerMoraleGauge = 0;
         moraleData.enemyMoraleGauge = 0;
 
@@ -174,17 +164,17 @@ public static class InitialTeamSetup
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
             new UpdateUserDataRequest {
              PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
-                 {"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(AllMonsterUniqueID_BF)},
-                 {"Team1UniqueID_BF", JsonConvert.SerializeObject(Team1UniqueID_BF)},
-                 {"Team2UniqueID_BF", JsonConvert.SerializeObject(Team2UniqueID_BF)},
-                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(PlayerTeam)},
-                 {"EnemyTeam", JsonConvert.SerializeObject(EnemyTeam)},
+                 {"AllMonsterUniqueID_BF", JsonConvert.SerializeObject(allMonsterUniqueID_BF)},
+                 {"Team1UniqueID_BF", JsonConvert.SerializeObject(team1UniqueID_BF)},
+                 {"Team2UniqueID_BF", JsonConvert.SerializeObject(team2UniqueID_BF)},
+                 {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)},
+                 {"EnemyTeam", JsonConvert.SerializeObject(enemyTeam)},
                  {"MoraleGaugeData", JsonConvert.SerializeObject(moraleData)},
                  {"HumanBattleData", JsonConvert.SerializeObject(humanBattleData)}
                 }
             }
         );
 
-        return $"{AllMonsterUniqueID_BF.Count}";
+        return $"{allMonsterUniqueID_BF.Count}";
     }
 }
