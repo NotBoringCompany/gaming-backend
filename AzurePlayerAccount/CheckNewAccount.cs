@@ -29,7 +29,7 @@ public static class CheckNewAccount
         );
 
         //Check if Data Exists or not
-        if (reqTitleData.Result.Data.ContainsKey("CurrentPlayerTeam") || reqTitleData.Result.Data.ContainsKey("PlayerAccountCreated"))
+        if (reqTitleData.Result.Data.ContainsKey("PlayerAccountCreated"))
         {
             //Data Found
             return "Player Team Information Found.";
@@ -39,16 +39,9 @@ public static class CheckNewAccount
             //Data Not Found, Create new title data for team information and inventory
             var reqInternalTitleData = await serverApi.GetTitleInternalDataAsync(new GetTitleDataRequest());
             var reqPrimaryTitleData = await serverApi.GetTitleDataAsync(new GetTitleDataRequest());
+            List<string> bundleIDs = new List<string>();
 
-            //Declare new string variable
-            string TeamInformation = reqInternalTitleData.Result.Data["NewPlayerTeam"];
-            string JsonStringData = reqInternalTitleData.Result.Data["NewPlayerStarterItems"];
-            string defaultQuest = reqPrimaryTitleData.Result.Data["DefaultQuest"];
-            string defaultQuestVar = reqPrimaryTitleData.Result.Data["DefaultVariable"];
-
-            List<string> BundleIDs = new List<string>();
-
-            BundleIDs.Add("DemoStarterItem");
+            bundleIDs.Add("DemoStarterItem");
 
             //Send Data Into User Title Data
             var updateUserData = serverApi.UpdateUserDataAsync(
@@ -56,9 +49,6 @@ public static class CheckNewAccount
                 {
                     PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
                     Data = new Dictionary<string, string>{
-                        //{"CurrentPlayerTeam", TeamInformation}, Player is no longer able to get Dranexx.
-                        {"PlayerQuestData", defaultQuest},
-                        {"PlayerVariableData", defaultQuestVar},
                         {"PlayerAccountCreated", "true"}
                     }
                 }
@@ -80,7 +70,7 @@ public static class CheckNewAccount
                 new GrantItemsToUserRequest
                 {
                     PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-                    ItemIds = BundleIDs,
+                    ItemIds = bundleIDs,
                     CatalogVersion = "InventoryTest"
                 }
             );
