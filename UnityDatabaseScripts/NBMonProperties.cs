@@ -54,7 +54,9 @@ public class NBMonProperties
         Panic,
         Double_Down_Attack,
         Double_Down_Special,
-        Bleeding
+        Bleeding,
+        Dexterity,
+        MoraleGuard
     }
 
 

@@ -37,7 +37,7 @@ public class ElementDatabase
     public enum Elements
     {
         Null,
-        Normal,
+        Ordinary,
         Fire,
         Water,
         Electric,

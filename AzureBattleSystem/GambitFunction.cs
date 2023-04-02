@@ -292,7 +292,7 @@ public static class GambitFunction
         List<NBMonBattleDataSave> usedMonsters = new List<NBMonBattleDataSave>();
         List<NBMonProperties.StatusEffectInfo> statusEffectsInfoList = new List<NBMonProperties.StatusEffectInfo>();
         var guardGambit = new NBMonProperties.StatusEffectInfo();
-        guardGambit.statusEffect = NBMonProperties.StatusEffect.Guard;
+        guardGambit.statusEffect = NBMonProperties.StatusEffect.MoraleGuard;
         guardGambit.triggerChance = 100;
         guardGambit.countAmmount = 3;
         statusEffectsInfoList.Add(guardGambit);
