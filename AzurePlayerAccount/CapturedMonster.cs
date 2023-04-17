@@ -87,7 +87,7 @@ public static class CapturedMonster{
     {
         NBMonBattleDatabase UsedData = RandomBattleDatabase.GetWildBattleData(dataId);
 
-        foreach(var MonsterDataFromRandomBattle in UsedData.MonsterDatas)
+        foreach(var randomMonsterData in UsedData.MonsterDatas)
         {
             NBMonBattleDataSave monsterData = new NBMonBattleDataSave();
 
@@ -97,11 +97,11 @@ public static class CapturedMonster{
             else
                 monsterData.owner = playerETHAdress;
 
-            monsterData.monsterId = MonsterDataFromRandomBattle.MonsterID;
-            monsterData.nickName = monsterData.monsterId;
-            monsterData.skillList = MonsterDataFromRandomBattle.EquipSkill;
-            monsterData.uniqueSkillList = MonsterDataFromRandomBattle.InheritedSkill;
-            monsterData.passiveList = MonsterDataFromRandomBattle.Passive;
+            monsterData.monsterId = randomMonsterData.MonsterID;
+            monsterData.nickName = randomMonsterData.MonsterNickname;
+            monsterData.skillList = randomMonsterData.EquipSkill;
+            monsterData.uniqueSkillList = randomMonsterData.InheritedSkill;
+            monsterData.passiveList = randomMonsterData.Passive;
 
             //Let's Generate This Monster's Level
             NBMonStatsCalculation.GenerateFixedLevel(monsterData, UsedData.LevelRange);

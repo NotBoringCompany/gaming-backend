@@ -80,7 +80,7 @@ public static class GenerateEnemyTeam
             // Set the owner to "WILD", the monster ID, nickname, skills, and passives
             monsterData.owner = "WILD";
             monsterData.monsterId = randomMonsterData.MonsterID;
-            monsterData.nickName = monsterData.monsterId;
+            monsterData.nickName = randomMonsterData.MonsterNickname;
             monsterData.skillList = randomMonsterData.EquipSkill;
             monsterData.uniqueSkillList = randomMonsterData.InheritedSkill;
             monsterData.passiveList = randomMonsterData.Passive;
