@@ -45,8 +45,16 @@ public static class CheckPlayerActivity
         else
             playerLoginData.lastLoginDayCount = -1; //Indicates empty data
 
+        var dictionary = new Dictionary<string, string>();
+
         if(playerLoginData.lastLoginDayCount != currentServerDayCount)
+        {
             playerLoginData.lastLoginDayCount = currentServerDayCount;
+
+            //Resets Defeated Monsters Objs ID and DemoWorldPickedItemData.
+            dictionary.Add("DemoWorldPickedItemData", "[]");
+            dictionary.Add("DefeatedMonsterObjs", "[]");
+        }
 
         playerLoginData.loginTime = reqServerTime.Result.Time;
 
@@ -62,6 +70,15 @@ public static class CheckPlayerActivity
                 }
             }
         );
+
+        if(dictionary.Count > 0)
+        {
+            var updatePlayerData = serverApi.UpdateUserDataAsync(new UpdateUserDataRequest
+            {
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Data = dictionary
+            });
+        }
 
         return null;
     }
