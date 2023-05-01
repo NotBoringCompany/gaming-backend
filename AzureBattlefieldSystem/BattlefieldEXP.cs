@@ -58,13 +58,14 @@ public static class BattlefieldEXP
         //Get Value
         playerTeam = JsonConvert.DeserializeObject<List<NBMonBattleDataSave>>(requestTeamInformation.Result.Data["CurrentPlayerTeam"].Value);
         
-        foreach(var monsterUid in activeMonsterUid){
+        foreach(var monsterUid in activeMonsterUid)
+        {
             //Convert from json to NBmonBattleDataSave
             currentMonsterData = UseItem.FindMonster(monsterUid, playerTeam, null);
 
             if(currentMonsterData != null)
             {
-                var enemyData = enemyTeam[0];
+                NBMonBattleDataSave enemyData = enemyTeam[0];
 
                 //Add EXP, but the dataFromAzureToClient is null because we don't need it to appear in UI
                 AttackFunction.AddEXP(enemyData, currentMonsterData, null, activeMonsterUid.Count);
@@ -78,12 +79,44 @@ public static class BattlefieldEXP
             }
         }
 
+        ItemDropsData data = new ItemDropsData();
+        data.reasoning = $"{activeMonsterUid.Count()} of an active player Monster received EXP and updated to PlayFab!";
+
+        //Item Drops
+        data.itemDrops = ItemDrops(enemyTeam[0]);
+
         //Let's Save Player Team Data and Enemy Team Data into PlayFab again.
         var updateReq = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest {
             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
             {"CurrentPlayerTeam", JsonConvert.SerializeObject(playerTeam)}
             }});
 
-        return $"{activeMonsterUid.Count()} of an active player Monster received EXP and updated to PlayFab!";
+        return JsonConvert.SerializeObject(data);
+    }
+
+    public static List<string> ItemDrops(NBMonBattleDataSave defeatedMonsterData)
+    {
+        var monsterData = NBMonDatabase.FindMonster(defeatedMonsterData.monsterId);
+        var lootList = monsterData.LootLists;
+        List<string> addedLoots = new List<string>();
+
+        foreach(var lootData in lootList)
+        {
+            Random r = new Random();
+
+            //add LootData if RNG matches
+            if(lootData.RNGChance > r.Next(0, 99))
+            {
+                addedLoots.Add(lootData.ItemDrop.ItemName);
+            }
+        }
+
+        return addedLoots;
+    }
+
+    public class ItemDropsData
+    {
+        public string reasoning;
+        public List<string> itemDrops;
     }
 }
