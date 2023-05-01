@@ -737,6 +737,10 @@ public static class AttackFunction
         //Level of Human Player's NBMon
         var thisMonsterLevel = attackerMonster.level;
 
+        //Immediately Don't Run this script if the level of the monster is maxed.
+        if(thisMonsterLevel >=  AttackFunction.MaxLevel)
+            return;
+
         //Level of Defeated NBMon
         var defeatedMonsterLevel = targetMonster.level;
 
@@ -757,6 +761,7 @@ public static class AttackFunction
         //Add ThisMonsterEXPData into dataFromAzureToClient.
         if(dataFromAzureToClient != null)
             dataFromAzureToClient.EXPDatas.Add(thisMonsterEXPData);
+
         return; //For Demo Purpose
 
         //EXP Multiplier Depending On Team's Type (Wild, NPC, or Boss)

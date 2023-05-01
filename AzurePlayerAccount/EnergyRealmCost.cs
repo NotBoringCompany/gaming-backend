@@ -24,6 +24,7 @@ public static class EnergyRealmCost{
         //Declare Variable
         List<string> itemIdList = new List<string>();
         int playerStamina = new int();
+        int playerStaminaSpentTotal = new int();
         int energyCost= new int();
 
         //Get ID Data From Client
@@ -31,6 +32,16 @@ public static class EnergyRealmCost{
             energyCost = args["EnergyCost"];
         else
             energyCost = 0;
+
+        //Request User Data
+        var reqUserData = await serverApi.GetUserDataAsync(
+            new GetUserDataRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId
+            }
+        );
+
+        if(reqUserData.Result.Data.ContainsKey("PlayerStaminaSpentTotal"))
+            playerStaminaSpentTotal = int.Parse(reqUserData.Result.Data["PlayerStaminaSpentTotal"].Value);
 
         //Request User Inventory Item
         var reqUserInventory = await serverApi.GetUserInventoryAsync(
@@ -54,6 +65,15 @@ public static class EnergyRealmCost{
                     VirtualCurrency = "ST", 
                     Amount = energyCost
                 });
+
+            playerStaminaSpentTotal += energyCost;
+
+            var reqUserUpdateData = await serverApi.UpdateUserDataAsync(new UpdateUserDataRequest{
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                Data = new Dictionary<string, string>{
+                    {"PlayerStaminaSpentTotal", playerStaminaSpentTotal.ToString()}
+                }
+            });
 
             return null;
         }
