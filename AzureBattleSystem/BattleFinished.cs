@@ -54,7 +54,23 @@ public static class BattleFinished
                 Random rand = new Random();
                 if (ItemDropTable.RNGChance > rand.Next(0, 100))
                 {
-                    DroppedItemCredential.Add(ItemDropTable.ItemDrop.PlayFabItemID);
+                    if(string.IsNullOrEmpty(ItemDropTable.ItemDrop.PlayFabItemID))
+                    {
+                        var itemFromDB = UseItem.FindItem(ItemDropTable.ItemDrop.ItemName);
+
+                        if(itemFromDB != null)
+                        {
+                            if(UseItem.FindItemIndex(ItemDropTable.ItemDrop.ItemName) == -1)
+                                continue;
+                            
+                            string itemID = UseItem.FindItemIndex(ItemDropTable.ItemDrop.ItemName).ToString("000000");
+                            DroppedItemCredential.Add(itemID);
+                        }
+                    }
+                    else
+                    {
+                        DroppedItemCredential.Add(ItemDropTable.ItemDrop.PlayFabItemID);   
+                    }
                 }
             }
         }
@@ -90,49 +106,72 @@ public static class BattleFinished
     }
 
     //Get EXP Logic to Individual Monster
-    public static void InsertEXPToMonster(NBMonBattleDataSave Monster)
+    public static void InsertEXPToMonster(NBMonBattleDataSave monster)
     {
         //Add Monster Current exp using EXP Memory Storage
-        Monster.currentExp += Monster.expMemoryStorage;
+        monster.currentExp += monster.expMemoryStorage;
 
         //Reset this monster's EXP Memory Storage
-        Monster.expMemoryStorage = 0;
+        monster.expMemoryStorage = 0;
             
         //Check if this monster Level Up.
-        if(Monster.currentExp >= Monster.nextLevelExpRequired)
+        if(monster.currentExp >= monster.nextLevelExpRequired)
         {
-            Monster.currentExp -= Monster.nextLevelExpRequired;
-            MonsterLevelUp(Monster);
+            monster.currentExp -= monster.nextLevelExpRequired;
+            MonsterLevelUp(monster);
         }
     }
 
     //Check Level Up
-    public static void MonsterLevelUp(NBMonBattleDataSave Monster)
+    public static void MonsterLevelUp(NBMonBattleDataSave monster)
     {
         //Check if Max Level Reached
-        if(Monster.level >= AttackFunction.MaxLevel)
+        if(monster.level >= AttackFunction.MaxLevel)
         {
-            Monster.currentExp = 0;
-            Monster.expMemoryStorage = 0;
-            Monster.NBMonLevelUp = false;
+            monster.currentExp = 0;
+            monster.expMemoryStorage = 0;
+            monster.NBMonLevelUp = false;
             return;
         }
 
         //Add Level to this Monster
-        Monster.level += 1;
-        Monster.expMemoryStorage = 0;
+        monster.level += 1;
+        monster.expMemoryStorage = 0;
         
+        //Add New Skill
+        AddNewSkill(monster);
+
         //Calculate This Monster Stats
-        NBMonStatsCalculation.CalculateNBMonStatsAfterLevelUp(Monster);
+        NBMonStatsCalculation.CalculateNBMonStatsAfterLevelUp(monster);
 
         //Check if This Monster's Current EXP is enough to Level Up again
-        if(Monster.currentExp >= Monster.nextLevelExpRequired)
+        if(monster.currentExp >= monster.nextLevelExpRequired)
         {
-            Monster.currentExp -= Monster.nextLevelExpRequired;
-            MonsterLevelUp(Monster);
+            monster.currentExp -= monster.nextLevelExpRequired;
+            MonsterLevelUp(monster);
         }
     }
     
+    public static void AddNewSkill(NBMonBattleDataSave monster)
+    {
+        //Get Monster Data
+        var monsterFromDB = NBMonDatabase.FindMonster(monster.monsterId);
+
+        foreach (var monsterSkillTree in monsterFromDB.skillTree)
+        {
+            monster.newSkillLearned = true;
+
+            if (monster.level == monsterSkillTree.levelRequired)
+            {
+                //Tell the player that this monster unlocked new skill
+                if (!monster.skillList.Contains(monsterSkillTree.skillName) && monster.skillList.Count < 4)
+                {
+                    monster.skillList.Add(monsterSkillTree.skillName);
+                }
+            }
+        }
+    }
+
 
     //Lost Logic
     public static void DoLostLogic(List<NBMonBattleDataSave> PlayerTeam)

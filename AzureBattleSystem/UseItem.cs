@@ -73,6 +73,21 @@ public static class UseItem
         return null;
     }
 
+    public static int FindItemIndex(string ItemName)
+    {
+        InventoryItemsPlayFabLists ItemDatabase = JsonConvert.DeserializeObject<InventoryItemsPlayFabLists>(ItemDatabaseJson.ItemDataJson);
+        //Looping ItemDatabase
+        foreach (var Item in ItemDatabase.ItemDataBasePlayFab)
+        {
+            if(Item.Name == ItemName)
+            {
+                return ItemDatabase.ItemDataBasePlayFab.LastIndexOf(Item);
+            }
+        }
+        
+        return -1;
+    }
+
     public static string FindPlayFabItemID(string ItemName)
         {
         //Get ItemDatabase

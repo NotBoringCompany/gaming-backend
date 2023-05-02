@@ -136,6 +136,7 @@ public static class InitialTeamSetup
         foreach (var monster in playerTeam)
         {
             monster.NBMonLevelUp = false;
+            monster.newSkillLearned = false;
 
             if (monster.fainted)
                 monster.hp = 1;

@@ -25,6 +25,7 @@ public class NBMonBattleDataSave
     public bool MutationAcquired;
     public int MutationType;
     public bool NBMonLevelUp;
+    public bool newSkillLearned;
     public int expMemoryStorage;
     public int currentExp;
     public int nextLevelExpRequired;
