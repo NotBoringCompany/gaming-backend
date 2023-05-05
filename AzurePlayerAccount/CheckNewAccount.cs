@@ -66,14 +66,14 @@ public static class CheckNewAccount
             );
 
             //Send Inventory Data
-            var updateInventoryData = serverApi.GrantItemsToUserAsync(
-                new GrantItemsToUserRequest
-                {
-                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-                    ItemIds = bundleIDs,
-                    CatalogVersion = "InventoryTest"
-                }
-            );
+            // var updateInventoryData = serverApi.GrantItemsToUserAsync(
+            //     new GrantItemsToUserRequest
+            //     {
+            //         PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+            //         ItemIds = bundleIDs,
+            //         CatalogVersion = "InventoryTest"
+            //     }
+            // );
 
             return "Player Team Information Not Found! Create New Title Data";
         }

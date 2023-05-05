@@ -425,9 +425,9 @@ namespace NBCompany.Setters
             string sessionToken = args["sessionToken"]; 
 
             var body = new Dictionary<string,string>
-                {
-                    {"sessionToken", sessionToken}
-                };
+            {
+                {"sessionToken", sessionToken}
+            };
 
             HttpClient client = new HttpClient();
             
