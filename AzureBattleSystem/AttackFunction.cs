@@ -749,7 +749,7 @@ public static class AttackFunction
 
         Random r = new Random();
 
-        var demoEXP = r.Next(2000,5000);
+        var demoEXP = r.Next(200, 500);
 
         //Add EXP to Monster (EXP Memory Storage)
         attackerMonster.expMemoryStorage += demoEXP;
