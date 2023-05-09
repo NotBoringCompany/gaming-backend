@@ -58,16 +58,39 @@ public static class CheckPlayerActivity
 
         playerLoginData.loginTime = reqServerTime.Result.Time;
 
+        //Create Body Data
+        var body = new Dictionary<string, string>()
+        {   
+            {"DayCountLastLogin", JsonConvert.SerializeObject(playerLoginData)},
+            {"PlayerLogin", "True"}
+        };
+
+        //Check if the player has DayCountLastLogin data
+        if(!reqReadOnlyData.Result.Data.ContainsKey("AlphaDemoItemGiven"))
+        {
+            //Add variable AlphaDemoItemGiven and set it to True
+            body.Add("AlphaDemoItemGiven", "True");
+
+            List<string> bundleIDs = new List<string>();
+            bundleIDs.Add("AlphaDemoBundle");
+
+            //Send Inventory Data
+            var updateInventoryData = serverApi.GrantItemsToUserAsync(
+                new GrantItemsToUserRequest
+                {
+                    PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
+                    ItemIds = bundleIDs,
+                    CatalogVersion = "InventoryTest"
+                }
+            );
+        }
+
         //updatePlayerReadOnlyData about DayCountLastLogin and tell PlayFab this player has Logged In using PlayerLogin.
         var updatePlayerReadOnlyData = serverApi.UpdateUserReadOnlyDataAsync(
             new UpdateUserDataRequest
             {
                 PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId,
-                Data = new Dictionary<string, string>() 
-                {
-                    {"DayCountLastLogin", JsonConvert.SerializeObject(playerLoginData)},
-                    {"PlayerLogin", "True"}
-                }
+                Data = body
             }
         );
 
@@ -79,6 +102,7 @@ public static class CheckPlayerActivity
                 Data = dictionary
             });
         }
+
 
         return null;
     }
