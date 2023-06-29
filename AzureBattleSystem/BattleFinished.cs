@@ -187,7 +187,7 @@ public static class BattleFinished
             Monster.statusEffectList.Clear();
             Monster.temporaryPassives.Clear();
 
-            if(Monster.fainted)
+            if(Monster.fainted || Monster.hp <= 1)
             {
                 Monster.hp = 1;
                 Monster.fainted = false;
