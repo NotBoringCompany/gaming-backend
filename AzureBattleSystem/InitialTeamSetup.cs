@@ -27,7 +27,7 @@ public static class InitialTeamSetup
     public static void GenerateHumanData(HumanBattleData humanBattleData, int battleCategory, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, string playerDisplayName, string playerPlayFabId)
     {
         //Let's generate NPC Human Data if the battle is an NPC Battle
-        if(battleCategory == 1) //Indicating NPC Battle
+        if(battleCategory <= 1) //Indicating NPC Battle or PvP Battle
         {
             humanBattleData.enemyHumanData = HumanBattleBaseData.defaultHumanBattleData();
             humanBattleData.enemyHumanData.maxHp = GenerateHumanHP(enemyTeam);
@@ -128,8 +128,8 @@ public static class InitialTeamSetup
             team2UniqueID_BF.Add(monster.uniqueId);
         }
 
-        // Add NPC if battleCategory is 1, which mean vs NPC
-        if (battleCategory == 1)
+        // Add NPC if battleCategory is 1 or higher (2), which mean vs NPC or PvP
+        if (battleCategory <= 1)
             allMonsterUniqueID_BF.Add(humanBattleData.enemyHumanData.uniqueId);
 
         // Purge NBMon Level Up Bool, Status Effect List, and Temporary Stats
