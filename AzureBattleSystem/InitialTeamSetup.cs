@@ -211,15 +211,21 @@ public static class InitialTeamSetup
             }
         );
 
+        //Declare new variable
+        BattleMoraleGauge.MoraleData opponentMoraleData = new BattleMoraleGauge.MoraleData();
+        BattleMoraleGauge.MoraleData userMoraleData = new BattleMoraleGauge.MoraleData();
+        HumanBattleData opponentHumanBattleData = new HumanBattleData();
+        HumanBattleData userHumanBattleData = new HumanBattleData();
+
         //Process Morale Data from Opponent to This Player
-        BattleMoraleGauge.MoraleData opponentMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestOpponentData.Result.Data["MoraleGaugeData"].Value);
-        BattleMoraleGauge.MoraleData userMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestUserData.Result.Data["MoraleGaugeData"].Value);
+        opponentMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestOpponentData.Result.Data["MoraleGaugeData"].Value);
+        userMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestUserData.Result.Data["MoraleGaugeData"].Value);
         userMoraleData.playerMoraleGauge = opponentMoraleData.enemyMoraleGauge;
         userMoraleData.enemyMoraleGauge = opponentMoraleData.playerMoraleGauge;
 
         //Process Human Player Data from Opponent to This Player
-        HumanBattleData opponentHumanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestOpponentData.Result.Data["HumanBattleData"].Value);
-        HumanBattleData userHumanBattleData = new HumanBattleData();
+        opponentHumanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestOpponentData.Result.Data["HumanBattleData"].Value);
+        userHumanBattleData = new HumanBattleData();
         userHumanBattleData.playerHumanData = opponentHumanBattleData.enemyHumanData;
         userHumanBattleData.enemyHumanData = opponentHumanBattleData.playerHumanData;
 
