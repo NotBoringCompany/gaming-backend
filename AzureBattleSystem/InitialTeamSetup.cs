@@ -198,16 +198,18 @@ public static class InitialTeamSetup
             opponentPlayFabID = args["OpponentPlayFabID"];
         }
         else return $"Error: Missing OpponentPlayFabID!";
-
-        //Request Team Information
-        var requestUserData = await serverApi.GetUserDataAsync(
-            new GetUserDataRequest {}
-        );
-
+        
         //Request Team Information (Opponent Player Data)
         var requestOpponentData = await serverApi.GetUserDataAsync(
             new GetUserDataRequest { 
                 PlayFabId = opponentPlayFabID
+            }
+        );
+
+        //Request Team Information
+        var requestUserData = await serverApi.GetUserDataAsync(
+            new GetUserDataRequest {
+                PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId
             }
         );
 
@@ -217,17 +219,17 @@ public static class InitialTeamSetup
         HumanBattleData opponentHumanBattleData = new HumanBattleData();
         HumanBattleData userHumanBattleData = new HumanBattleData();
 
-        //Process Morale Data from Opponent to This Player
-        opponentMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestOpponentData.Result.Data["MoraleGaugeData"].Value);
-        userMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestUserData.Result.Data["MoraleGaugeData"].Value);
-        userMoraleData.playerMoraleGauge = opponentMoraleData.enemyMoraleGauge;
-        userMoraleData.enemyMoraleGauge = opponentMoraleData.playerMoraleGauge;
-
         //Process Human Player Data from Opponent to This Player
         opponentHumanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestOpponentData.Result.Data["HumanBattleData"].Value);
         userHumanBattleData = new HumanBattleData();
         userHumanBattleData.playerHumanData = opponentHumanBattleData.enemyHumanData;
         userHumanBattleData.enemyHumanData = opponentHumanBattleData.playerHumanData;
+
+        //Process Morale Data from Opponent to This Player
+        opponentMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestOpponentData.Result.Data["MoraleGaugeData"].Value);
+        userMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestUserData.Result.Data["MoraleGaugeData"].Value);
+        userMoraleData.playerMoraleGauge = opponentMoraleData.enemyMoraleGauge;
+        userMoraleData.enemyMoraleGauge = opponentMoraleData.playerMoraleGauge;
 
         //Update AllMonsterUniqueID_BF to Player Title Data
         var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
