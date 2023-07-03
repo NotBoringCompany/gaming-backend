@@ -27,7 +27,7 @@ public static class InitialTeamSetup
     public static void GenerateHumanData(HumanBattleData humanBattleData, int battleCategory, List<NBMonBattleDataSave> playerTeam, List<NBMonBattleDataSave> enemyTeam, string playerDisplayName, string playerPlayFabId)
     {
         //Let's generate NPC Human Data if the battle is an NPC Battle
-        if(battleCategory <= 1) //Indicating NPC Battle or PvP Battle
+        if(battleCategory == 1 || battleCategory == 3) //Indicating NPC Battle or PvP Battle
         {
             humanBattleData.enemyHumanData = HumanBattleBaseData.defaultHumanBattleData();
             humanBattleData.enemyHumanData.maxHp = GenerateHumanHP(enemyTeam);
@@ -129,7 +129,7 @@ public static class InitialTeamSetup
         }
 
         // Add NPC if battleCategory is 1 or higher (2), which mean vs NPC or PvP
-        if (battleCategory <= 1)
+        if (battleCategory == 1 || battleCategory == 3)
             allMonsterUniqueID_BF.Add(humanBattleData.enemyHumanData.uniqueId);
 
         // Purge NBMon Level Up Bool, Status Effect List, and Temporary Stats
@@ -177,5 +177,68 @@ public static class InitialTeamSetup
         );
 
         return $"{allMonsterUniqueID_BF.Count}";
+    }
+
+    //Cloud Methods
+    [FunctionName("InitialTeamSetupAzureUsingOpponentData")]
+    public static async Task<dynamic> InitialTeamSetupAzureUsingOpponentData([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
+    {
+        //Setup serverApi (Server API to PlayFab)
+        FunctionExecutionContext<dynamic> context = JsonConvert.DeserializeObject<FunctionExecutionContext<dynamic>>(await req.ReadAsStringAsync());
+        dynamic args = context.FunctionArgument;
+        PlayFabServerInstanceAPI serverApi = AzureHelper.ServerAPISetup(args, context);
+
+        //Opponent PlayFabID
+        string opponentPlayFabID = string.Empty;
+
+        //Check args["SwitchInput"] if it's null or not
+        if(args["OpponentPlayFabID"] != null)
+        {
+            //Let's extract the argument value to SwitchInputValue variable.
+            opponentPlayFabID = args["OpponentPlayFabID"];
+        }
+        else return $"Error: Missing OpponentPlayFabID!";
+
+        //Request Team Information
+        var requestUserData = await serverApi.GetUserDataAsync(
+            new GetUserDataRequest {}
+        );
+
+        //Request Team Information (Opponent Player Data)
+        var requestOpponentData = await serverApi.GetUserDataAsync(
+            new GetUserDataRequest { 
+                PlayFabId = opponentPlayFabID
+            }
+        );
+
+        //Process Morale Data from Opponent to This Player
+        BattleMoraleGauge.MoraleData opponentMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestOpponentData.Result.Data["MoraleGaugeData"].Value);
+        BattleMoraleGauge.MoraleData userMoraleData = JsonConvert.DeserializeObject<BattleMoraleGauge.MoraleData>(requestUserData.Result.Data["MoraleGaugeData"].Value);
+        userMoraleData.playerMoraleGauge = opponentMoraleData.enemyMoraleGauge;
+        userMoraleData.enemyMoraleGauge = opponentMoraleData.playerMoraleGauge;
+
+        //Process Human Player Data from Opponent to This Player
+        HumanBattleData opponentHumanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestOpponentData.Result.Data["MoraleGaugeData"].Value);
+        HumanBattleData userHumanBattleData = new HumanBattleData();
+        userHumanBattleData.playerHumanData = opponentHumanBattleData.enemyHumanData;
+        userHumanBattleData.enemyHumanData = opponentHumanBattleData.playerHumanData;
+
+        //Update AllMonsterUniqueID_BF to Player Title Data
+        var requestAllMonsterUniqueID_BF = await serverApi.UpdateUserDataAsync(
+            new UpdateUserDataRequest {
+             PlayFabId = context.CallerEntityProfile.Lineage.MasterPlayerAccountId, Data = new Dictionary<string, string>{
+                 {"AllMonsterUniqueID_BF", requestOpponentData.Result.Data["AllMonsterUniqueID_BF"].Value}, //Stay Intact
+                 {"Team1UniqueID_BF",  requestOpponentData.Result.Data["Team2UniqueID_BF"].Value}, //Reversed for Team 1 Turn Order
+                 {"Team2UniqueID_BF", requestOpponentData.Result.Data["Team1UniqueID_BF"].Value}, //Reversed for Team 2 Turn Order
+                 {"CurrentPlayerTeam",requestOpponentData.Result.Data["EnemyTeam"].Value}, // Use EnemyTeam of Opponent to be this player CurrentPlayerTeam
+                 {"EnemyTeam", requestOpponentData.Result.Data["CurrentPlayerTeam"].Value}, //Use CurrentPlayerTeam of Opponent to be an Enemy Team.
+                 {"MoraleGaugeData", JsonConvert.SerializeObject(userMoraleData)}, //Reversed Morale Gauge
+                 {"HumanBattleData", JsonConvert.SerializeObject(userHumanBattleData)}, //Reversed HumanBattleData
+                 {"RNGSeeds",  requestOpponentData.Result.Data["RNGSeeds"].Value}, //Get RNGSeeds from Opponent. Important
+                }
+            }
+        );
+
+        return $"Get Opponent Data Success";
     }
 }
