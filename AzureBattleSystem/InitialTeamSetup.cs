@@ -218,7 +218,7 @@ public static class InitialTeamSetup
         userMoraleData.enemyMoraleGauge = opponentMoraleData.playerMoraleGauge;
 
         //Process Human Player Data from Opponent to This Player
-        HumanBattleData opponentHumanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestOpponentData.Result.Data["MoraleGaugeData"].Value);
+        HumanBattleData opponentHumanBattleData = JsonConvert.DeserializeObject<HumanBattleData>(requestOpponentData.Result.Data["HumanBattleData"].Value);
         HumanBattleData userHumanBattleData = new HumanBattleData();
         userHumanBattleData.playerHumanData = opponentHumanBattleData.enemyHumanData;
         userHumanBattleData.enemyHumanData = opponentHumanBattleData.playerHumanData;
